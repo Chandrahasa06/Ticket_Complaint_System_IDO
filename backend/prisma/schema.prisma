@@ -12,3 +12,92 @@ generator client {
 datasource db {
   provider  = "postgresql"
 }
+
+enum Role {
+  USER
+  ADMIN
+  ENGINEER
+  TECHNICIAN
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  FOLLOW_UP
+  OVERDUE
+}
+
+model account{
+  id Int  @id@default(@autoincrement())
+  email String @unique
+  password String
+  approved boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  accountId Int      @unique
+  account   Account  @relation(fields: [accountId], references: [id])
+
+  tickets   Ticket[]
+}
+
+model Admin{
+  id        Int      @id @default(autoincrement())
+  accountId Int      @unique
+  account   Account  @relation(fields: [accountId], references: [id])
+}
+
+model Engineer{
+  id        Int      @id @default(autoincrement())
+  accountId Int      @unique
+  account   Account  @relation(fields: [accountId], references: [id])
+  tickets   Ticket[]
+  technicians Technician[]
+}
+
+model Technician{
+  id        Int      @id @default(autoincrement())
+  accountId Int      @unique
+  account   Account  @relation(fields: [accountId], references: [id])
+
+  engineerId Int
+  engineer   Engineer @relation(fields: [engineerId], references: [id])
+
+  tickets    Ticket[]
+
+}
+
+model Ticket{
+  id Int
+  title String
+  description String
+  status TicketStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId Int
+  user User @relation(fields: [userdId],references:[id])
+
+  EngineerId Int?
+  engineer Engineer? @relation(fields: [EngineerId],references:[id])
+
+  technicianId Int?
+  technician   Technician?   @relation(fields: [technicianId], references: [id])
+
+  followUps FollowUp[]
+}
+
+
+model FollowUp {
+  id        Int      @id @default(autoincrement())
+  notes     String
+  createdAt DateTime @default(now())
+
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+}
