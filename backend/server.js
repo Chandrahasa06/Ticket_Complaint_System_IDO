@@ -12,7 +12,7 @@ app.get("/", (req, res) => {
     res.send("Hello, World!");
 });
 
-app.post("/register", async(req,res)=>{
+app.post("/register", async(req, res)=>{
     const username = req.body["username"];
     const email = req.body["email"];
     const password = req.body["password"];
@@ -44,7 +44,13 @@ app.post("/register", async(req,res)=>{
         res.status(500).json({
         message: "Internal server error",
         });    
+        console.log(e);
     }
+});
+
+app.get("/users", async(req, res)=>{
+    const users = await prisma.user.findMany();
+    res.json(users);
 });
 
 app.listen(port, ()=>{
