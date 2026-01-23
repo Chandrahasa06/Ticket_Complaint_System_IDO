@@ -4,26 +4,19 @@ import dotenv from "dotenv";
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export const checkAuth = async(req, res) => {
+export const checkAuth = async(req, res, next) => {
     const token = req.cookies.token;
 
     if (!token) {
-        return false;
+        return res.status(401).json({ message: "Not authenticated" });
     }
     try {
-        const payload = await jwt.verify(token, JWT_SECRET);
-        console.log(payload);
-        // const user = await prisma.user.findUnique({
-        //     where: {email: payload.email,}
-        // })
-        res.status(200).json({message: "Authenticated", userId: payload.userId});
-        return true;
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload;
+        next();
     }
     catch(e){
-        res.status(500).json({message: "Internal Server Error"});
         console.log(e);
-        return false;
+        return res.status(401).json({ message: "Invalid or expired token" });
     }
-
-    return true;
 }

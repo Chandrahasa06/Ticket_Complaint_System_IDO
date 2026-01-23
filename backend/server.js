@@ -12,6 +12,11 @@ app.use(express.json());
 app.use(cookieParser());
 const port = 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const router = express.Router();
+
+// router.get("/", home);
+
+router.use(checkAuth);
 
 app.get("/", (req, res) => {
     res.send("Hello, World!");
@@ -76,13 +81,17 @@ app.post("/login", async(req, res)=>{
         }
     
         const token = jwt.sign({
+            id: user.id,
+            username: user.username,
             email: user.email,
+            role: "user",
         }, JWT_SECRET, { expiresIn: "7d" });
     
         res.cookie("token", token , {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
     
         res.json({ message: "Login successful", userId: user.id });
