@@ -5,6 +5,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { checkAuth } from "./middlewares/checkAuth.js";
+import userRoutes from "./routes/user.routes.js";
+import engineerRoutes from "./routes/engineer.routes.js";
+import technicianRoutes from "./routes/technician.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+
 
 dotenv.config();
 const app = express();
@@ -112,6 +117,13 @@ app.get("/check", async(req, res)=>{
     checkAuth(req, res);
 });
 
+app.use("/api/user", userRoutes);
+app.use("/api/engineer", engineerRoutes);
+app.use("/api/technician", technicianRoutes);
+app.use("/api/admin", adminRoutes);
+
 app.listen(port, ()=>{
     console.log(`Server listening on port ${port}`);
 })
+
+
