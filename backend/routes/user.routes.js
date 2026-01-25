@@ -1,16 +1,70 @@
 import express from "express";
+import dotenv from "dotenv";
+import { prisma } from "../prisma/client.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 import { checkAuth } from "../middlewares/checkAuth.js";
 
-const router = express.Router();
+dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET;
+const userRouter = express.Router();
 
-router.use(checkAuth);
 
-router.get("/dashboard", (req, res) => {
+userRouter.get("/dashboard", (req, res) => {
     res.json({ message: "User dashboard", user: req.user });
 });
 
-router.post("/raise-ticket", (req, res) => {
+userRouter.post("/raise-ticket", (req, res) => {
     res.json({ message: "Ticket raised by user" });
 });
 
-export default router;
+userRouter.post("/login", async(req, res)=>{
+    const {email, password} = req.body;
+
+    if(!email || !password){
+        return res.status(400).json({message: "All fields are required!",});
+    }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: {
+                email: email,
+            }
+        })
+        
+        if(!user){
+            return res.status(404).json({message: "User not found"});
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid password" });
+        }
+    
+        const token = jwt.sign({
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: "user",
+        }, JWT_SECRET, { expiresIn: "7d" });
+    
+        res.cookie("token", token , {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+    
+        res.json({ message: "Login successful", id: user.id });
+    } 
+    catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+userRouter.use(checkAuth);
+
+export default userRouter;

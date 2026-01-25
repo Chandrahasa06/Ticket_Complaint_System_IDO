@@ -7,32 +7,48 @@ datasource db {
   provider = "postgresql"
 }
 
-model user {
+model User {
   id       Int    @id @default(autoincrement())
   username String
   email    String @unique
   password String
 }
 
-model admin {
+model Admin {
   id       Int    @id @default(autoincrement())
   username String
   email    String @unique
   password String
 }
 
-model engineer {
+model Engineer {
   id       Int    @id @default(autoincrement())
   username String
   email    String @unique
   password String
 }
 
-model technician {
+model Technician {
   id       Int    @id @default(autoincrement())
   username String
   email    String @unique
   password String
+}
+
+model Ticket {
+  id       Int    @id @default(autoincrement())
+  type     String
+  subtype  String
+  subject  String
+  body     String
+  status   String
+
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id])
+
+  engineerId Int
+
+  createdAt   DateTime       @default(now())
 }
 
 

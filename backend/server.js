@@ -5,10 +5,10 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { checkAuth } from "./middlewares/checkAuth.js";
-import userRoutes from "./routes/user.routes.js";
-import engineerRoutes from "./routes/engineer.routes.js";
-import technicianRoutes from "./routes/technician.routes.js";
-import adminRoutes from "./routes/admin.routes.js";
+import userRouter from "./routes/user.routes.js";
+import engineerRouter from "./routes/engineer.routes.js";
+import technicianRouter from "./routes/technician.routes.js";
+import adminRouter from "./routes/admin.routes.js";
 
 
 dotenv.config();
@@ -61,66 +61,15 @@ app.post("/register", async(req, res)=>{
     }
 });
 
-app.post("/login", async(req, res)=>{
-    const {email, password} = req.body;
-
-    if(!email || !password){
-        return res.status(400).json({message: "All fields are required!",});
-    }
-
-    try {
-        const user = await prisma.user.findUnique({
-            where: {
-                email: email,
-            }
-        })
-    
-        if(!user){
-            return res.status(404).json({message: "User not found"});
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid password" });
-        }
-    
-        const token = jwt.sign({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: "user",
-        }, JWT_SECRET, { expiresIn: "7d" });
-    
-        res.cookie("token", token , {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-    
-        res.json({ message: "Login successful", userId: user.id });
-    } 
-    catch (e) {
-        console.log(e);
-        return res.status(500).json({ message: "Internal server error" });
-    }
-});
+app.use("/api/user", userRouter);
+app.use("/api/engineer", engineerRouter);
+app.use("/api/technician", technicianRouter);
+app.use("/api/admin", adminRouter);
 
 app.post("/logout", (req, res)=>{
     res.clearCookie("token");
-    res.json({message: "Logout successful"});
-    res.redirect("/");
+    res.json({message: "Logged out successfully"});
 });
-
-app.get("/check", async(req, res)=>{
-    checkAuth(req, res);
-});
-
-app.use("/api/user", userRoutes);
-app.use("/api/engineer", engineerRoutes);
-app.use("/api/technician", technicianRoutes);
-app.use("/api/admin", adminRoutes);
 
 app.listen(port, ()=>{
     console.log(`Server listening on port ${port}`);
