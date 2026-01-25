@@ -15,10 +15,6 @@ userRouter.get("/dashboard", (req, res) => {
     res.json({ message: "User dashboard", user: req.user });
 });
 
-userRouter.post("/raise-ticket", (req, res) => {
-    res.json({ message: "Ticket raised by user" });
-});
-
 userRouter.post("/login", async(req, res)=>{
     const {email, password} = req.body;
 
@@ -66,5 +62,50 @@ userRouter.post("/login", async(req, res)=>{
 });
 
 userRouter.use(checkAuth);
+
+userRouter.get("/tickets", async(req, res)=>{
+    try{
+        const tickets = await prisma.user.findUnique({
+            where: {
+                id: req.user.id,
+            },
+            include: {
+                tickets: true,
+            }
+        })
+
+        res.json({ tickets: tickets.tickets });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+})
+
+userRouter.post("/raise", async(req, res) => {
+    const { type, subtype, subject, body } = req.body;
+
+    if (!type || !subtype || !subject || !body) {
+        return res.status(400).json({ message: "All fields are required!" });
+    }
+
+    try {
+        const ticket = await prisma.ticket.create({
+            data: {
+                type: type,
+                subtype: subtype,
+                subject: subject,
+                body: body,
+                status: "",
+                userId: req.user.id,
+            }
+        })
+
+        res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
+    
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 export default userRouter;

@@ -14,6 +14,8 @@ model User {
   password String
 
   tickets  Ticket[]
+
+  @@map("user")
 }
 
 model Admin {
@@ -21,6 +23,8 @@ model Admin {
   username String
   email    String @unique
   password String
+
+  @@map("admin")
 }
 
 model Engineer {
@@ -28,6 +32,8 @@ model Engineer {
   username String
   email    String @unique
   password String
+
+  @@map("engineer")
 }
 
 model Technician {
@@ -35,6 +41,8 @@ model Technician {
   username String
   email    String @unique
   password String
+
+  @@map("technician")
 }
 
 model Ticket {
@@ -48,9 +56,9 @@ model Ticket {
   userId   Int
   user     User   @relation(fields: [userId], references: [id])
 
-  engineerId Int
-
   createdAt   DateTime       @default(now())
+
+  @@map("ticket")
 }
 
 
