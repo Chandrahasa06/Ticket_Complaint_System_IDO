@@ -65,7 +65,7 @@ userRouter.use(checkAuth);
 
 userRouter.get("/tickets", async(req, res)=>{
     try{
-        const tickets = await prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: {
                 id: req.user.id,
             },
@@ -74,7 +74,7 @@ userRouter.get("/tickets", async(req, res)=>{
             }
         })
 
-        res.json({ tickets: tickets.tickets });
+        res.json({ tickets: user.tickets });
     } catch (e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
