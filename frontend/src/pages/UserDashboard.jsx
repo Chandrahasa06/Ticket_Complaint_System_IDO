@@ -10,12 +10,12 @@ function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-       <header className="bg-blue-600 text-white p-4 shadow-lg">
+      <header className="bg-blue-600 text-white p-4 shadow-lg">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">User Dashboard</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm">Welcome, John Doe</span>
-            <button onClick={handleLogout} className="bg-blue-700 px-4 py-2 rounded hover:bg-blue-800">Logout</button>
+            <button className="bg-blue-700 px-4 py-2 rounded hover:bg-blue-800">Logout</button>
           </div>
         </div>
       </header>
