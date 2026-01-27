@@ -15,6 +15,41 @@ adminRouter.get("/dashboard", (req, res) => {
     res.json({ message: "Admin dashboard", user: req.user });
 });
 
+adminRouter.post("/register", async(req, res)=>{
+    const { username, email, password } = req.body;
+    
+    if(!username || !email || !password){
+        return res.status(400).json({message: "All fields are required!",});
+    }
+    
+    
+    try {
+        const hashed_password = await bcrypt.hash(password,10);
+        
+        const admin = await prisma.admin.create({
+            data: {
+                username: username,
+                email: email,
+                password: hashed_password,
+            }
+        })
+        res.status(201).json({ message: "Admin added", id: admin.id });
+    } 
+    catch (e) {
+        if (e.code === "P2002") {
+        return res.status(409).json({
+            message: "Email already exists",
+        });
+        }
+
+        res.status(500).json({
+        message: "Internal server error",
+        });    
+        console.log(e);
+    }
+});
+
+
 adminRouter.post("/login", async(req, res)=>{
     const {email, password} = req.body;
 
@@ -59,6 +94,28 @@ adminRouter.post("/login", async(req, res)=>{
     }
 });
 
+
 adminRouter.use(checkAuth);
+
+adminRouter.get("/tickets", async(req, res) => {
+    if(req.user.role !== "admin"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    try{
+        const status = req.query.status;
+
+        const tickets = await prisma.ticket.findMany({
+            where: (status && status !== "ALL") ? { status: status } : { undefined },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        res.json({ tickets: tickets });
+    }
+    catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 export default adminRouter;
