@@ -9,6 +9,7 @@ import userRouter from "./routes/user.routes.js";
 import engineerRouter from "./routes/engineer.routes.js";
 import technicianRouter from "./routes/technician.routes.js";
 import adminRouter from "./routes/admin.routes.js";
+import "./cron/overdue.js";
 
 
 dotenv.config();

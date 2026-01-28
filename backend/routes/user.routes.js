@@ -106,6 +106,9 @@ userRouter.get("/tickets", async(req, res)=>{
 
     try{
         const status = req.query.status;
+        const pg = parseInt(req.query.page) || 1;
+        const take = 10;
+        const skip = (pg - 1) * take;
         
         const user = await prisma.user.findUnique({
             where: {
@@ -115,16 +118,31 @@ userRouter.get("/tickets", async(req, res)=>{
                 tickets: {
                     where: (status && status !== "ALL") ? { status: status } : { undefined },
                     orderBy: {createdAt: 'desc'},
+                    skip: skip,
+                    take: take,
                 }
             }
         });
 
-        res.json({ tickets: user.tickets });
+        const totalTickets = await prisma.ticket.count({
+            where: {
+                userId: req.user.id,
+                status: (status && status !== "ALL") ? { status: status } : undefined,
+            }
+        })
+
+        res.json({ 
+            tickets: user.tickets,
+            pagination: {
+                page: pg,
+                totalTickets: totalTickets,
+            }
+         });
     } catch (e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
-})
+});
 
 
 userRouter.post("/raise", async(req, res) => {
