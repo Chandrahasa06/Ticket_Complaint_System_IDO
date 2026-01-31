@@ -1,89 +1,75 @@
-import React, { useState } from 'react';
+import React from "react";
 
-function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log('Login:', { email, password, role });
-    // You'll redirect based on role later
-  };
-
+const Login = ({ onLogin }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Ticket Managment System</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
+    <div className="login-wrapper">
+      <div className="login-card">
+
+        <div className="login-title">
+          Ticket Management System
+        </div>
+        <div className="login-subtitle">
+          Sign in to your account
         </div>
 
-        <form onSubmit={handleLogin}>
-          {/* Email Input */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">
-              Email Address
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-gray-700">
+              Username / Email
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              type="text"
               placeholder="Enter your email"
-              required
+              className="login-input"
             />
           </div>
 
-          {/* Password Input */}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">
+          <div>
+            <label className="text-sm text-gray-700">
               Password
             </label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
-              required
+              className="login-input"
             />
           </div>
 
-          {/* Role Selection */}
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">
-              Login As
-            </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="user">User</option>
-              <option value="engineer">Engineer</option>
-              <option value="technician">Technician</option>
-              <option value="admin">Admin</option>
-            </select>
+          <div className="text-right text-sm text-blue-600 cursor-pointer">
+            Forgot password?
           </div>
 
-          {/* Login Button */}
           <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold"
+            onClick={() => onLogin("user")}
+            className="login-btn"
           >
             Sign In
           </button>
-        </form>
 
-        {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Forgot password? <span className="text-blue-600 cursor-pointer hover:underline">Reset here</span></p>
+          <div className="text-center text-sm text-gray-500">
+            OR
+          </div>
+
+          <button className="w-full border rounded-lg py-2 text-gray-700 hover:bg-gray-100 transition">
+            Continue with Google
+          </button>
         </div>
+
+        <div className="mt-6 flex justify-center gap-3">
+          <button onClick={() => onLogin("admin")} className="role-btn">
+            Admin
+          </button>
+          <button onClick={() => onLogin("engineer")} className="role-btn">
+            Engineer
+          </button>
+          <button onClick={() => onLogin("technician")} className="role-btn">
+            Technician
+          </button>
+        </div>
+
       </div>
     </div>
   );
-}
+};
 
 export default Login;

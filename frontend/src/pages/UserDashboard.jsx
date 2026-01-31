@@ -1,200 +1,189 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-function UserDashboard() {
-  const [activeTab, setActiveTab] = useState('raise');
-  const [tickets, setTickets] = useState([
-    { id: 1, title: 'AC not working', department: 'Electrical', status: 'Pending', date: '2026-01-20' },
-    { id: 2, title: 'Broken desk', department: 'Carpentry', status: 'Resolved', date: '2026-01-18' },
-  ]);
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-blue-600 text-white p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">User Dashboard</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm">Welcome, John Doe</span>
-            <button className="bg-blue-700 px-4 py-2 rounded hover:bg-blue-800">Logout</button>
-          </div>
-        </div>
-      </header>
 
-      {/* Navigation Tabs */}
-      <div className="container mx-auto mt-6">
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab('raise')}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              activeTab === 'raise'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Raise a Ticket
-          </button>
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              activeTab === 'pending'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Pending Complaints
-          </button>
-          <button
-            onClick={() => setActiveTab('resolved')}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              activeTab === 'resolved'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            Resolved Complaints
-          </button>
-        </div>
+const UserDashboard = () => {
+  const [activeTab, setActiveTab] = useState("raise");
 
-        {/* Content Area */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          {activeTab === 'raise' && <RaiseTicketForm />}
-          {activeTab === 'pending' && <TicketList tickets={tickets.filter(t => t.status === 'Pending')} />}
-          {activeTab === 'resolved' && <TicketList tickets={tickets.filter(t => t.status === 'Resolved')} showFeedback />}
-        </div>
-      </div>
-    </div>
-  );
-}
+  const [tickets, setTickets] = useState([]);
 
-// Raise Ticket Form Component
-function RaiseTicketForm() {
   const [formData, setFormData] = useState({
-    title: '',
-    department: '',
-    description: '',
-    priority: 'Medium',
+    title: "",
+    department: "",
+    priority: "Low",
+    description: "",
+    photo: null,
   });
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData({
+      ...formData,
+      [name]: files ? files[0] : value,
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Ticket submitted:', formData);
-    alert('Ticket raised successfully!');
+
+    const newTicket = {
+      id: `TKT${tickets.length + 1}`,
+      title: formData.title,
+      department: formData.department,
+      priority: formData.priority,
+      description: formData.description,
+      photo: formData.photo,
+      status: "pending",
+      date: new Date().toLocaleDateString(),
+    };
+
+    setTickets([...tickets, newTicket]);
+
+    // Reset form
+    setFormData({
+      title: "",
+      department: "",
+      priority: "Low",
+      description: "",
+      photo: null,
+    });
+
+    setActiveTab("pending");
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">Raise a New Ticket</h2>
-      
-      <div>
-        <label className="block text-gray-700 font-semibold mb-2">Complaint Title</label>
-        <input
-          type="text"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Brief description of the issue"
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-gray-700 font-semibold mb-2">Department</label>
-        <select
-          value={formData.department}
-          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-        >
-          <option value="">Select Department</option>
-          <option value="Electrical">Electrical</option>
-          <option value="Plumbing">Plumbing</option>
-          <option value="Carpentry">Carpentry</option>
-          <option value="IT">IT Support</option>
-          <option value="Civil">Civil</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-gray-700 font-semibold mb-2">Priority</label>
-        <select
-          value={formData.priority}
-          onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-          <option value="Critical">Critical</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-gray-700 font-semibold mb-2">Description</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="5"
-          placeholder="Detailed description of the problem"
-          required
-        ></textarea>
-      </div>
-
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
-      >
-        Submit Ticket
-      </button>
-    </form>
+  const filteredTickets = tickets.filter(
+    (t) => t.status === activeTab
   );
-}
 
-// Ticket List Component
-function TicketList({ tickets, showFeedback }) {
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">
-        {showFeedback ? 'Resolved Complaints' : 'Pending Complaints'}
-      </h2>
-      
-      {tickets.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No tickets found</p>
-      ) : (
-        <div className="space-y-4">
-          {tickets.map((ticket) => (
-            <div key={ticket.id} className="border rounded-lg p-4 hover:shadow-md transition">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{ticket.title}</h3>
-                  <p className="text-sm text-gray-600">Department: {ticket.department}</p>
-                  <p className="text-sm text-gray-600">Date: {ticket.date}</p>
-                </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  ticket.status === 'Resolved' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {ticket.status}
-                </span>
-              </div>
-              
-              {showFeedback && (
-                <div className="mt-4 flex gap-2">
-                  <button className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                    Satisfied ✓
-                  </button>
-                  <button className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                    Create Follow-up
-                  </button>
-                </div>
-              )}
-            </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* HEADER */}
+      <header className="bg-blue-600 text-white px-8 py-4 flex justify-between">
+        <h1 className="text-xl font-bold">User Dashboard</h1>
+        <button className="bg-blue-800 px-4 py-2 rounded">Logout</button>
+      </header>
+
+      <div className="p-8">
+        {/* TABS */}
+        <div className="flex gap-3 mb-6">
+          {["raise", "pending", "resolved"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded ${
+                activeTab === tab
+                  ? "bg-blue-600 text-white"
+                  : "bg-white"
+              }`}
+            >
+              {tab === "raise"
+                ? "Raise Ticket"
+                : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
           ))}
         </div>
-      )}
+
+        {/* RAISE TICKET */}
+        {activeTab === "raise" && (
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white p-6 rounded-lg shadow max-w-xl"
+          >
+            <h2 className="text-lg font-semibold mb-4">Raise New Ticket</h2>
+
+            <input
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="Complaint Title"
+              className="w-full mb-3 p-2 border rounded"
+              required
+            />
+
+            <select
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              className="w-full mb-3 p-2 border rounded"
+              required
+            >
+              <option value="">Select Department</option>
+              <option>Electrical</option>
+              <option>Plumbing</option>
+              <option>IT</option>
+            </select>
+
+            <select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              className="w-full mb-3 p-2 border rounded"
+            >
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+            </select>
+
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe the issue"
+              className="w-full mb-3 p-2 border rounded"
+              rows="4"
+            />
+
+            <input
+              type="file"
+              name="photo"
+              accept="image/*"
+              onChange={handleChange}
+              className="mb-4"
+            />
+
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-6 py-2 rounded"
+            >
+              Submit Ticket
+            </button>
+          </form>
+        )}
+
+        {/* PENDING / RESOLVED */}
+        {activeTab !== "raise" && (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Tickets
+            </h2>
+
+            {filteredTickets.length === 0 ? (
+              <p className="text-gray-500">No tickets found.</p>
+            ) : (
+              <ul className="space-y-3">
+                {filteredTickets.map((ticket) => (
+                  <li
+                    key={ticket.id}
+                    className="border p-4 rounded flex justify-between"
+                  >
+                    <div>
+                      <p className="font-medium">{ticket.title}</p>
+                      <p className="text-sm text-gray-500">
+                        {ticket.department} • {ticket.priority}
+                      </p>
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {ticket.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
-}
+};
 
 export default UserDashboard;
