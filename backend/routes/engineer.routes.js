@@ -61,4 +61,40 @@ engineerRouter.post("/login", async(req, res)=>{
 
 engineerRouter.use(checkAuth);
 
+engineerRouter.get("/tickets", async(req, res) => {
+    if(req.user.role !== "engineer"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    try{
+        const status = req.query.status;
+        const pg = parseInt(req.query.pg) || 1;
+        const take = 50;
+        const skip = (pg-1)*take;
+
+        const tickets = await prisma.ticket.findMany({
+            where: (status && status !== "ALL") ? { status: status } : undefined,
+            orderBy: { createdAt: 'desc' },
+            skip: skip,
+            take: take,
+        });
+
+        const totalTickets = await prisma.ticket.count({
+            where: (status && status !== "ALL") ? { status: status } : undefined,
+        });
+
+        res.json({ 
+            tickets: tickets,
+            pagination: {
+                pg: pg,
+                totalTickets: totalTickets,
+            }
+        });
+    }
+    catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 export default engineerRouter;
