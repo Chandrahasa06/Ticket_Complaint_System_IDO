@@ -29,10 +29,10 @@ function App() {
       <Route path="/login/technician" element={<TechnicianLogin />} />
 
       {/* DASHBOARDS */}
-      <Route path="/dashboard/user" element={<UserDashboard />} />
-      <Route path="/dashboard/admin" element={<AdminDashboard />} />
-      <Route path="/dashboard/engineer" element={<EngineerDashboard />} />
-      <Route path="/dashboard/technician" element={<TechnicianDashboard />} />
+      <Route path="/user/dashboard" element={<UserDashboard />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/engineer/dashboard" element={<EngineerDashboard />} />
+      <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
 
       {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" />} />

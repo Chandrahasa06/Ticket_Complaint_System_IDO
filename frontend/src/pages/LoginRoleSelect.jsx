@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom"; 
 
 const LoginRoleSelect = ({ setPage }) => {
   const [hoveredRole, setHoveredRole] = useState(null);
+  const navigate = useNavigate();
 
   const roles = [
     {
@@ -15,7 +17,8 @@ const LoginRoleSelect = ({ setPage }) => {
       ),
       gradient: "from-blue-500 to-indigo-600",
       glowColor: "blue",
-      particles: "blue-400"
+      particles: "blue-400",
+      path: "/login/user"
     },
     {
       id: "admin-login",
@@ -28,7 +31,8 @@ const LoginRoleSelect = ({ setPage }) => {
       ),
       gradient: "from-slate-700 to-slate-900",
       glowColor: "slate",
-      particles: "slate-500"
+      particles: "slate-500",
+      path: "/login/admin"
     },
     {
       id: "engineer-login",
@@ -42,7 +46,8 @@ const LoginRoleSelect = ({ setPage }) => {
       ),
       gradient: "from-emerald-500 to-green-600",
       glowColor: "green",
-      particles: "green-400"
+      particles: "green-400",
+      path: "/login/engineer"
     },
     {
       id: "technician-login",
@@ -55,7 +60,8 @@ const LoginRoleSelect = ({ setPage }) => {
       ),
       gradient: "from-purple-500 to-pink-600",
       glowColor: "purple",
-      particles: "purple-400"
+      particles: "purple-400",
+      path:"/login/technician"
     }
   ];
 
@@ -101,7 +107,7 @@ const LoginRoleSelect = ({ setPage }) => {
           {roles.map((role, index) => (
             <button
               key={role.id}
-              onClick={() => setPage(role.id)}
+              onClick={() => navigate(role.path)}
               onMouseEnter={() => setHoveredRole(role.id)}
               onMouseLeave={() => setHoveredRole(null)}
               className="group relative"

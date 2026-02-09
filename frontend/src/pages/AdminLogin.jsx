@@ -1,15 +1,40 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const AdminLogin = ({ onLogin }) => {
-  const [username, setUsername] = useState("");
+const AdminLogin = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ username: false, password: false });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin("admin");
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:3000/api/admin/login", {
+      method: "POST",
+      credentials: "include", 
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email:email,
+        password: password,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Invalid credentials");
+      return;
+    }
+
+    navigate("/admin/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+};
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -57,10 +82,10 @@ const AdminLogin = ({ onLogin }) => {
                   </div>
                   <input
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onFocus={() => setIsFocused({ ...isFocused, username: true })}
-                    onBlur={() => setIsFocused({ ...isFocused, username: false })}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setIsFocused({ ...isFocused, email: true })}
+                    onBlur={() => setIsFocused({ ...isFocused, email: false })}
                     placeholder="Enter admin username or email"
                     className="w-full pl-12 pr-4 py-3.5 bg-slate-700 bg-opacity-50 border-2 border-slate-600 text-white placeholder-slate-400 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500 focus:ring-opacity-30 transition-all duration-300 outline-none"
                   />

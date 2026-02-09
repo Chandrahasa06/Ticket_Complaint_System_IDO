@@ -1,15 +1,39 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const TechnicianLogin = ({ onLogin }) => {
-  const [technicianId, setTechnicianId] = useState("");
+const TechnicianLogin = () => {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isFocused, setIsFocused] = useState({ technicianId: false, password: false });
+  const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin("technician");
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault(); 
+    try {
+    const res = await fetch("http://localhost:3000/api/technician/login", {
+      method: "POST",
+      credentials: "include", 
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email:email,
+        password: password,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Invalid credentials");
+      return;
+    }
+
+    navigate("/technician/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+};
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center p-4">
@@ -74,10 +98,10 @@ const TechnicianLogin = ({ onLogin }) => {
                   </div>
                   <input
                     type="text"
-                    value={technicianId}
-                    onChange={(e) => setTechnicianId(e.target.value)}
-                    onFocus={() => setIsFocused({ ...isFocused, technicianId: true })}
-                    onBlur={() => setIsFocused({ ...isFocused, technicianId: false })}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setIsFocused({ ...isFocused, email: true })}
+                    onBlur={() => setIsFocused({ ...isFocused, email: false })}
                     placeholder="Enter your technician ID or email"
                     className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all duration-300 outline-none bg-white"
                   />

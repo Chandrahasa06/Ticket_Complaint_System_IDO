@@ -1,15 +1,43 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const UserLogin = ({ onLogin }) => {
+const UserLogin = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin("user");
-  };
+     try {
+    const res = await fetch("http://localhost:3000/api/user/login", {
+      method: "POST",
+      credentials: "include", 
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email:email,
+        password: password,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Invalid credentials");
+      return;
+    }
+    console.log("STATUS:", res.status);
+    const data = await res.json();
+    console.log("LOGIN RESPONSE:", data);
+
+    navigate("/user/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+};
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
