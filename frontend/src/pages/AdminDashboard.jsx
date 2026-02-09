@@ -68,6 +68,19 @@ const AdminDashboard = () => {
       ? []
       : tickets.filter((t) => t.status === activeTab);
 
+  const handleLogout = async(req, res) => {
+    try {
+      const res = await fetch("http://localhost:3000/logout");
+      if (res.ok) {
+        window.location.href = "/login";
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  }
+
   const getStatusColor = (status) => {
     const colors = {
       overdue: "bg-red-100 text-red-700 border-red-200",
@@ -139,7 +152,7 @@ const AdminDashboard = () => {
                 <p className="text-xs text-purple-200">admin@system.com</p>
               </div>
             </div>
-            <button className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
+            <button onClick={handleLogout} className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
               <span className="flex items-center gap-2">
                 Logout
                 <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

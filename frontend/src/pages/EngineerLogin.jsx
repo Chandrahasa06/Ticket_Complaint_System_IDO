@@ -1,15 +1,44 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const EngineerLogin = ({ onLogin }) => {
-  const [engineerId, setEngineerId] = useState("");
+
+
+const EngineerLogin = () => {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isFocused, setIsFocused] = useState({ engineerId: false, password: false });
+  const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onLogin("engineer");
-  };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:3000/api/engineer/login", {
+      method: "POST",
+      credentials: "include", 
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email:email,
+        password: password,
+      }),
+    });
+
+    if (!res.ok) {
+      alert("Invalid credentials");
+      return;
+    }
+
+    navigate("/engineer/dashboard");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+};
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center p-4">
@@ -55,10 +84,10 @@ const EngineerLogin = ({ onLogin }) => {
                   </div>
                   <input
                     type="text"
-                    value={engineerId}
-                    onChange={(e) => setEngineerId(e.target.value)}
-                    onFocus={() => setIsFocused({ ...isFocused, engineerId: true })}
-                    onBlur={() => setIsFocused({ ...isFocused, engineerId: false })}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setIsFocused({ ...isFocused, email: true })}
+                    onBlur={() => setIsFocused({ ...isFocused, email: false })}
                     placeholder="Enter your engineer ID or email"
                     className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-100 transition-all duration-300 outline-none bg-white"
                   />
