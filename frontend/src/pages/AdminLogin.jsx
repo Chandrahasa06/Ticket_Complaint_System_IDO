@@ -8,33 +8,37 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ username: false, password: false });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      if(!email || !password){
+        alert("All fields are required!");
+        return;
+      }
 
-  try {
-    const res = await fetch("http://localhost:3000/api/admin/login", {
-      method: "POST",
-      credentials: "include", 
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email:email,
-        password: password,
-      }),
-    });
+      const res = await fetch("http://localhost:3000/api/admin/login", {
+        method: "POST",
+        credentials: "include", 
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email:email,
+          password: password,
+        }),
+      });
 
-    if (!res.ok) {
-      alert("Invalid credentials");
-      return;
+      if (!res.ok) {
+        alert("Invalid credentials");
+        return;
+      }
+
+      navigate("/admin/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
-
-    navigate("/admin/dashboard");
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -66,7 +70,7 @@ const handleSubmit = async (e) => {
 
         {/* Login Card */}
         <div className="bg-slate-800 bg-opacity-50 backdrop-blur-xl border border-purple-500 border-opacity-30 rounded-3xl shadow-2xl p-8 animate-fadeInUp">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* Username Input */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-purple-200">

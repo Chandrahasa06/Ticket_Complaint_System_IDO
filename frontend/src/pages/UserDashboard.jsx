@@ -51,7 +51,7 @@ const UserDashboard = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  const handleLogin = () => {
     console.log("Ticket submitted:", formData);
     // Reset form
     setFormData({ title: "", department: "", priority: "", description: "" });
@@ -195,7 +195,7 @@ const UserDashboard = () => {
               </div>
 
               <button
-                onClick={handleSubmit}
+                onClick={handleLogin}
                 className="group w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
               >
                 Submit Ticket

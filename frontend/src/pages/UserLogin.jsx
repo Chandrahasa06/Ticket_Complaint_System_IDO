@@ -8,35 +8,40 @@ const UserLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
      try {
-    const res = await fetch("http://localhost:3000/api/user/login", {
-      method: "POST",
-      credentials: "include", 
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email:email,
-        password: password,
-      }),
-    });
+      if(!email || !password){
+        alert("All fields are required!");
+        return;
+      }
 
-    if (!res.ok) {
-      alert("Invalid credentials");
-      return;
+      const res = await fetch("http://localhost:3000/api/user/login", {
+        method: "POST",
+        credentials: "include", 
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email:email,
+          password: password,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Invalid credentials");
+        return;
+      }
+      console.log("STATUS:", res.status);
+      const data = await res.json();
+      console.log("LOGIN RESPONSE:", data);
+
+      navigate("/user/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
-    console.log("STATUS:", res.status);
-    const data = await res.json();
-    console.log("LOGIN RESPONSE:", data);
-
-    navigate("/user/dashboard");
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
-};
+  };
 
 
   return (
@@ -66,7 +71,7 @@ const UserLogin = () => {
 
         {/* Login Card */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 backdrop-blur-sm bg-opacity-90 animate-fadeInUp">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* Email Input */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">

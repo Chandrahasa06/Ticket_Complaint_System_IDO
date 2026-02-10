@@ -8,32 +8,37 @@ const TechnicianLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault(); 
     try {
-    const res = await fetch("http://localhost:3000/api/technician/login", {
-      method: "POST",
-      credentials: "include", 
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email:email,
-        password: password,
-      }),
-    });
 
-    if (!res.ok) {
-      alert("Invalid credentials");
-      return;
+      if(!email || !password){
+        alert("All fields are required!");
+        return;
+      }
+      const res = await fetch("http://localhost:3000/api/technician/login", {
+        method: "POST",
+        credentials: "include", 
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email:email,
+          password: password,
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Invalid credentials");
+        return;
+      }
+
+      navigate("/technician/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
     }
-
-    navigate("/technician/dashboard");
-  } catch (err) {
-    console.error(err);
-    alert("Server error");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 flex items-center justify-center p-4">
@@ -82,7 +87,7 @@ const TechnicianLogin = () => {
 
         {/* Login Card */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 backdrop-blur-sm bg-opacity-90 animate-fadeInUp border border-purple-100">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* Technician ID Input */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
