@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { X, Star, Phone, Mail, Activity, Clock, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const EngineerDashboard = () => {
   const [activeTab, setActiveTab] = useState("pending");
+  const navigate = useNavigate();
   const [ticketsData, setTicketsData] = useState([
     {
       id: "TKT001",
@@ -101,6 +103,21 @@ const EngineerDashboard = () => {
       default: return null;
     }
   };
+  const handleLogout = async () => {
+  try {
+    await fetch("http://localhost:3000/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    navigate("/LoginRoleSelect"); // change route if needed
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50">
@@ -124,7 +141,8 @@ const EngineerDashboard = () => {
               </p>
             </div>
           </div>
-          <button className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
+          <button
+          onClick={handleLogout} className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
             <span className="flex items-center gap-2">
               Logout
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

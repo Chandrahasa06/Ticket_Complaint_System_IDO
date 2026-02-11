@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-
+import { useNavigate } from "react-router-dom";
 const UserDashboard = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [formData, setFormData] = useState({
@@ -66,6 +67,21 @@ const UserDashboard = () => {
       default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
+  const handleLogout = async () => {
+  try {
+    await fetch("http://localhost:3000/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    navigate("/LoginRoleSelect"); // change route if needed
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -83,7 +99,8 @@ const UserDashboard = () => {
               <p className="text-blue-100 text-sm">Manage your service requests</p>
             </div>
           </div>
-          <button className="group relative bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
+          <button
+          onClick={handleLogout} className="group relative bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
             <span className="flex items-center gap-2">
               Logout
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

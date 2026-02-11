@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Eye, Bell, X, TrendingUp, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom"; 
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const navigate = useNavigate();
 
   const tickets = [
     {
@@ -68,18 +70,22 @@ const AdminDashboard = () => {
       ? []
       : tickets.filter((t) => t.status === activeTab);
 
-  const handleLogout = async(req, res) => {
-    try {
-      const res = await fetch("http://localhost:3000/logout");
-      if (res.ok) {
-        window.location.href = "/login";
-      } else {
-        console.error("Logout failed");
-      }
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+const handleLogout = async () => {
+  try {
+    await fetch("http://localhost:3000/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    navigate("/LoginRoleSelect"); // change route if needed
+  } catch (error) {
+    console.error("Logout error:", error);
   }
+};
+
 
   const getStatusColor = (status) => {
     const colors = {
@@ -117,6 +123,7 @@ const AdminDashboard = () => {
       default:
         return null;
     }
+
   };
 
   return (
