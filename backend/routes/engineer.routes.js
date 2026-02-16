@@ -15,6 +15,42 @@ engineerRouter.get("/dashboard", (req, res) => {
     res.json({ message: "Engineer dashboard", user: req.user });
 });
 
+
+engineerRouter.post("/register", async(req, res)=>{
+    const { username, email, password } = req.body;
+    
+    if(!username || !email || !password){
+        return res.status(400).json({message: "All fields are required!",});
+    }
+    
+    
+    try {
+        const hashed_password = await bcrypt.hash(password,10);
+        
+        const engineer = await prisma.engineer.create({
+            data: {
+                username: username,
+                email: email,
+                password: hashed_password,
+            }
+        })
+        res.status(201).json({ message: "Engineer added", id: engineer.id });
+    } 
+    catch (e) {
+        if (e.code === "P2002") {
+        return res.status(409).json({
+            message: "Email already exists",
+        });
+        }
+
+        res.status(500).json({
+        message: "Internal server error",
+        });    
+        console.log(e);
+    }
+});
+
+
 engineerRouter.post("/login", async(req, res)=>{
     const {email, password} = req.body;
 
