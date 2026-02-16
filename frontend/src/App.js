@@ -4,16 +4,16 @@ import { Routes, Route, Navigate} from "react-router-dom";
 import LoginRoleSelect from "./pages/LoginRoleSelect";
 
 /* Login pages */
-import UserLogin from "./pages/UserLogin";
-import AdminLogin from "./pages/AdminLogin";
-import EngineerLogin from "./pages/EngineerLogin";
-import TechnicianLogin from "./pages/TechnicianLogin";
+import UserLogin from "./pages/User/Login";
+import AdminLogin from "./pages/Admin/Login";
+import EngineerLogin from "./pages/Engineer/Login";
+import TechnicianLogin from "./pages/Technician/Login";
 
 /* Dashboards */
-import UserDashboard from "./pages/UserDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import EngineerDashboard from "./pages/EngineerDashboard";
-import TechnicianDashboard from "./pages/TechnicianDashboard";
+import UserDashboard from "./pages/User/Dashboard";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import EngineerDashboard from "./pages/Engineer/Dashboard";
+import TechnicianDashboard from "./pages/Technician/Dashboard";
 
 function App() {
 
