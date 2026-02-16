@@ -99,49 +99,48 @@ userRouter.post("/login", async(req, res)=>{
 
 userRouter.use(checkAuth);
 
-userRouter.get("/tickets", async(req, res)=>{
-    if(req.user.role !== "user"){
-        return res.status(403).json({ message: "Access denied" });
+userRouter.get("/tickets", async (req, res) => {
+  if (req.user.role !== "user") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    const status = req.query.status;
+    const pg = parseInt(req.query.page) || 1;
+    const take = 10;
+    const skip = (pg - 1) * take;
+
+    let whereCondition = {
+      userId: req.user.id,
+    };
+
+    if (status && status !== "ALL") {
+      whereCondition.status = status;
     }
 
-    try{
-        const status = req.query.status;
-        const pg = parseInt(req.query.page) || 1;
-        const take = 10;
-        const skip = (pg - 1) * take;
-        
-        const user = await prisma.user.findUnique({
-            where: {
-                id: req.user.id,
-            },
-            include: {
-                tickets: {
-                    where: (status && status !== "ALL") ? { status: status } : { undefined },
-                    orderBy: {createdAt: 'desc'},
-                    skip: skip,
-                    take: take,
-                }
-            }
-        });
+    const tickets = await prisma.ticket.findMany({
+      where: whereCondition,
+      orderBy: { createdAt: "desc" },
+      skip: skip,
+      take: take,
+    });
 
-        const totalTickets = await prisma.ticket.count({
-            where: {
-                userId: req.user.id,
-                status: (status && status !== "ALL") ? { status: status } : undefined,
-            }
-        })
+    const totalTickets = await prisma.ticket.count({
+      where: whereCondition,
+    });
 
-        res.json({ 
-            tickets: user.tickets,
-            pagination: {
-                page: pg,
-                totalTickets: totalTickets,
-            }
-         });
-    } catch (e) {
-        console.log(e);
-        return res.status(500).json({ message: "Internal server error" });
-    }
+    res.json({
+      tickets: tickets,
+      pagination: {
+        page: pg,
+        totalTickets: totalTickets,
+      },
+    });
+
+  } catch (e) {
+    console.log(e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 

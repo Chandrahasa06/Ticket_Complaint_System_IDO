@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
@@ -11,51 +13,83 @@ const UserDashboard = () => {
     description: ""
   });
 
-  // ---------------- SAMPLE DATA ----------------
-  const pendingTickets = [
-    {
-      id: "TKT001",
-      title: "Fan not working",
-      department: "Electrical",
-      priority: "High",
-      status: "Pending",
-      date: "2026-01-25",
-      technician: "Not Assigned",
-      description: "Ceiling fan is not rotating properly",
-    },
-    {
-      id: "TKT003",
-      title: "Water leakage in bathroom",
-      department: "Plumbing",
-      priority: "Medium",
-      status: "Pending",
-      date: "2026-01-26",
-      technician: "Not Assigned",
-      description: "Continuous water dripping from pipe",
-    },
-  ];
+  const [tickets, setTickets] = useState([]);
+  // const [loading, setLoading] = useState(false);
 
-  const resolvedTickets = [
-    {
-      id: "TKT002",
-      title: "Broken desk",
-      department: "Carpentry",
-      priority: "Low",
-      status: "Resolved",
-      date: "2026-01-18",
-      technician: "Ramesh Kumar",
-      description: "Desk leg was replaced and fixed",
-    },
-  ];
+  const fetchTickets = async (status) => {
+    try {
+      let url = "http://localhost:3000/api/user/tickets";
+
+      if (status) {
+        url = url + "?status=" + status;
+      }
+
+      const response = await fetch(url, {
+        credentials: "include"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
+
+      setTickets(data.tickets);
+
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // ---------------- SAMPLE DATA ----------------removed
+
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = () => {
-    console.log("Ticket submitted:", formData);
-    // Reset form
-    setFormData({ title: "", department: "", priority: "", description: "" });
+  const handleSubmitTicket = async () => {
+    if (!formData.title || !formData.department || !formData.priority || !formData.description) {
+      alert("All fields are required!");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/user/raise", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          type: formData.department,
+          subtype: formData.priority,
+          subject: formData.title,
+          body: formData.description
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("Ticket raised successfully!");
+
+      setFormData({
+        title: "",
+        department: "",
+        priority: "",
+        description: ""
+      });
+
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
+    }
   };
 
   // Priority badge colors
@@ -68,20 +102,20 @@ const UserDashboard = () => {
     }
   };
   const handleLogout = async () => {
-  try {
-    await fetch("http://localhost:3000/logout", {
-      method: "POST",
-      credentials: "include"
-    });
+    try {
+      await fetch("http://localhost:3000/logout", {
+        method: "POST",
+        credentials: "include"
+      });
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
 
-    navigate("/LoginRoleSelect"); // change route if needed
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
+      navigate("/LoginRoleSelect"); // change route if needed
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -91,7 +125,7 @@ const UserDashboard = () => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm animate-pulse">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9a1 1 0 012 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z"/>
+                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9a1 1 0 012 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z" />
               </svg>
             </div>
             <div>
@@ -100,7 +134,7 @@ const UserDashboard = () => {
             </div>
           </div>
           <button
-          onClick={handleLogout} className="group relative bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
+            onClick={handleLogout} className="group relative bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
             <span className="flex items-center gap-2">
               Logout
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,12 +155,21 @@ const UserDashboard = () => {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105"
-                  : "text-gray-600 hover:bg-gray-100 hover:scale-102"
-              }`}
+              onClick={() => {
+                if (tab.id === "pending") {
+                  fetchTickets("PENDING");
+                }
+
+                if (tab.id === "resolved") {
+                  fetchTickets("RESOLVED");
+                }
+
+                setActiveTab(tab.id);
+              }}
+              className={`relative px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === tab.id
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105"
+                : "text-gray-600 hover:bg-gray-100 hover:scale-102"
+                }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
@@ -212,7 +255,7 @@ const UserDashboard = () => {
               </div>
 
               <button
-                onClick={handleLogin}
+                onClick={handleSubmitTicket}
                 className="group w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
               >
                 Submit Ticket
@@ -233,12 +276,12 @@ const UserDashboard = () => {
                 <p className="text-gray-500 text-sm">Track your open service requests</p>
               </div>
               <div className="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full font-semibold text-sm">
-                {pendingTickets.length} Active
+                {tickets.length} Active
               </div>
             </div>
 
             <div className="space-y-4">
-              {pendingTickets.map((ticket, index) => (
+              {tickets.map((ticket, index) => (
                 <div
                   key={ticket.id}
                   className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-blue-200"
@@ -248,25 +291,24 @@ const UserDashboard = () => {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="text-xs font-bold text-gray-400 tracking-wider">{ticket.id}</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(ticket.priority)}`}>
-                            {ticket.priority}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(ticket.subtype)}`}>
+                            {ticket.subtype}
                           </span>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">{ticket.title}</h3>
-                        
+                        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">{ticket.subject}</h3>
+
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            {ticket.department}
+                            {ticket.type}
                           </div>
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {ticket.date}
+                            {new Date(ticket.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,12 +350,12 @@ const UserDashboard = () => {
                 <p className="text-gray-500 text-sm">Review completed service requests</p>
               </div>
               <div className="bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold text-sm">
-                {resolvedTickets.length} Completed
+                {tickets.length} Completed
               </div>
             </div>
 
             <div className="space-y-4">
-              {resolvedTickets.map((ticket, index) => (
+              {tickets.map((ticket, index) => (
                 <div
                   key={ticket.id}
                   className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-green-200"
@@ -323,19 +365,18 @@ const UserDashboard = () => {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <span className="text-xs font-bold text-gray-400 tracking-wider">{ticket.id}</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(ticket.priority)}`}>
-                            {ticket.priority}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getPriorityColor(ticket.subtype)}`}>
+                            {ticket.subtype}
                           </span>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-600 transition-colors">{ticket.title}</h3>
-                        
+                        <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-600 transition-colors">{ticket.subject}</h3>
+
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             </svg>
-                            {ticket.department}
+                            {ticket.type}
                           </div>
                           <div className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,7 +388,7 @@ const UserDashboard = () => {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {ticket.date}
+                            {new Date(ticket.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
@@ -402,7 +443,7 @@ const UserDashboard = () => {
             <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32 animate-pulse"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full -ml-24 -mb-24 animate-pulse animation-delay-1000"></div>
-              
+
               <div className="relative z-10">
                 <button
                   onClick={() => setSelectedTicket(null)}
@@ -412,7 +453,7 @@ const UserDashboard = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                
+
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-12 h-12 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,15 +479,14 @@ const UserDashboard = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-xs text-blue-600 font-semibold">TICKET ID</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.id}</p>
+                    <p className="text-xs text-blue-600 font-semibold">TICKET </p>
+                    {/* <p className="text-lg font-bold text-gray-800">{selectedTicket.id}</p> */}
                   </div>
                 </div>
-                <span className={`px-4 py-2 rounded-full font-semibold text-sm ${
-                  selectedTicket.status === "Pending" 
-                    ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-200" 
-                    : "bg-green-100 text-green-700 border-2 border-green-200"
-                }`}>
+                <span className={`px-4 py-2 rounded-full font-semibold text-sm ${selectedTicket.status === "Pending"
+                  ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-200"
+                  : "bg-green-100 text-green-700 border-2 border-green-200"
+                  }`}>
                   {selectedTicket.status}
                 </span>
               </div>
@@ -463,7 +503,7 @@ const UserDashboard = () => {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-purple-600 font-semibold mb-1">ISSUE TITLE</p>
-                      <p className="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition-colors">{selectedTicket.title}</p>
+                      <p className="text-lg font-bold text-gray-800 group-hover:text-purple-600 transition-colors">{selectedTicket.subject}</p>
                     </div>
                   </div>
                 </div>
@@ -478,7 +518,7 @@ const UserDashboard = () => {
                     </div>
                     <div>
                       <p className="text-xs text-blue-600 font-semibold mb-1">DEPARTMENT</p>
-                      <p className="text-base font-bold text-gray-800">{selectedTicket.department}</p>
+                      <p className="text-base font-bold text-gray-800">{selectedTicket.type}</p>
                     </div>
                   </div>
                 </div>
@@ -493,14 +533,13 @@ const UserDashboard = () => {
                     </div>
                     <div>
                       <p className="text-xs text-orange-600 font-semibold mb-1">PRIORITY LEVEL</p>
-                      <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${
-                        selectedTicket.priority === "High" 
-                          ? "bg-red-500 text-white" 
-                          : selectedTicket.priority === "Medium"
+                      <span className={`inline-block px-3 py-1 rounded-full font-bold text-sm ${selectedTicket.subtype === "High"
+                        ? "bg-red-500 text-white"
+                        : selectedTicket.subtype === "Medium"
                           ? "bg-yellow-500 text-white"
                           : "bg-blue-500 text-white"
-                      }`}>
-                        {selectedTicket.priority}
+                        }`}>
+                        {selectedTicket.subtype}
                       </span>
                     </div>
                   </div>
@@ -516,7 +555,7 @@ const UserDashboard = () => {
                     </div>
                     <div>
                       <p className="text-xs text-green-600 font-semibold mb-1">CREATED DATE</p>
-                      <p className="text-base font-bold text-gray-800">{selectedTicket.date}</p>
+                      <p className="text-base font-bold text-gray-800">{new Date(selectedTicket.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
