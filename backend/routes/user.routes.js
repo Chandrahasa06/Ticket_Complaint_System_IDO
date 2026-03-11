@@ -123,6 +123,9 @@ userRouter.get("/tickets", async (req, res) => {
       orderBy: { createdAt: "desc" },
       skip: skip,
       take: take,
+      include: {
+        prev: true,
+      }
     });
 
     const totalTickets = await prisma.ticket.count({
@@ -162,6 +165,39 @@ userRouter.post("/raise", async(req, res) => {
                 subtype: subtype,
                 subject: subject,
                 body: body,
+                status: "PENDING",
+                userId: req.user.id,
+            }
+        })
+
+        res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
+    
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
+userRouter.post("/followup", async(req, res)=> {
+    if(req.user.role !== "user"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { type, subtype, subject, body, prevId } = req.body;
+
+    if (!type || !subtype || !subject || !body || !prevId) {
+        return res.status(400).json({ message: "All fields are required!" });
+    }
+
+    try {
+        const ticket = await prisma.ticket.create({
+            data: {
+                type: type,
+                subtype: subtype,
+                subject: subject,
+                body: body,
+                prevId: prevId,
                 status: "PENDING",
                 userId: req.user.id,
             }
