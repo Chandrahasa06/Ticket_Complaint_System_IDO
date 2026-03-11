@@ -1,362 +1,231 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Star, Phone, Mail, Activity, Clock, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const glassCard = {
+  borderRadius: 28,
+  backdropFilter: "blur(30px)",
+  WebkitBackdropFilter: "blur(30px)",
+  background: "rgba(255,255,255,0.6)",
+  boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
+};
+
+const getStatusStyle = (status) => {
+  const s = (status || "").toLowerCase().replace("_","-");
+  const map = {
+    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    "in-progress": { color:"#7c3aed", bg:"rgba(237,233,254,0.85)", border:"rgba(139,92,246,0.25)" },
+    overdue:       { color:"#dc2626", bg:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
+    resolved:      { color:"#16a34a", bg:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
+    closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+  };
+  return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
+};
+
 const EngineerDashboard = () => {
   const [activeTab, setActiveTab] = useState("pending");
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [ticketsData, setTicketsData] = useState([
-    {
-      id: "TKT001",
-      title: "AC not working",
-      user: "John Doe",
-      date: "2026-01-20",
-      priority: "High",
-      status: "pending",
-      technician: null,
-      description: "AC not cooling properly"
-    },
-    {
-      id: "TKT002",
-      title: "Fan issue",
-      user: "Jane Smith",
-      date: "2026-01-19",
-      priority: "Medium",
-      status: "in-progress",
-      technician: "Ravi Kumar",
-      description: "Fan making noise"
-    },
-    {
-      id: "TKT003",
-      title: "Light problem",
-      user: "Bob Wilson",
-      date: "2026-01-18",
-      priority: "Low",
-      status: "overdue",
-      technician: null,
-      description: "Tube light flickering"
-    }
-  ]);
 
+  // Dummy technicians (no backend route for this yet)
   const technicians = [
-    {
-      id: "TECH01",
-      name: "Ravi Kumar",
-      skill: "Electrical",
-      rating: 4.6,
-      email: "ravi@iiti.ac.in",
-      phone: "9876543210",
-      activeTickets: 2,
-      status: "active"
-    },
-    {
-      id: "TECH02",
-      name: "Amit Sharma",
-      skill: "Maintenance",
-      rating: 4.2,
-      email: "amit@iiti.ac.in",
-      phone: "9123456789",
-      activeTickets: 1,
-      status: "inactive"
-    }
+    { id:"TECH01", name:"Ravi Kumar",  skill:"Electrical",  rating:4.6, email:"ravi@iiti.ac.in",  phone:"9876543210", activeTickets:2, status:"active" },
+    { id:"TECH02", name:"Amit Sharma", skill:"Maintenance", rating:4.2, email:"amit@iiti.ac.in",  phone:"9123456789", activeTickets:1, status:"inactive" },
   ];
 
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [assignTicket, setAssignTicket] = useState(null);
-  const [selectedTechnician, setSelectedTechnician] = useState(null);
-  const [viewTechnician, setViewTechnician] = useState(null);
+  const [viewTechnician, setViewTechnician]  = useState(null);
 
-  const count = (status) =>
-    ticketsData.filter(t => t.status === status).length;
-
-  const assignTechnician = () => {
-    setTicketsData(prev =>
-      prev.map(t =>
-        t.id === assignTicket.id
-          ? {
-              ...t,
-              status: "in-progress",
-              technician: selectedTechnician.name
-            }
-          : t
-      )
-    );
-    setAssignTicket(null);
-    setSelectedTechnician(null);
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "High": return "bg-red-500 text-white";
-      case "Medium": return "bg-yellow-500 text-white";
-      case "Low": return "bg-blue-500 text-white";
-      default: return "bg-gray-500 text-white";
+  const fetchTickets = async (status) => {
+    setLoading(true);
+    try {
+      let url = "http://localhost:3000/api/engineer/tickets?pg=1";
+      if (status && status !== "technicians") {
+        url += `&status=${status.toUpperCase().replace("-","_")}`;
+      }
+      const res = await fetch(url, { credentials:"include" });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+      setTickets(data.tickets);
+    } catch (e) {
+      console.error(e);
+      alert("Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (activeTab !== "technicians") {
+      fetchTickets(activeTab);
+    }
+  }, [activeTab]);
+
   const getStatusIcon = (status) => {
-    switch (status) {
-      case "pending": return <Clock className="w-5 h-5" />;
-      case "in-progress": return <Activity className="w-5 h-5" />;
-      case "overdue": return <AlertTriangle className="w-5 h-5" />;
-      case "resolved": return <CheckCircle className="w-5 h-5" />;
+    const s = (status || "").toLowerCase().replace("_","-");
+    switch (s) {
+      case "pending":     return <Clock size={16} />;
+      case "in-progress": return <Activity size={16} />;
+      case "overdue":     return <AlertTriangle size={16} />;
+      case "resolved":    return <CheckCircle size={16} />;
       default: return null;
     }
   };
+
   const handleLogout = async () => {
-  try {
-    await fetch("http://localhost:3000/logout", {
-      method: "POST",
-      credentials: "include"
-    });
+    try {
+      await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      navigate("/LoginRoleSelect");
+    } catch (error) { console.error("Logout error:", error); }
+  };
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-
-    navigate("/LoginRoleSelect"); // change route if needed
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
+  const tabs = [
+    { key:"pending",     label:"Pending",    icon:"⏳" },
+    { key:"in-progress", label:"In Progress", icon:"🔄" },
+    { key:"overdue",     label:"Overdue",     icon:"⚠️" },
+    { key:"resolved",    label:"Resolved",    icon:"✅" },
+    { key:"closed",      label:"Closed",      icon:"🔒" },
+    { key:"technicians", label:"My Team",     icon:"👥", customCount: technicians.length },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-green-50 to-emerald-50">
-      {/* MODERN HEADER */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 text-white shadow-2xl backdrop-blur-sm bg-opacity-95">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400 blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                </svg>
-              </div>
+    <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
+      <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
+      <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
+
+      <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
+              <svg width="22" height="22" fill="white" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" /></svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Engineer Dashboard</h1>
-              <p className="text-sm text-emerald-100 flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse"></span>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Engineer Dashboard</div>
+              <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
                 Electrical Department
-              </p>
+              </div>
             </div>
           </div>
-          <button
-          onClick={handleLogout} className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
-            <span className="flex items-center gap-2">
-              Logout
-              <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </span>
+          <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Logout
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           </button>
         </div>
       </header>
 
-      {/* MODERN TABS */}
-      <div className="bg-white shadow-md sticky top-[72px] z-30">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex gap-3 flex-wrap">
-          {[
-            { key: "pending", label: `Pending`, count: count("pending"), icon: "⏳", gradient: "from-yellow-500 to-orange-500" },
-            { key: "in-progress", label: `In Progress`, count: count("in-progress"), icon: "🔄", gradient: "from-blue-500 to-indigo-500" },
-            { key: "overdue", label: `Overdue`, count: count("overdue"), icon: "⚠️", gradient: "from-red-500 to-pink-500" },
-            { key: "resolved", label: "Resolved", count: 0, icon: "✅", gradient: "from-green-500 to-emerald-500" },
-            { key: "closed", label: "Closed", count: 0, icon: "🔒", gradient: "from-gray-500 to-slate-500" },
-            { key: "technicians", label: "My Team", count: technicians.length, icon: "👥", gradient: "from-purple-500 to-pink-500" }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`relative px-5 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                activeTab === tab.key
-                  ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30 scale-105"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-102"
-              }`}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              <span>{tab.label}</span>
-              {tab.count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  activeTab === tab.key ? "bg-white bg-opacity-30" : "bg-gray-200"
-                }`}>
-                  {tab.count}
-                </span>
-              )}
-              {activeTab === tab.key && (
-                <span className="absolute inset-0 rounded-xl bg-white opacity-20 animate-pulse"></span>
-              )}
-            </button>
-          ))}
+      {/* TAB BAR */}
+      <div style={{ position:"sticky", top:68, zIndex:90, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.45)", borderBottom:"1px solid rgba(255,255,255,0.5)", boxShadow:"0 4px 16px rgba(0,0,0,0.04)" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"14px 32px", display:"flex", gap:10, flexWrap:"wrap" }}>
+          {tabs.map(tab => {
+            const cnt = tab.customCount !== undefined ? tab.customCount : tickets.length;
+            const active = activeTab === tab.key;
+            return (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ padding:"9px 18px", borderRadius:20, border:"none", background: active ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.7)", color: active ? "white" : "#374151", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow: active ? "0 8px 24px rgba(99,102,241,0.3)" : "0 2px 8px rgba(0,0,0,0.05)", transition:"all 0.2s" }}>
+                <span>{tab.icon}</span><span>{tab.label}</span>
+                {cnt > 0 && activeTab === tab.key && (
+                  <span style={{ padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700, background:"rgba(255,255,255,0.25)", color:"white" }}>{cnt}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* TICKETS */}
+      <div style={{ maxWidth:1280, margin:"0 auto", padding:"28px 32px", position:"relative", zIndex:1 }}>
+
+        {/* TICKET TABS */}
         {activeTab !== "technicians" && (
-          <div className="space-y-5 animate-fadeIn">
-            {ticketsData.filter(t => t.status === activeTab).length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+          <div>
+            {loading ? (
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
+                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
+              </div>
+            ) : tickets.length === 0 ? (
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
+                <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(99,102,241,0.08)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
+                  <svg width="28" height="28" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-700 mb-2">No Tickets Found</h3>
-                <p className="text-gray-500">There are no {activeTab.replace("-", " ")} tickets at the moment.</p>
+                <div style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:6 }}>No Tickets Found</div>
+                <div style={{ fontSize:13, color:"#9ca3af" }}>There are no {activeTab.replace("-"," ")} tickets at the moment.</div>
               </div>
             ) : (
-              ticketsData
-                .filter(t => t.status === activeTab)
-                .map((ticket, index) => (
-                  <div
-                    key={ticket.id}
-                    className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-green-200"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center text-white">
+              tickets.map((ticket) => {
+                const statusKey = (ticket.status || "").toLowerCase().replace("_","-");
+                const ss = getStatusStyle(statusKey);
+                return (
+                  <div key={ticket.id} style={{ ...glassCard, marginBottom:16 }}>
+                    <div style={{ padding:"24px 26px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                            <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", flexShrink:0 }}>
                               {getStatusIcon(ticket.status)}
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-xs font-bold text-gray-400 tracking-wider">{ticket.id}</span>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPriorityColor(ticket.priority)} shadow-sm`}>
-                                  {ticket.priority}
-                                </span>
-                              </div>
-                              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-600 transition-colors">
-                                {ticket.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-3">{ticket.description}</p>
-                            </div>
+                            <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{ticket.id}</span>
                           </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">Raised by</p>
-                                <p className="font-medium text-gray-700">{ticket.user}</p>
-                              </div>
+                          <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{ticket.subject}</div>
+                          <div style={{ fontSize:13, color:"#6b7280", marginBottom:16 }}>{ticket.body}</div>
+                          <div style={{ display:"flex", gap:24, flexWrap:"wrap" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <svg width="14" height="14" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                              <div><div style={{ fontSize:11, color:"#9ca3af" }}>Department</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{ticket.type}</div></div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">Date</p>
-                                <p className="font-medium text-gray-700">{ticket.date}</p>
-                              </div>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <svg width="14" height="14" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                              <div><div style={{ fontSize:11, color:"#9ca3af" }}>Issue Type</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{ticket.subtype}</div></div>
                             </div>
-                            {ticket.technician && (
-                              <div className="flex items-center gap-2">
-                                <UserCheck className="w-4 h-4 text-green-500" />
-                                <div>
-                                  <p className="text-gray-400 text-xs">Assigned to</p>
-                                  <p className="font-medium text-green-600">{ticket.technician}</p>
-                                </div>
-                              </div>
-                            )}
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <svg width="14" height="14" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                              <div><div style={{ fontSize:11, color:"#9ca3af" }}>Date</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{new Date(ticket.createdAt).toLocaleDateString()}</div></div>
+                            </div>
                           </div>
                         </div>
-
-                        <div className="flex flex-wrap gap-3">
-                          <button
-                            onClick={() => setSelectedTicket(ticket)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105 active:scale-95"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                            View
-                          </button>
-
-                          {(ticket.status === "pending" || ticket.status === "overdue") && (
-                            <>
-                              <button
-                                onClick={() => setAssignTicket(ticket)}
-                                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
-                              >
-                                <UserCheck className="w-4 h-4" />
-                                Assign
-                              </button>
-                              <button className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95">
-                                <X className="w-4 h-4" />
-                                Close
-                              </button>
-                            </>
-                          )}
+                        <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.bg, border:`1px solid ${ss.border}`, whiteSpace:"nowrap" }}>
+                          {getStatusIcon(ticket.status)}
+                          {ticket.status}
                         </div>
                       </div>
                     </div>
+                    <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)", flexWrap:"wrap" }}>
+                      <button onClick={() => setSelectedTicket(ticket)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        View
+                      </button>
+                    </div>
                   </div>
-                ))
+                );
+              })
             )}
           </div>
         )}
 
-        {/* MY TECHNICIANS */}
+        {/* TECHNICIANS TAB */}
         {activeTab === "technicians" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-            {technicians.map((tech, index) => (
-              <div
-                key={tech.id}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-purple-200"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="h-24 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-grid-pattern opacity-20"></div>
-                  <div className="absolute top-3 right-3 flex items-center gap-2 bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1 rounded-full">
-                    <span className={`w-2 h-2 rounded-full ${tech.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></span>
-                    <span className="text-xs text-white font-medium">{tech.status === "active" ? "Active" : "Inactive"}</span>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:20 }}>
+            {technicians.map((tech) => (
+              <div key={tech.id} style={{ ...glassCard, overflow:"hidden" }}>
+                <div style={{ height:80, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+                  <div style={{ position:"absolute", top:10, right:12, display:"flex", alignItems:"center", gap:6, padding:"4px 12px", borderRadius:20, background:"rgba(255,255,255,0.2)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)" }}>
+                    <span style={{ width:7, height:7, borderRadius:"50%", background: tech.status === "active" ? "#4ade80" : "#f87171", display:"inline-block" }} />
+                    <span style={{ fontSize:11, fontWeight:600, color:"white" }}>{tech.status === "active" ? "Active" : "Inactive"}</span>
                   </div>
                 </div>
-
-                <div className="p-6 -mt-12 relative">
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-3xl font-bold shadow-xl mb-4 mx-auto border-4 border-white group-hover:scale-110 transition-transform duration-300">
-                    {tech.name.charAt(0)}
+                <div style={{ padding:"0 24px 24px", marginTop:-36 }}>
+                  <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:28, fontWeight:700, boxShadow:"0 8px 24px rgba(99,102,241,0.35)", border:"3px solid white", margin:"0 auto 14px" }}>{tech.name.charAt(0)}</div>
+                  <div style={{ textAlign:"center", marginBottom:14 }}>
+                    <div style={{ fontSize:16, fontWeight:700, color:"#111827", marginBottom:3 }}>{tech.name}</div>
+                    <div style={{ fontSize:13, color:"#6b7280", marginBottom:2 }}>{tech.skill}</div>
                   </div>
-
-                  <div className="text-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">{tech.name}</h3>
-                    <p className="text-sm text-gray-500 mb-2">{tech.skill}</p>
-                    <p className="text-xs text-gray-400">ID: {tech.id}</p>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:3, marginBottom:14 }}>
+                    {[...Array(5)].map((_, i) => (<Star key={i} size={14} style={{ color: i < Math.floor(tech.rating) ? "#facc15" : "#d1d5db", fill: i < Math.floor(tech.rating) ? "#facc15" : "none" }} />))}
+                    <span style={{ fontSize:13, fontWeight:600, color:"#374151", marginLeft:4 }}>{tech.rating}</span>
                   </div>
-
-                  <div className="flex items-center justify-center gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < Math.floor(tech.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                      />
-                    ))}
-                    <span className="ml-2 text-sm font-semibold text-gray-700">{tech.rating}</span>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-3 mb-4 border border-purple-100">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Active Tickets</span>
-                      <span className="px-3 py-1 bg-purple-500 text-white rounded-full text-sm font-bold">
-                        {tech.activeTickets}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setViewTechnician(tech)}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-3 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                  <button onClick={() => setViewTechnician(tech)} style={{ width:"100%", padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     View Details
                   </button>
                 </div>
@@ -366,219 +235,72 @@ const EngineerDashboard = () => {
         )}
       </div>
 
-      {/* VIEW TICKET MODAL */}
+      {/* TICKET MODAL */}
       {selectedTicket && (
-        <Modal onClose={() => setSelectedTicket(null)} title="Ticket Details" gradient="from-blue-600 to-indigo-600">
-          <div className="space-y-4">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-              <p className="text-xs text-blue-600 font-semibold mb-1">TICKET ID</p>
-              <p className="text-lg font-bold text-gray-800">{selectedTicket.id}</p>
+        <GlassModal onClose={() => setSelectedTicket(null)} title="Ticket Details">
+          {[
+            { label:"TICKET ID",   val: selectedTicket.id },
+            { label:"SUBJECT",     val: selectedTicket.subject },
+            { label:"DEPARTMENT",  val: selectedTicket.type },
+            { label:"ISSUE TYPE",  val: selectedTicket.subtype },
+            { label:"STATUS",      val: selectedTicket.status },
+            { label:"DATE",        val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+            { label:"DESCRIPTION", val: selectedTicket.body },
+          ].map((f,i) => (
+            <div key={i} style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>{f.label}</div>
+              <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{f.val}</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100">
-              <p className="text-xs text-purple-600 font-semibold mb-1">TITLE</p>
-              <p className="text-lg font-bold text-gray-800">{selectedTicket.title}</p>
-            </div>
-            <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-4 rounded-xl border border-gray-200">
-              <p className="text-xs text-gray-600 font-semibold mb-1">DESCRIPTION</p>
-              <p className="text-gray-700">{selectedTicket.description}</p>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-              <p className="text-xs text-green-600 font-semibold mb-1">STATUS</p>
-              <p className="text-lg font-bold text-gray-800 capitalize">{selectedTicket.status.replace("-", " ")}</p>
-            </div>
-          </div>
-        </Modal>
+          ))}
+        </GlassModal>
       )}
 
-      {/* ASSIGN TECHNICIAN MODAL */}
-      {assignTicket && (
-        <Modal onClose={() => setAssignTicket(null)} title="Assign Technician" gradient="from-green-600 to-emerald-600">
-          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-            <p className="text-sm text-green-700">
-              <span className="font-semibold">Ticket:</span> {assignTicket.title}
-            </p>
-          </div>
-
-          <div className="space-y-3 mb-6">
-            {technicians
-              .filter(t => t.status === "active")
-              .map(t => (
-                <label
-                  key={t.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                    selectedTechnician?.id === t.id
-                      ? "border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg"
-                      : "border-gray-200 hover:border-green-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="tech"
-                    checked={selectedTechnician?.id === t.id}
-                    onChange={() => setSelectedTechnician(t)}
-                    className="w-5 h-5 text-green-600"
-                  />
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-400 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                    {t.name.charAt(0)}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{t.name}</p>
-                    <p className="text-sm text-gray-500">{t.skill}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-semibold">{t.rating}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">{t.activeTickets} tickets</p>
-                  </div>
-                </label>
-              ))}
-          </div>
-
-          <button
-            onClick={assignTechnician}
-            disabled={!selectedTechnician}
-            className={`w-full px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${
-              selectedTechnician
-                ? "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-green-500/30 hover:scale-105 active:scale-95"
-                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            <UserCheck className="w-5 h-5" />
-            Assign Technician
-          </button>
-        </Modal>
-      )}
-
-      {/* TECHNICIAN DETAILS MODAL */}
+      {/* TECHNICIAN MODAL */}
       {viewTechnician && (
-        <Modal onClose={() => setViewTechnician(null)} title="Technician Profile" gradient="from-purple-600 to-pink-600">
-          <div className="text-center">
-            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center mx-auto mb-4 shadow-xl text-white text-4xl font-bold">
-              {viewTechnician.name.charAt(0)}
-            </div>
-
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">{viewTechnician.name}</h2>
-            <p className="text-gray-500 mb-4">{viewTechnician.skill}</p>
-
-            <div className="flex items-center justify-center gap-1 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-5 h-5 ${i < Math.floor(viewTechnician.rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-                />
-              ))}
-              <span className="ml-2 text-lg font-semibold text-gray-700">{viewTechnician.rating}</span>
-            </div>
-
-            <div className="space-y-3 text-left">
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100 flex items-center gap-3">
-                <Mail className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-xs text-blue-600 font-semibold">EMAIL</p>
-                  <p className="text-gray-800 font-medium">{viewTechnician.email}</p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100 flex items-center gap-3">
-                <Phone className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-xs text-green-600 font-semibold">PHONE</p>
-                  <p className="text-gray-800 font-medium">{viewTechnician.phone}</p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100 flex items-center gap-3">
-                <Activity className="w-5 h-5 text-purple-600" />
-                <div>
-                  <p className="text-xs text-purple-600 font-semibold">ACTIVE TICKETS</p>
-                  <p className="text-gray-800 font-medium">{viewTechnician.activeTickets} tickets</p>
-                </div>
-              </div>
+        <GlassModal onClose={() => setViewTechnician(null)} title="Technician Profile">
+          <div style={{ textAlign:"center", marginBottom:20 }}>
+            <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:32, fontWeight:700, margin:"0 auto 12px", boxShadow:"0 12px 32px rgba(99,102,241,0.35)" }}>{viewTechnician.name.charAt(0)}</div>
+            <div style={{ fontSize:20, fontWeight:700, color:"#111827", marginBottom:4 }}>{viewTechnician.name}</div>
+            <div style={{ fontSize:14, color:"#6b7280", marginBottom:12 }}>{viewTechnician.skill}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:3 }}>
+              {[...Array(5)].map((_, i) => (<Star key={i} size={16} style={{ color: i < Math.floor(viewTechnician.rating) ? "#facc15" : "#d1d5db", fill: i < Math.floor(viewTechnician.rating) ? "#facc15" : "none" }} />))}
+              <span style={{ fontSize:14, fontWeight:600, color:"#374151", marginLeft:6 }}>{viewTechnician.rating}</span>
             </div>
           </div>
-        </Modal>
+          {[
+            { icon: <Mail size={16} color="#6366f1" />,     label:"EMAIL",          val: viewTechnician.email },
+            { icon: <Phone size={16} color="#6366f1" />,    label:"PHONE",          val: viewTechnician.phone },
+            { icon: <Activity size={16} color="#6366f1" />, label:"ACTIVE TICKETS", val: `${viewTechnician.activeTickets} tickets` },
+          ].map((f,i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+              {f.icon}
+              <div>
+                <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", marginBottom:2 }}>{f.label}</div>
+                <div style={{ fontSize:14, fontWeight:500, color:"#111827" }}>{f.val}</div>
+              </div>
+            </div>
+          ))}
+        </GlassModal>
       )}
-
-      {/* CUSTOM ANIMATIONS */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .bg-grid-pattern {
-          background-image: 
-            linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-          background-size: 20px 20px;
-        }
-      `}</style>
     </div>
   );
 };
 
-/* MODERN MODAL */
-const Modal = ({ children, onClose, title, gradient }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-    <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-slideUp">
-      <div className={`relative bg-gradient-to-r ${gradient} p-6 text-white overflow-hidden`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32 animate-pulse"></div>
-        
-        <div className="relative z-10">
-          <button
-            onClick={onClose}
-            className="absolute top-0 right-0 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-90 group"
-          >
-            <X className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
-          
-          <h2 className="text-2xl font-bold">{title}</h2>
-          <p className="text-sm opacity-90 mt-1">View and manage information</p>
+const GlassModal = ({ children, onClose, title }) => (
+  <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+    <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:560, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+      <div style={{ padding:"22px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div>
+          <div style={{ fontSize:18, fontWeight:600, color:"white" }}>{title}</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:2 }}>View and manage information</div>
         </div>
+        <button onClick={onClose} style={{ width:32, height:32, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
       </div>
-
-      <div className="p-6 max-h-[70vh] overflow-y-auto">
+      <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
         {children}
+        <button onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", marginTop:8 }}>Close</button>
       </div>
     </div>
-
-    <style jsx>{`
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(50px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
-
-      .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out forwards;
-      }
-
-      .animate-slideUp {
-        animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-      }
-    `}</style>
   </div>
 );
 
