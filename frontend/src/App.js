@@ -1,15 +1,18 @@
 import { Routes, Route, Navigate} from "react-router-dom";
 
-/* Role Selection */
+// Middlewares
+import ProtectedRoute from "./middlewares/ProtectedRoute";
+
+// Role Selection 
 import LoginRoleSelect from "./pages/LoginRoleSelect";
 
-/* Login pages */
+// Login pages
 import UserLogin from "./pages/User/Login";
 import AdminLogin from "./pages/Admin/Login";
 import EngineerLogin from "./pages/Engineer/Login";
 import TechnicianLogin from "./pages/Technician/Login";
 
-/* Dashboards */
+// Dashboards
 import UserDashboard from "./pages/User/Dashboard";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import EngineerDashboard from "./pages/Engineer/Dashboard";
@@ -29,10 +32,10 @@ function App() {
       <Route path="/login/technician" element={<TechnicianLogin />} />
 
       {/* DASHBOARDS */}
-      <Route path="/user/dashboard" element={<UserDashboard />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/engineer/dashboard" element={<EngineerDashboard />} />
-      <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
+      <Route path="/user/dashboard" element={<ProtectedRoute roles={["user"]}><UserDashboard /></ProtectedRoute>} />
+      <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/engineer/dashboard" element={<ProtectedRoute roles={["engineer"]}><EngineerDashboard /></ProtectedRoute>} />
+      <Route path="/technician/dashboard" element={<ProtectedRoute roles={["technician"]}><TechnicianDashboard /></ProtectedRoute>} />
 
       {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/" />} />

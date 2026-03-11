@@ -43,6 +43,21 @@ app.post("/logout", (req, res)=>{
     res.json({message: "Logged out successfully"});
 });
 
+app.get("/protectedRoute", (req, res)=>{
+    const token = req.cookies.token;
+    if (!token) {
+        return res.status(401).json({ message: "Login required" });
+    }
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        return res.json(payload);
+    }
+    catch(e){
+        console.log(e);
+        return res.status(401).json({ message: "Invalid or expired token" });
+    }
+});
+
 app.listen(port, ()=>{
     console.log(`Server listening on port ${port}`);
 })
