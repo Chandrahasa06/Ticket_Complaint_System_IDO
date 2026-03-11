@@ -1,581 +1,366 @@
-import React, { useState } from "react";
-import { Eye, Bell, X, TrendingUp, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom"; 
+import React, { useState, useEffect } from "react";
+import { Eye, X, TrendingUp, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+const getStatusStyle = (status) => {
+  const s = (status || "").toLowerCase().replace("_","-");
+  const map = {
+    overdue:      { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
+    pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    "in-progress":{ color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
+    resolved:     { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
+    closed:       { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+  };
+  return map[s] || map.closed;
+};
+
+const getStatusIcon = (status) => {
+  const s = (status || "").toLowerCase().replace("_","-");
+  const props = { size: 15 };
+  switch (s) {
+    case "overdue":      return <AlertTriangle {...props} />;
+    case "pending":      return <Clock {...props} />;
+    case "in-progress":  return <TrendingUp {...props} />;
+    case "resolved":     return <CheckCircle {...props} />;
+    case "closed":       return <XCircle {...props} />;
+    default: return null;
+  }
+};
+
+const glassCard = {
+  borderRadius: 28,
+  backdropFilter: "blur(30px)",
+  WebkitBackdropFilter: "blur(30px)",
+  background: "rgba(255,255,255,0.6)",
+  boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
+};
+
+const TICKETS_PER_PAGE = 3;
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tickets, setTickets] = useState([]);
+  const [totalTickets, setTotalTickets] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0 });
   const navigate = useNavigate();
 
-  const tickets = [
-    {
-      id: "TKT001",
-      title: "Plumbing issue",
-      department: "Plumbing",
-      user: "Jane Smith",
-      engineer: "Engineer Jones",
-      status: "overdue",
-      priority: "Critical",
-      date: "2026-01-10 (16 days ago)",
-      description: "Water leakage in washroom",
-    },
-    {
-      id: "TKT002",
-      title: "Projector repair",
-      department: "IT",
-      user: "Bob Johnson",
-      engineer: "Engineer Davis",
-      status: "in-progress",
-      priority: "Medium",
-      date: "2026-01-22 (4 days ago)",
-      description: "Projector flickering issue",
-    },
-    {
-      id: "TKT003",
-      title: "Door lock broken",
-      department: "Carpentry",
-      user: "Alice Brown",
-      engineer: "Engineer Wilson",
-      status: "resolved",
-      priority: "Low",
-      date: "2026-01-18 (8 days ago)",
-      description: "Door lock jammed",
-    },
-    {
-      id: "TKT004",
-      title: "AC not working",
-      department: "Electrical",
-      user: "John Doe",
-      engineer: "Engineer Smith",
-      status: "pending",
-      priority: "High",
-      date: "2026-01-25 (1 day ago)",
-      description: "AC not cooling properly",
-    },
-    {
-      id: "TKT005",
-      title: "Network cable issue",
-      department: "IT",
-      user: "Robert King",
-      engineer: "Engineer Clark",
-      status: "closed",
-      priority: "Low",
-      date: "2026-01-05 (21 days ago)",
-      description: "Loose network cable fixed",
-    },
+  const fetchTickets = async (status, page = 1) => {
+    setLoading(true);
+    try {
+      let url = `http://localhost:3000/api/admin/tickets?pg=${page}`;
+      if (status && status !== "overview") url += `&status=${status.toUpperCase().replace("-","_")}`;
+      const res = await fetch(url, { credentials:"include" });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+      setTickets(data.tickets);
+      setTotalTickets(data.pagination.totalTickets);
+    } catch (e) {
+      console.error(e);
+      alert("Server error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      // Fetch counts for each status in parallel
+      const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED"];
+      const [allRes, ...statusRes] = await Promise.all([
+        fetch("http://localhost:3000/api/admin/tickets?pg=1", { credentials:"include" }),
+        ...statuses.map(s => fetch(`http://localhost:3000/api/admin/tickets?pg=1&status=${s}`, { credentials:"include" }))
+      ]);
+      const allData = await allRes.json();
+      const statusData = await Promise.all(statusRes.map(r => r.json()));
+      setStats({
+        total:      allData.pagination?.totalTickets || 0,
+        pending:    statusData[0].pagination?.totalTickets || 0,
+        inProgress: statusData[1].pagination?.totalTickets || 0,
+        overdue:    statusData[2].pagination?.totalTickets || 0,
+        resolved:   statusData[3].pagination?.totalTickets || 0,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Fetch when tab changes
+  useEffect(() => {
+    if (activeTab === "overview") {
+      fetchStats();
+    } else {
+      setCurrentPage(1);
+      fetchTickets(activeTab, 1);
+    }
+  }, [activeTab]);
+
+  // Fetch when page changes
+  useEffect(() => {
+    if (activeTab !== "overview") {
+      fetchTickets(activeTab, currentPage);
+    }
+  }, [currentPage]);
+
+  const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      navigate("/LoginRoleSelect");
+    } catch (error) { console.error("Logout error:", error); }
+  };
+
+  const tabs = [
+    { id:"overview",    label:"Overview",    icon:"📈" },
+    { id:"pending",     label:"Pending",     icon:"⏳" },
+    { id:"overdue",     label:"Overdue",     icon:"⚠️" },
+    { id:"in-progress", label:"In Progress", icon:"🔄" },
+    { id:"resolved",    label:"Resolved",    icon:"✅" },
+    { id:"closed",      label:"Closed",      icon:"🔒" },
   ];
 
-  const filteredTickets =
-    activeTab === "overview"
-      ? []
-      : tickets.filter((t) => t.status === activeTab);
-
-const handleLogout = async () => {
-  try {
-    await fetch("http://localhost:3000/logout", {
-      method: "POST",
-      credentials: "include"
-    });
-
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-
-    navigate("/LoginRoleSelect"); // change route if needed
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
-};
-
-
-  const getStatusColor = (status) => {
-    const colors = {
-      overdue: "bg-red-100 text-red-700 border-red-200",
-      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      "in-progress": "bg-blue-100 text-blue-700 border-blue-200",
-      resolved: "bg-green-100 text-green-700 border-green-200",
-      closed: "bg-gray-100 text-gray-700 border-gray-200",
-    };
-    return colors[status] || "bg-gray-100 text-gray-700";
-  };
-
-  const getPriorityColor = (priority) => {
-    const colors = {
-      Critical: "bg-red-500 text-white",
-      High: "bg-orange-500 text-white",
-      Medium: "bg-yellow-500 text-white",
-      Low: "bg-blue-500 text-white",
-    };
-    return colors[priority] || "bg-gray-500 text-white";
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "overdue":
-        return <AlertTriangle className="w-5 h-5" />;
-      case "pending":
-        return <Clock className="w-5 h-5" />;
-      case "in-progress":
-        return <TrendingUp className="w-5 h-5" />;
-      case "resolved":
-        return <CheckCircle className="w-5 h-5" />;
-      case "closed":
-        return <XCircle className="w-5 h-5" />;
-      default:
-        return null;
-    }
-
-  };
+  const statCards = [
+    { label:"Total Tickets", value: stats.total,      icon:"📊" },
+    { label:"Pending",       value: stats.pending,    icon:"⏳" },
+    { label:"In Progress",   value: stats.inProgress, icon:"🔄" },
+    { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
+    { label:"Resolved",      value: stats.resolved,   icon:"✅" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* MODERN HEADER */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white shadow-2xl backdrop-blur-sm bg-opacity-95">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-                </svg>
-              </div>
+    <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
+
+      <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
+      <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
+
+      {/* HEADER */}
+      <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
+              <svg width="22" height="22" fill="white" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+              </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-              <p className="text-sm text-purple-200 flex items-center gap-2">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Admin Dashboard</div>
+              <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
                 System Administrator
-              </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-3 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-xl border border-white border-opacity-20">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center font-bold text-white">
-                A
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-purple-200">admin@system.com</p>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="group bg-white bg-opacity-20 hover:bg-opacity-30 px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:scale-105 active:scale-95 backdrop-blur-sm border border-white border-opacity-30">
-              <span className="flex items-center gap-2">
-                Logout
-                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </span>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              Logout
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6 lg:p-8">
-        {/* MODERN SUMMARY CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          {[
-            { label: "Total Tickets", value: tickets.length, icon: "📊", gradient: "from-blue-500 to-cyan-500", iconBg: "bg-blue-100" },
-            { label: "Pending", value: tickets.filter(t => t.status === "pending").length, icon: "⏳", gradient: "from-yellow-500 to-orange-500", iconBg: "bg-yellow-100" },
-            { label: "In Progress", value: tickets.filter(t => t.status === "in-progress").length, icon: "🔄", gradient: "from-indigo-500 to-purple-500", iconBg: "bg-indigo-100" },
-            { label: "Overdue", value: tickets.filter(t => t.status === "overdue").length, icon: "⚠️", gradient: "from-red-500 to-pink-500", iconBg: "bg-red-100" },
-            { label: "Resolved", value: tickets.filter(t => t.status === "resolved").length, icon: "✅", gradient: "from-green-500 to-emerald-500", iconBg: "bg-green-100" },
-          ].map((card, i) => (
-            <div
-              key={i}
-              className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden hover:-translate-y-2"
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              {/* Gradient Background on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-              
-              <div className="relative p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-14 h-14 ${card.iconBg} rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
-                    {card.icon}
-                  </div>
-                  <div className={`px-3 py-1 bg-gradient-to-r ${card.gradient} text-white text-xs font-bold rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500`}>
-                    Active
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500 mb-1 font-medium">{card.label}</p>
-                <p className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  {card.value}
-                </p>
-              </div>
+      {/* MAIN */}
+      <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
 
-              {/* Bottom Accent */}
-              <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500`}></div>
+        {/* Stat Cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
+          {statCards.map((c, i) => (
+            <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
+              <div style={{ fontSize:26, marginBottom:10 }}>{c.icon}</div>
+              <div style={{ fontSize:12, color:"#6b7280", fontWeight:500, marginBottom:4 }}>{c.label}</div>
+              <div style={{ fontSize:32, fontWeight:600, background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{c.value}</div>
             </div>
           ))}
         </div>
 
-        {/* MODERN TABS */}
-        <div className="bg-white rounded-2xl shadow-lg p-2 mb-8 inline-flex gap-2 flex-wrap">
-          {[
-            { id: "overview", label: "Overview", icon: "📈" },
-            { id: "pending", label: "Pending", icon: "⏳" },
-            { id: "overdue", label: "Overdue", icon: "⚠️" },
-            { id: "in-progress", label: "In Progress", icon: "🔄" },
-            { id: "resolved", label: "Resolved", icon: "✅" },
-            { id: "closed", label: "Closed", icon: "🔒" }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`relative px-5 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30 scale-105"
-                  : "text-gray-600 hover:bg-gray-100 hover:scale-102"
-              }`}
-            >
-              <span className="text-lg">{tab.icon}</span>
-              {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute inset-0 rounded-xl bg-white opacity-20 animate-pulse"></span>
-              )}
+        {/* Tabs */}
+        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{
+              padding:"10px 18px", borderRadius:15, border:"none",
+              fontSize:13, fontWeight:500, fontFamily:"inherit",
+              cursor:"pointer", display:"flex", alignItems:"center", gap:6,
+              background: activeTab === tab.id ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent",
+              color: activeTab === tab.id ? "white" : "#6b7280",
+              boxShadow: activeTab === tab.id ? "0 8px 24px rgba(99,102,241,0.3)" : "none",
+            }}>
+              <span>{tab.icon}</span>{tab.label}
             </button>
           ))}
         </div>
 
-        {/* CONTENT */}
-        <div>
-          {/* OVERVIEW */}
-          {activeTab === "overview" && (
-            <div className="space-y-6 animate-fadeIn">
-              {/* Critical Alerts */}
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl p-6 shadow-lg animate-pulse-slow">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white flex-shrink-0">
-                    <AlertTriangle className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-red-900 mb-2 text-lg flex items-center gap-2">
-                      ⚠️ Critical Alerts
-                    </h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-center gap-2 text-red-700">
-                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        <span className="font-medium">{tickets.filter(t => t.status === "overdue").length} ticket(s) overdue - Immediate action required</span>
-                      </li>
-                      <li className="flex items-center gap-2 text-red-700">
-                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        <span className="font-medium">{tickets.filter(t => t.priority === "Critical").length} critical priority ticket(s) need attention</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+        {/* OVERVIEW */}
+        {activeTab === "overview" && (
+          <div>
+            <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(254,226,226,0.65)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
+              <div style={{ width:44, height:44, borderRadius:14, background:"rgba(239,68,68,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#ef4444", flexShrink:0 }}>
+                <AlertTriangle size={20} />
               </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Tickets by Department */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-500 border border-gray-100">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-800">Tickets by Department</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {["Electrical", "Plumbing", "IT", "Carpentry"].map((d, i) => {
-                      const count = tickets.filter(t => t.department === d).length;
-                      return (
-                        <div key={i} className="group flex items-center justify-between p-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold group-hover:scale-110 transition-transform duration-300">
-                              {d[0]}
-                            </div>
-                            <span className="font-medium text-gray-700">{d}</span>
-                          </div>
-                          <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-full text-sm group-hover:scale-110 transition-transform duration-300">
-                            {count}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-500 border border-gray-100">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-white">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="font-bold text-lg text-gray-800">Recent Activity</h3>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 hover:bg-red-100 transition-colors duration-300">
-                      <span className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5">!</span>
-                      <div>
-                        <p className="text-red-700 font-medium">Ticket #TKT001 is overdue</p>
-                        <p className="text-xs text-red-600">16 days past deadline</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-50 hover:bg-yellow-100 transition-colors duration-300">
-                      <span className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5">⏳</span>
-                      <div>
-                        <p className="text-yellow-700 font-medium">Ticket #TKT004 pending</p>
-                        <p className="text-xs text-yellow-600">Waiting for 1 day</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors duration-300">
-                      <span className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5">🔄</span>
-                      <div>
-                        <p className="text-blue-700 font-medium">Ticket #TKT002 in progress</p>
-                        <p className="text-xs text-blue-600">Active for 4 days</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 transition-colors duration-300">
-                      <span className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5">✓</span>
-                      <div>
-                        <p className="text-green-700 font-medium">Ticket #TKT003 resolved</p>
-                        <p className="text-xs text-green-600">Completed successfully</p>
-                      </div>
-                    </div>
-                  </div>
+              <div>
+                <div style={{ fontSize:15, fontWeight:600, color:"#991b1b", marginBottom:8 }}>⚠️ Critical Alerts</div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
+                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#ef4444", display:"inline-block", flexShrink:0 }} />
+                  {stats.overdue} ticket(s) overdue — Immediate action required
                 </div>
               </div>
             </div>
-          )}
 
-          {/* TICKET LIST */}
-          {activeTab !== "overview" && (
-            <div className="space-y-5 animate-fadeIn">
-              {filteredTickets.length === 0 ? (
-                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+            <div style={{ ...glassCard, padding:26 }}>
+              <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+                {[
+                  { label:"Pending",     val: stats.pending,    color:"#d97706" },
+                  { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
+                  { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
+                  { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
+                ].map((s,i) => (
+                  <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
+                    <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
+                    <div style={{ fontSize:13, color:"#6b7280" }}>{s.label}</div>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-700 mb-2">No Tickets Found</h3>
-                  <p className="text-gray-500">There are no {activeTab.replace("-", " ")} tickets at the moment.</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TICKET LIST */}
+        {activeTab !== "overview" && (
+          <div>
+            {loading ? (
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
+                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
+              </div>
+            ) : tickets.length === 0 ? (
+              <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
+                <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", color:"#6366f1" }}>
+                  <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
-              ) : (
-                filteredTickets.map((t, index) => (
-                  <div
-                    key={t.id}
-                    className="group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100 hover:border-purple-200"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="p-6">
-                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                        <div className="flex-1">
-                          {/* Header */}
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getStatusColor(t.status)} border-2`}>
-                              {getStatusIcon(t.status)}
+                <div style={{ fontSize:18, fontWeight:600, color:"#111827", marginBottom:6 }}>No Tickets Found</div>
+                <div style={{ fontSize:14, color:"#6b7280" }}>There are no {activeTab.replace("-"," ")} tickets at the moment.</div>
+              </div>
+            ) : (
+              <>
+                {tickets.map((t) => {
+                  const statusKey = (t.status || "").toLowerCase().replace("_","-");
+                  const ss = getStatusStyle(statusKey);
+                  return (
+                    <div key={t.id} style={{ ...glassCard, marginBottom:16 }}>
+                      <div style={{ padding:"24px 26px" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
+                          <div style={{ flex:1 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                              <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{t.id}</span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <span className="text-xs font-bold text-gray-400 tracking-wider">{t.id}</span>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPriorityColor(t.priority)} shadow-sm`}>
-                                  {t.priority}
-                                </span>
-                              </div>
-                              <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-purple-600 transition-colors">
-                                {t.title}
-                              </h3>
-                              <p className="text-sm text-gray-600 mb-3">{t.description}</p>
-                            </div>
-                          </div>
-
-                          {/* Details Grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">Department</p>
-                                <p className="font-medium text-gray-700">{t.department}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">User</p>
-                                <p className="font-medium text-gray-700">{t.user}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">Engineer</p>
-                                <p className="font-medium text-gray-700">{t.engineer}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <div>
-                                <p className="text-gray-400 text-xs">Created</p>
-                                <p className="font-medium text-gray-700 text-xs">{t.date}</p>
-                              </div>
+                            <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{t.subject}</div>
+                            <div style={{ fontSize:13, color:"#6b7280", marginBottom:14 }}>{t.body}</div>
+                            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+                              {[
+                                { label:"Department", val: t.type },
+                                { label:"Issue Type",  val: t.subtype },
+                                { label:"Created",    val: new Date(t.createdAt).toLocaleDateString() },
+                                { label:"Status",     val: t.status },
+                              ].map((m, i) => (
+                                <div key={i}>
+                                  <div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>{m.label}</div>
+                                  <div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{m.val}</div>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <div className={`px-4 py-2 rounded-xl border-2 ${getStatusColor(t.status)} font-semibold text-sm flex items-center gap-2 w-fit`}>
-                          {getStatusIcon(t.status)}
-                          {t.status.toUpperCase().replace("-", " ")}
+                          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.background, border:`1px solid ${ss.border}`, whiteSpace:"nowrap" }}>
+                            {getStatusIcon(statusKey)}
+                            {t.status}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-100">
-                        <button
-                          onClick={() => setSelectedTicket(t)}
-                          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30 hover:scale-105 active:scale-95"
-                        >
-                          <Eye size={18} />
-                          View Details
+                      <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)" }}>
+                        <button onClick={() => setSelectedTicket(t)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                          <Eye size={15} /> View Details
                         </button>
-
-                        {activeTab === "overdue" && (
-                          <button className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-300 hover:shadow-lg hover:shadow-red-500/30 hover:scale-105 active:scale-95">
-                            <Bell size={18} />
-                            Notify Engineer
-                          </button>
-                        )}
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+                  );
+                })}
 
-      {/* MODERN MODAL */}
+                {/* PAGINATION */}
+                {totalPages > 1 && (
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
+                    <div style={{ fontSize:13, color:"#6b7280" }}>
+                      Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background: currentPage === 1 ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === 1 ? "#d1d5db" : "#374151", cursor: currentPage === 1 ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(page => (
+                        <button key={page} onClick={() => setCurrentPage(page)} style={{ width:36, height:36, borderRadius:12, border: currentPage === page ? "none" : "1px solid rgba(0,0,0,0.08)", background: currentPage === page ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.8)", color: currentPage === page ? "white" : "#374151", fontSize:13, fontWeight: currentPage === page ? 700 : 500, cursor:"pointer", fontFamily:"inherit", boxShadow: currentPage === page ? "0 4px 14px rgba(99,102,241,0.35)" : "none" }}>
+                          {page}
+                        </button>
+                      ))}
+                      <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background: currentPage === totalPages ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === totalPages ? "#d1d5db" : "#374151", cursor: currentPage === totalPages ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* MODAL */}
       {selectedTicket && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative animate-scaleIn overflow-hidden">
-            {/* Header with Gradient */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-              <button
-                onClick={() => setSelectedTicket(null)}
-                className="absolute top-4 right-4 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-90"
-              >
-                <X className="w-5 h-5" />
+        <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+              <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Ticket Details</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Complete information about this ticket</div>
+              <button onClick={() => setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+                <X size={15} />
               </button>
-              <h2 className="text-2xl font-bold mb-2">Ticket Details</h2>
-              <p className="text-purple-100 text-sm">Complete information about this ticket</p>
             </div>
 
-            {/* Content */}
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-                    <p className="text-xs text-blue-600 font-semibold mb-1">TICKET ID</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.id}</p>
+            <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                {[
+                  { label:"TICKET ID",   val: selectedTicket.id },
+                  { label:"SUBJECT",     val: selectedTicket.subject },
+                  { label:"DEPARTMENT",  val: selectedTicket.type },
+                  { label:"ISSUE TYPE",  val: selectedTicket.subtype },
+                  { label:"STATUS",      val: selectedTicket.status },
+                  { label:"DATE",        val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+                ].map((f, i) => (
+                  <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                    <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{f.val}</div>
                   </div>
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100">
-                    <p className="text-xs text-purple-600 font-semibold mb-1">TITLE</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.title}</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-                    <p className="text-xs text-green-600 font-semibold mb-1">DEPARTMENT</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.department}</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-orange-50 to-red-50 p-4 rounded-xl border border-orange-100">
-                    <p className="text-xs text-orange-600 font-semibold mb-1">PRIORITY</p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${getPriorityColor(selectedTicket.priority)}`}>
-                      {selectedTicket.priority}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 p-4 rounded-xl border border-slate-100">
-                    <p className="text-xs text-slate-600 font-semibold mb-1">USER</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.user}</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-4 rounded-xl border border-cyan-100">
-                    <p className="text-xs text-cyan-600 font-semibold mb-1">ENGINEER</p>
-                    <p className="text-lg font-bold text-gray-800">{selectedTicket.engineer}</p>
-                  </div>
-                  <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl border border-yellow-100">
-                    <p className="text-xs text-yellow-600 font-semibold mb-1">STATUS</p>
-                    <span className={`inline-block px-3 py-1 rounded-xl border-2 text-sm font-bold ${getStatusColor(selectedTicket.status)}`}>
-                      {selectedTicket.status.toUpperCase().replace("-", " ")}
-                    </span>
-                  </div>
-                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100">
-                    <p className="text-xs text-indigo-600 font-semibold mb-1">DATE</p>
-                    <p className="text-sm font-bold text-gray-800">{selectedTicket.date}</p>
-                  </div>
-                </div>
+                ))}
               </div>
-
-              <div className="mt-6 bg-gradient-to-br from-gray-50 to-slate-50 p-5 rounded-xl border border-gray-200">
-                <p className="text-xs text-gray-600 font-semibold mb-2">DESCRIPTION</p>
-                <p className="text-gray-800 leading-relaxed">{selectedTicket.description}</p>
+              <div style={{ marginTop:14, padding:"15px 17px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:6 }}>DESCRIPTION</div>
+                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{selectedTicket.body}</div>
               </div>
+              <button onClick={() => setSelectedTicket(null)} style={{ width:"100%", marginTop:14, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Custom Animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes scaleIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out forwards;
-        }
-
-        .animate-pulse-slow {
-          animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.9;
-          }
-        }
-      `}</style>
     </div>
   );
 };
