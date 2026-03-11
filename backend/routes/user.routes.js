@@ -177,6 +177,29 @@ userRouter.post("/raise", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+userRouter.put("/tickets/:id/satisfied", async (req, res) => {
+  if (req.user.role !== "user") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    const ticket = await prisma.ticket.update({
+      where: {
+        id: Number(req.params.id),
+        userId: req.user.id
+      },
+      data: {
+        satisfied: true
+      }
+    });
+
+    res.json({ message: "Ticket marked as satisfied", ticket });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Failed to update ticket" });
+  }
+});
 
 
 userRouter.post("/followup", async(req, res)=> {

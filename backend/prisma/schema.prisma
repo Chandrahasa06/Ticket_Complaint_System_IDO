@@ -56,6 +56,8 @@ model Ticket {
   next     Ticket[]  @relation("TicketChain")
   status   String
 
+  satisfied Boolean @default(false)
+
   userId   Int
   user     User    @relation(fields: [userId], references: [id])
 

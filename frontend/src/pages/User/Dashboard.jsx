@@ -13,9 +13,36 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [followupTicket, setFollowupTicket] = useState(null); // ticket to follow up on
+  const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
   const [formData, setFormData] = useState({ title:"", department:"", subtype:"", description:"" });
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
+
+const handleSatisfied = async (ticketId) => {
+  try {
+    const res = await fetch(`http://localhost:3000/api/user/tickets/${ticketId}/satisfied`, {
+      method: "PUT",
+      credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setTickets(prev =>
+        prev.map(t =>
+          t.id === ticketId ? { ...t, satisfied: true } : t
+        )
+      );
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+const [satisfiedTickets, setSatisfiedTickets] = useState(
+  JSON.parse(localStorage.getItem("satisfiedTickets")) || []
+);
 
   const fetchTickets = async (status) => {
     setLoading(true);
@@ -65,6 +92,36 @@ const UserDashboard = () => {
     }
   };
 
+  const handleSubmitFollowup = async () => {
+    if (!followupForm.title || !followupForm.description) {
+      alert("All fields are required!");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:3000/api/user/followup", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: followupTicket.type,
+          subtype: followupTicket.subtype,
+          subject: followupForm.title,
+          body: followupForm.description,
+          prevId: followupTicket.id,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) { alert(data.message); return; }
+      alert("Follow-up ticket raised successfully!");
+      setFollowupTicket(null);
+      setFollowupForm({ title:"", description:"" });
+      fetchTickets("RESOLVED");
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -91,7 +148,6 @@ const UserDashboard = () => {
     { id:"resolved", label:"Resolved",     iconPath:"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
   ];
 
-  // Subtype options per department
   const subtypeOptions = {
     Electrical: ["Fan", "Light", "AC", "Switchboard", "Wiring", "Other"],
     Plumbing:   ["Tap", "Pipe Leak", "Water Pump", "Drainage", "Other"],
@@ -130,7 +186,16 @@ const UserDashboard = () => {
       </header>
 
       {/* MAIN */}
-      <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
+      <main style={{
+    maxWidth:1280,
+    margin:"0 auto",
+    padding:"32px",
+    position:"relative",
+    zIndex:1,
+    display:"flex",
+    flexDirection:"column",
+    alignItems:"center"
+  }}>
 
         {/* Tabs */}
         <div style={{ display:"flex", gap:8, marginBottom:28, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
@@ -157,7 +222,9 @@ const UserDashboard = () => {
 
         {/* RAISE TICKET */}
         {activeTab === "raise" && (
-          <div style={{ ...glassCard, padding:"36px 40px", maxWidth:780 }}>
+
+  <div style={{ display:"flex", justifyContent:"center", width:"100%" }}>
+          <div style={{ ...glassCard, padding:"36px 40px", maxWidth:1000,width :"100%" }}>
             <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:30 }}>
               <div style={{ width:48, height:48, borderRadius:15, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
                 <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -170,7 +237,6 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            {/* Title */}
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Complaint Title</label>
               <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle}
@@ -178,7 +244,6 @@ const UserDashboard = () => {
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
 
-            {/* Department */}
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
               <select name="department" value={formData.department} onChange={e => {
@@ -192,7 +257,6 @@ const UserDashboard = () => {
               </select>
             </div>
 
-            {/* Subtype — only show when department is selected */}
             {formData.department && (
               <div style={{ marginBottom:20 }}>
                 <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Issue Type</label>
@@ -205,7 +269,6 @@ const UserDashboard = () => {
               </div>
             )}
 
-            {/* Description */}
             <div style={{ marginBottom:24 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
@@ -220,11 +283,13 @@ const UserDashboard = () => {
               </svg>
             </button>
           </div>
+        </div>
         )}
 
         {/* PENDING TICKETS */}
         {activeTab === "pending" && (
-          <div>
+          <div style={{ width:"100%", maxWidth:1000 }}>
+            
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
               <div>
                 <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>Pending Complaints</div>
@@ -280,7 +345,7 @@ const UserDashboard = () => {
 
         {/* RESOLVED TICKETS */}
         {activeTab === "resolved" && (
-          <div>
+          <div style={{ width:"100%", maxWidth:1000 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
               <div>
                 <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>Resolved Complaints</div>
@@ -330,14 +395,63 @@ const UserDashboard = () => {
                       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                       Details
                     </button>
-                    <button style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(34,197,94,0.2)", background:"rgba(34,197,94,0.12)", color:"#16a34a", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      Satisfied
-                    </button>
-                    <button style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+{ticket.satisfied ? (
+  <div
+    style={{
+      flex:1,
+      minWidth:130,
+      padding:"11px",
+      borderRadius:18,
+      border:"1px solid rgba(34,197,94,0.25)",
+      background:"rgba(220,252,231,0.85)",
+      color:"#16a34a",
+      fontSize:13,
+      fontWeight:600,
+      fontFamily:"inherit",
+      display:"flex",
+      alignItems:"center",
+      justifyContent:"center",
+      gap:7
+    }}
+  >
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+    </svg>
+    User Satisfied
+  </div>
+) : (
+  <button
+    onClick={() => handleSatisfied(ticket.id)}
+    style={{
+      flex:1,
+      minWidth:130,
+      padding:"11px",
+      borderRadius:18,
+      border:"1px solid rgba(34,197,94,0.2)",
+      background:"rgba(34,197,94,0.12)",
+      color:"#16a34a",
+      fontSize:13,
+      fontWeight:500,
+      fontFamily:"inherit",
+      cursor:"pointer",
+      display:"flex",
+      alignItems:"center",
+      justifyContent:"center",
+      gap:7
+    }}
+  >
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+    </svg>
+    Satisfied
+  </button>
+)}
+{!ticket.satisfied && (
+                    <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"", description:"" }); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       Follow-up
                     </button>
+)}
                   </div>
                 </div>
               </div>
@@ -346,7 +460,7 @@ const UserDashboard = () => {
         )}
       </main>
 
-      {/* MODAL */}
+      {/* TICKET DETAILS MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:660, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -375,11 +489,11 @@ const UserDashboard = () => {
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
-                  { label:"ISSUE TITLE",   val: selectedTicket.subject,                               span: true },
-                  { label:"DEPARTMENT",    val: selectedTicket.type },
-                  { label:"ISSUE TYPE",    val: selectedTicket.subtype },
-                  { label:"CREATED DATE",  val: new Date(selectedTicket.createdAt).toLocaleDateString() },
-                  { label:"TICKET ID",     val: selectedTicket.id },
+                  { label:"ISSUE TITLE",  val: selectedTicket.subject, span: true },
+                  { label:"DEPARTMENT",   val: selectedTicket.type },
+                  { label:"ISSUE TYPE",   val: selectedTicket.subtype },
+                  { label:"CREATED DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+                  { label:"TICKET ID",    val: selectedTicket.id },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -397,17 +511,88 @@ const UserDashboard = () => {
                 <button onClick={() => setSelectedTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                   Close
                 </button>
-                {selectedTicket.status === "PENDING" && (
-                  <button style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    Cancel Ticket
-                  </button>
-                )}
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* FOLLOW-UP MODAL */}
+      {followupTicket && (
+        <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+
+            {/* Header */}
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#dc2626,#f97316)", position:"relative" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Raise Follow-up Ticket</div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Issue not resolved? Let us know.</div>
+                </div>
+              </div>
+              <button onClick={() => setFollowupTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div style={{ padding:"24px 28px" }}>
+
+              {/* Pre-filled info */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+                <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
+                </div>
+                <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>ISSUE TYPE</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.subtype}</div>
+                </div>
+              </div>
+
+              {/* New title */}
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>
+                <input
+                  value={followupForm.title}
+                  onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })}
+                  placeholder="e.g., Issue still not fixed after repair"
+                  style={inputStyle}
+                  onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
+                />
+              </div>
+
+              {/* New description */}
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
+                <textarea
+                  value={followupForm.description}
+                  onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })}
+                  placeholder="Describe what is still wrong or not fixed properly..."
+                  rows={4}
+                  style={{ ...inputStyle, resize:"none", height:"auto" }}
+                  onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
+                />
+              </div>
+
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
+                  Cancel
+                </button>
+                <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#dc2626,#f97316)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(220,38,38,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                  Submit Follow-up Ticket
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
