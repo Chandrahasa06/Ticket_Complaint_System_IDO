@@ -113,6 +113,9 @@ adminRouter.get("/tickets", async(req, res) => {
             orderBy: { createdAt: 'desc' },
             skip: skip,
             take: take,
+            include: {
+                prev: true,
+            },
         });
 
         const totalTickets = await prisma.ticket.count({

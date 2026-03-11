@@ -46,15 +46,18 @@ model Technician {
 }
 
 model Ticket {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   type     String
   subtype  String
   subject  String
   body     String
+  prevId   Int?
+  prev     Ticket?   @relation("TicketChain", fields: [prevId], references: [id])
+  next     Ticket[]  @relation("TicketChain")
   status   String
 
   userId   Int
-  user     User   @relation(fields: [userId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
 
   createdAt   DateTime       @default(now())
 
