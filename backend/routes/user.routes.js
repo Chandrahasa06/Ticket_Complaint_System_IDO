@@ -5,23 +5,26 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { checkAuth } from "../middlewares/checkAuth.js";
-
+ 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const userRouter = express.Router();
-
-
+ 
+ 
 userRouter.get("/dashboard", (req, res) => {
     res.json({ message: "User dashboard", user: req.user });
 });
-
+ 
 userRouter.post("/register", async(req, res)=>{
     const { username, email, password } = req.body;
     
     if(!username || !email || !password){
         return res.status(400).json({message: "All fields are required!",});
     }
-    
+ 
+    if(!email.endsWith("@iiti.ac.in")){
+        return res.status(400).json({message: "Only @iiti.ac.in email addresses are allowed!"});
+    }
     
     try {
         const hashed_password = await bcrypt.hash(password,10);
@@ -41,22 +44,26 @@ userRouter.post("/register", async(req, res)=>{
             message: "Email already exists",
         });
         }
-
+ 
         res.status(500).json({
         message: "Internal server error",
         });    
         console.log(e);
     }
 });
-
-
+ 
+ 
 userRouter.post("/login", async(req, res)=>{
     const {email, password} = req.body;
-
+ 
     if(!email || !password){
         return res.status(400).json({message: "All fields are required!",});
     }
-
+ 
+    if(!email.endsWith("@iiti.ac.in")){
+        return res.status(400).json({message: "Only @iiti.ac.in email addresses are allowed!"});
+    }
+ 
     try {
         const user = await prisma.user.findUnique({
             where: {
@@ -67,9 +74,9 @@ userRouter.post("/login", async(req, res)=>{
         if(!user){
             return res.status(404).json({message: "User not found"});
         }
-
+ 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-
+ 
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid password" });
         }
@@ -95,43 +102,40 @@ userRouter.post("/login", async(req, res)=>{
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
-
+ 
+ 
 userRouter.use(checkAuth);
-
+ 
 userRouter.get("/tickets", async (req, res) => {
   if (req.user.role !== "user") {
     return res.status(403).json({ message: "Access denied" });
   }
-
+ 
   try {
     const status = req.query.status;
     const pg = parseInt(req.query.page) || 1;
     const take = 10;
     const skip = (pg - 1) * take;
-
+ 
     let whereCondition = {
       userId: req.user.id,
     };
-
+ 
     if (status && status !== "ALL") {
       whereCondition.status = status;
     }
-
+ 
     const tickets = await prisma.ticket.findMany({
       where: whereCondition,
       orderBy: { createdAt: "desc" },
       skip: skip,
       take: take,
-      include: {
-        prev: true,
-      }
     });
-
+ 
     const totalTickets = await prisma.ticket.count({
       where: whereCondition,
     });
-
+ 
     res.json({
       tickets: tickets,
       pagination: {
@@ -139,25 +143,25 @@ userRouter.get("/tickets", async (req, res) => {
         totalTickets: totalTickets,
       },
     });
-
+ 
   } catch (e) {
     console.log(e);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
-
+ 
+ 
 userRouter.post("/raise", async(req, res) => {
     if(req.user.role !== "user"){
         return res.status(403).json({ message: "Access denied" });
     }
-
+ 
     const { type, subtype, subject, body } = req.body;
-
+ 
     if (!type || !subtype || !subject || !body) {
         return res.status(400).json({ message: "All fields are required!" });
     }
-
+ 
     try {
         const ticket = await prisma.ticket.create({
             data: {
@@ -169,7 +173,7 @@ userRouter.post("/raise", async(req, res) => {
                 userId: req.user.id,
             }
         })
-
+ 
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     
     } catch (e) {
@@ -177,42 +181,19 @@ userRouter.post("/raise", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-userRouter.put("/tickets/:id/satisfied", async (req, res) => {
-  if (req.user.role !== "user") {
-    return res.status(403).json({ message: "Access denied" });
-  }
-
-  try {
-    const ticket = await prisma.ticket.update({
-      where: {
-        id: Number(req.params.id),
-        userId: req.user.id
-      },
-      data: {
-        satisfied: true
-      }
-    });
-
-    res.json({ message: "Ticket marked as satisfied", ticket });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "Failed to update ticket" });
-  }
-});
-
-
+ 
+ 
 userRouter.post("/followup", async(req, res)=> {
     if(req.user.role !== "user"){
         return res.status(403).json({ message: "Access denied" });
     }
-
+ 
     const { type, subtype, subject, body, prevId } = req.body;
-
+ 
     if (!type || !subtype || !subject || !body || !prevId) {
         return res.status(400).json({ message: "All fields are required!" });
     }
-
+ 
     try {
         const ticket = await prisma.ticket.create({
             data: {
@@ -225,7 +206,7 @@ userRouter.post("/followup", async(req, res)=> {
                 userId: req.user.id,
             }
         })
-
+ 
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     
     } catch (e) {
@@ -233,5 +214,6 @@ userRouter.post("/followup", async(req, res)=> {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
+ 
 export default userRouter;
+ 

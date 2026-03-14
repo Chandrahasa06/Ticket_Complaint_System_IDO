@@ -28,10 +28,11 @@ model Admin {
 }
 
 model Engineer {
-  id       Int    @id @default(autoincrement())
-  username String
-  email    String @unique
-  password String
+  id         Int    @id @default(autoincrement())
+  username   String
+  email      String @unique
+  password   String
+  department String @default("General")
 
   @@map("engineer")
 }
@@ -46,24 +47,22 @@ model Technician {
 }
 
 model Ticket {
-  id       Int     @id @default(autoincrement())
-  type     String
-  subtype  String
-  subject  String
-  body     String
-  prevId   Int?
-  prev     Ticket?   @relation("TicketChain", fields: [prevId], references: [id])
-  next     Ticket[]  @relation("TicketChain")
-  status   String
+  id      Int     @id @default(autoincrement())
+  type    String
+  subtype String
+  subject String
+  body    String
+  prevId  Int?
+  prev    Ticket?  @relation("TicketChain", fields: [prevId], references: [id])
+  next    Ticket[] @relation("TicketChain")
+  status  String
 
   satisfied Boolean @default(false)
 
-  userId   Int
-  user     User    @relation(fields: [userId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 
-  createdAt   DateTime       @default(now())
+  createdAt DateTime @default(now())
 
   @@map("ticket")
 }
-
-
