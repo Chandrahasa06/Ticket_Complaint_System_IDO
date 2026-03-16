@@ -7,7 +7,6 @@ const getStatusStyle = (status) => {
   const map = {
     overdue:      { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
     pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    "in-progress":{ color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
     resolved:     { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
     closed:       { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
@@ -20,7 +19,6 @@ const getStatusIcon = (status) => {
   switch (s) {
     case "overdue":      return <AlertTriangle {...props} />;
     case "pending":      return <Clock {...props} />;
-    case "in-progress":  return <TrendingUp {...props} />;
     case "resolved":     return <CheckCircle {...props} />;
     case "closed":       return <XCircle {...props} />;
     default: return null;
@@ -124,7 +122,6 @@ const AdminDashboard = () => {
     { id:"overview",    label:"Overview",    icon:"📈" },
     { id:"pending",     label:"Pending",     icon:"⏳" },
     { id:"overdue",     label:"Overdue",     icon:"⚠️" },
-    { id:"in-progress", label:"In Progress", icon:"🔄" },
     { id:"resolved",    label:"Resolved",    icon:"✅" },
     { id:"closed",      label:"Closed",      icon:"🔒" },
   ];
@@ -132,7 +129,6 @@ const AdminDashboard = () => {
   const statCards = [
     { label:"Total Tickets", value: stats.total,      icon:"📊" },
     { label:"Pending",       value: stats.pending,    icon:"⏳" },
-    { label:"In Progress",   value: stats.inProgress, icon:"🔄" },
     { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
     { label:"Resolved",      value: stats.resolved,   icon:"✅" },
   ];
@@ -223,7 +219,6 @@ const AdminDashboard = () => {
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                 {[
                   { label:"Pending",     val: stats.pending,    color:"#d97706" },
-                  { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
                   { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
                   { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
                 ].map((s,i) => (
