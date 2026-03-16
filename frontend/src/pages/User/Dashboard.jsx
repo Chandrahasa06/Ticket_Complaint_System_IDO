@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+ 
 const glassCard = {
   borderRadius: 28,
   backdropFilter: "blur(30px)",
@@ -8,42 +8,18 @@ const glassCard = {
   background: "rgba(255,255,255,0.6)",
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
 };
-
+ 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [followupTicket, setFollowupTicket] = useState(null); // ticket to follow up on
+  const [followupTicket, setFollowupTicket] = useState(null);
   const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
   const [formData, setFormData] = useState({ title:"", department:"", subtype:"", description:"" });
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-
-const handleSatisfied = async (ticketId) => {
-  try {
-    const res = await fetch(`http://localhost:3000/api/user/tickets/${ticketId}/satisfied`, {
-      method: "PUT",
-      credentials: "include"
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      setTickets(prev =>
-        prev.map(t =>
-          t.id === ticketId ? { ...t, satisfied: true } : t
-        )
-      );
-    }
-
-  } catch (err) {
-    console.error(err);
-  }
-};
-const [satisfiedTickets, setSatisfiedTickets] = useState(
-  JSON.parse(localStorage.getItem("satisfiedTickets")) || []
-);
-
+  const [satisfiedIds, setSatisfiedIds] = useState([]); // track satisfied ticket ids
+ 
   const fetchTickets = async (status) => {
     setLoading(true);
     try {
@@ -60,11 +36,11 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
       setLoading(false);
     }
   };
-
+ 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
+ 
   const handleSubmitTicket = async () => {
     if (!formData.title || !formData.department || !formData.subtype || !formData.description) {
       alert("All fields are required!");
@@ -91,7 +67,7 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
       alert("Server error");
     }
   };
-
+ 
   const handleSubmitFollowup = async () => {
     if (!followupForm.title || !followupForm.description) {
       alert("All fields are required!");
@@ -121,7 +97,7 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
       alert("Server error");
     }
   };
-
+ 
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -132,7 +108,7 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
       console.error("Logout error:", error);
     }
   };
-
+ 
   const inputStyle = {
     width:"100%", padding:"13px 16px",
     borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)",
@@ -141,28 +117,26 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
     boxSizing:"border-box", display:"block",
     transition:"border-color 0.2s, box-shadow 0.2s",
   };
-
+ 
   const tabs = [
     { id:"raise",    label:"Raise Ticket", iconPath:"M12 4v16m8-8H4" },
     { id:"pending",  label:"Pending",      iconPath:"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
     { id:"resolved", label:"Resolved",     iconPath:"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
   ];
-
+ 
   const subtypeOptions = {
     Electrical: ["Fan", "Light", "AC", "Switchboard", "Wiring", "Other"],
     Plumbing:   ["Tap", "Pipe Leak", "Water Pump", "Drainage", "Other"],
     Carpentry:  ["Door", "Window", "Furniture", "Other"],
     IT:         ["Network", "Projector", "CCTV", "Computer", "Other"],
   };
-
+ 
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
-
-      {/* Blobs */}
+ 
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
-
-      {/* HEADER */}
+ 
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -184,20 +158,9 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
           </button>
         </div>
       </header>
-
-      {/* MAIN */}
-      <main style={{
-    maxWidth:1280,
-    margin:"0 auto",
-    padding:"32px",
-    position:"relative",
-    zIndex:1,
-    display:"flex",
-    flexDirection:"column",
-    alignItems:"center"
-  }}>
-
-        {/* Tabs */}
+ 
+      <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
+ 
         <div style={{ display:"flex", gap:8, marginBottom:28, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => {
@@ -219,12 +182,10 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
             </button>
           ))}
         </div>
-
+ 
         {/* RAISE TICKET */}
         {activeTab === "raise" && (
-
-  <div style={{ display:"flex", justifyContent:"center", width:"100%" }}>
-          <div style={{ ...glassCard, padding:"36px 40px", maxWidth:1000,width :"100%" }}>
+          <div style={{ ...glassCard, padding:"36px 40px", maxWidth:780 }}>
             <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:30 }}>
               <div style={{ width:48, height:48, borderRadius:15, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
                 <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -236,14 +197,14 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                 <div style={{ fontSize:13, color:"#6b7280", marginTop:3 }}>Fill in the details below to submit your request</div>
               </div>
             </div>
-
+ 
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Complaint Title</label>
               <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
-
+ 
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
               <select name="department" value={formData.department} onChange={e => {
@@ -256,7 +217,7 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                 <option>IT</option>
               </select>
             </div>
-
+ 
             {formData.department && (
               <div style={{ marginBottom:20 }}>
                 <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Issue Type</label>
@@ -268,14 +229,14 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                 </select>
               </div>
             )}
-
+ 
             <div style={{ marginBottom:24 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
-
+ 
             <button onClick={handleSubmitTicket} style={{ width:"100%", padding:"15px", borderRadius:30, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:15, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 16px 48px rgba(99,102,241,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
               Submit Ticket
               <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -283,13 +244,11 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
               </svg>
             </button>
           </div>
-        </div>
         )}
-
+ 
         {/* PENDING TICKETS */}
         {activeTab === "pending" && (
-          <div style={{ width:"100%", maxWidth:1000 }}>
-            
+          <div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
               <div>
                 <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>Pending Complaints</div>
@@ -297,16 +256,14 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
               </div>
               <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#d97706", background:"rgba(254,243,199,0.85)", border:"1px solid rgba(245,158,11,0.25)" }}>{tickets.length} Active</span>
             </div>
-
+ 
             {loading && <div style={{ textAlign:"center", padding:40, color:"#6b7280" }}>Loading tickets...</div>}
-
             {!loading && tickets.length === 0 && (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
                 <div style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:6 }}>No Pending Tickets</div>
                 <div style={{ fontSize:13, color:"#9ca3af" }}>You have no pending service requests.</div>
               </div>
             )}
-
             {!loading && tickets.map((ticket) => (
               <div key={ticket.id} style={{ ...glassCard, marginBottom:14 }}>
                 <div style={{ padding:"22px 26px" }}>
@@ -342,10 +299,10 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
             ))}
           </div>
         )}
-
+ 
         {/* RESOLVED TICKETS */}
         {activeTab === "resolved" && (
-          <div style={{ width:"100%", maxWidth:1000 }}>
+          <div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
               <div>
                 <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>Resolved Complaints</div>
@@ -353,113 +310,78 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
               </div>
               <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"1px solid rgba(34,197,94,0.25)" }}>{tickets.length} Completed</span>
             </div>
-
+ 
             {loading && <div style={{ textAlign:"center", padding:40, color:"#6b7280" }}>Loading tickets...</div>}
-
             {!loading && tickets.length === 0 && (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
                 <div style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:6 }}>No Resolved Tickets</div>
                 <div style={{ fontSize:13, color:"#9ca3af" }}>You have no resolved service requests yet.</div>
               </div>
             )}
-
-            {!loading && tickets.map((ticket) => (
-              <div key={ticket.id} style={{ ...glassCard, marginBottom:14 }}>
-                <div style={{ padding:"22px 26px" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:8 }}>{ticket.subject}</div>
-                      <div style={{ display:"flex", flexWrap:"wrap", gap:16, fontSize:13, color:"#6b7280" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                          {ticket.type}
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, color:"#16a34a" }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                          <span style={{ fontWeight:500 }}>{ticket.subtype}</span>
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          {new Date(ticket.createdAt).toLocaleDateString()}
+ 
+            {!loading && tickets.map((ticket) => {
+              const isSatisfied = satisfiedIds.includes(ticket.id);
+              return (
+                <div key={ticket.id} style={{
+                  ...glassCard,
+                  marginBottom:14,
+                  background: isSatisfied ? "rgba(220,252,231,0.7)" : "rgba(255,255,255,0.6)",
+                  border: isSatisfied ? "1.5px solid rgba(34,197,94,0.3)" : "none",
+                }}>
+                  <div style={{ padding:"22px 26px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:8 }}>{ticket.subject}</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:16, fontSize:13, color:"#6b7280" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                            {ticket.type}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, color:"#16a34a" }}>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                            <span style={{ fontWeight:500 }}>{ticket.subtype}</span>
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
+ 
+                      {/* Badge */}
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <svg width="16" height="16" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>
+                          {isSatisfied ? "Resolved ✓" : "Resolved"}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <svg width="16" height="16" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                      <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>Resolved</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:4 }}>
-                    <button onClick={() => setSelectedTicket(ticket)} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
-                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      Details
-                    </button>
-{ticket.satisfied ? (
-  <div
-    style={{
-      flex:1,
-      minWidth:130,
-      padding:"11px",
-      borderRadius:18,
-      border:"1px solid rgba(34,197,94,0.25)",
-      background:"rgba(220,252,231,0.85)",
-      color:"#16a34a",
-      fontSize:13,
-      fontWeight:600,
-      fontFamily:"inherit",
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"center",
-      gap:7
-    }}
-  >
-    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-    </svg>
-    User Satisfied
-  </div>
-) : (
-  <button
-    onClick={() => handleSatisfied(ticket.id)}
-    style={{
-      flex:1,
-      minWidth:130,
-      padding:"11px",
-      borderRadius:18,
-      border:"1px solid rgba(34,197,94,0.2)",
-      background:"rgba(34,197,94,0.12)",
-      color:"#16a34a",
-      fontSize:13,
-      fontWeight:500,
-      fontFamily:"inherit",
-      cursor:"pointer",
-      display:"flex",
-      alignItems:"center",
-      justifyContent:"center",
-      gap:7
-    }}
-  >
-    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-    </svg>
-    Satisfied
-  </button>
-)}
-{!ticket.satisfied && (
-                    <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"", description:"" }); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Follow-up
-                    </button>
-)}
+ 
+                    {/* Buttons — hide all if satisfied */}
+                    {!isSatisfied && (
+                      <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:4 }}>
+                        <button onClick={() => setSelectedTicket(ticket)} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          Details
+                        </button>
+                        <button onClick={() => setSatisfiedIds(prev => [...prev, ticket.id])} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(34,197,94,0.2)", background:"rgba(34,197,94,0.12)", color:"#16a34a", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          Satisfied
+                        </button>
+                        <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"", description:"" }); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                          Follow-up
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
-
+ 
       {/* TICKET DETAILS MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
@@ -478,7 +400,6 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px", borderRadius:18, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.12)", marginBottom:18 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em" }}>TICKET STATUS</div>
@@ -486,7 +407,6 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                   {selectedTicket.status}
                 </span>
               </div>
-
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
                   { label:"ISSUE TITLE",  val: selectedTicket.subject, span: true },
@@ -501,28 +421,30 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                   </div>
                 ))}
               </div>
-
               <div style={{ padding:"14px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:20 }}>
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:6 }}>DETAILED DESCRIPTION</div>
                 <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{selectedTicket.body}</div>
               </div>
-
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={() => setSelectedTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                   Close
                 </button>
+                {selectedTicket.status === "PENDING" && (
+                  <button style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    Cancel Ticket
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
-
+ 
       {/* FOLLOW-UP MODAL */}
       {followupTicket && (
         <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-
-            {/* Header */}
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#dc2626,#f97316)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -537,10 +459,7 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-
             <div style={{ padding:"24px 28px" }}>
-
-              {/* Pre-filled info */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
                 <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                   <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
@@ -551,34 +470,18 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
                   <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.subtype}</div>
                 </div>
               </div>
-
-              {/* New title */}
               <div style={{ marginBottom:16 }}>
                 <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>
-                <input
-                  value={followupForm.title}
-                  onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })}
-                  placeholder="e.g., Issue still not fixed after repair"
-                  style={inputStyle}
+                <input value={followupForm.title} onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })} placeholder="e.g., Issue still not fixed after repair" style={inputStyle}
                   onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
-                />
+                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
               </div>
-
-              {/* New description */}
               <div style={{ marginBottom:24 }}>
                 <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
-                <textarea
-                  value={followupForm.description}
-                  onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })}
-                  placeholder="Describe what is still wrong or not fixed properly..."
-                  rows={4}
-                  style={{ ...inputStyle, resize:"none", height:"auto" }}
+                <textarea value={followupForm.description} onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })} placeholder="Describe what is still wrong or not fixed properly..." rows={4} style={{ ...inputStyle, resize:"none", height:"auto" }}
                   onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
-                />
+                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
               </div>
-
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                   Cancel
@@ -592,9 +495,10 @@ const [satisfiedTickets, setSatisfiedTickets] = useState(
           </div>
         </div>
       )}
-
+ 
     </div>
   );
 };
-
+ 
 export default UserDashboard;
+ 
