@@ -35,6 +35,12 @@ const glassCard = {
  
 const TICKETS_PER_PAGE = 3;
  
+const AREAS = [
+  "Hostels", "KV School", "Abhinandhan Bhavan", "Academic Block",
+  "Library", "Sports Complex", "Guest House", "Faculty Quarters",
+  "Admin Block", "Cafeteria"
+];
+ 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -46,17 +52,20 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [addRole, setAddRole] = useState("engineer");
-  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"" });
+  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
   const [addLoading, setAddLoading] = useState(false);
  
   const handleAddPeople = async (e) => {
     e.preventDefault();
     if (!addForm.username || !addForm.email || !addForm.password) { alert("All fields are required!"); return; }
     if (addRole === "engineer" && !addForm.department) { alert("Please select a department!"); return; }
+    if (addRole === "technician" && !addForm.department) { alert("Please select a department!"); return; }
+    if (addRole === "technician" && addForm.area.length === 0) { alert("Please select at least one area!"); return; }
     setAddLoading(true);
     try {
-      const body = { username: addForm.username, email: addForm.email, password: addForm.password };
+      const body = { username: addForm.username, email: addForm.email, password: addForm.password, phone: addForm.phone, employeeId: addForm.employeeId };
       if (addRole === "engineer") body.department = addForm.department;
+      if (addRole === "technician") { body.department = addForm.department; body.area = addForm.area; }
       const res = await fetch(`http://localhost:3000/api/${addRole}/register`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +74,7 @@ const AdminDashboard = () => {
       const data = await res.json();
       if (!res.ok) { alert(data.message || "Registration failed"); return; }
       alert(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`);
-      setAddForm({ username:"", email:"", password:"", department:"" });
+      setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
       setShowAddPeople(false);
     } catch (err) { console.error(err); alert("Server error"); }
     finally { setAddLoading(false); }
@@ -91,7 +100,6 @@ const AdminDashboard = () => {
  
   const fetchStats = async () => {
     try {
-      // Fetch counts for each status in parallel
       const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED"];
       const [allRes, ...statusRes] = await Promise.all([
         fetch("http://localhost:3000/api/admin/tickets?pg=1", { credentials:"include" }),
@@ -106,12 +114,9 @@ const AdminDashboard = () => {
         overdue:    statusData[2].pagination?.totalTickets || 0,
         resolved:   statusData[3].pagination?.totalTickets || 0,
       });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
  
-  // Fetch when tab changes
   useEffect(() => {
     if (activeTab === "overview") {
       fetchStats();
@@ -121,7 +126,6 @@ const AdminDashboard = () => {
     }
   }, [activeTab]);
  
-  // Fetch when page changes
   useEffect(() => {
     if (activeTab !== "overview") {
       fetchTickets(activeTab, currentPage);
@@ -322,7 +326,6 @@ const AdminDashboard = () => {
                   );
                 })}
  
-                {/* PAGINATION */}
                 {totalPages > 1 && (
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
                     <div style={{ fontSize:13, color:"#6b7280" }}>
@@ -390,10 +393,9 @@ const AdminDashboard = () => {
       {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={() => setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
  
-            {/* Header */}
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -408,12 +410,10 @@ const AdminDashboard = () => {
               </button>
             </div>
  
-            <div style={{ padding:"24px 28px" }}>
- 
-              {/* Role Toggle */}
+            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
                 {["engineer","technician"].map(r => (
-                  <button key={r} onClick={() => { setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: addRole === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: addRole === r ? "white" : "#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow: addRole === r ? "0 4px 14px rgba(99,102,241,0.3)" : "none", transition:"all 0.2s", textTransform:"capitalize" }}>
+                  <button key={r} onClick={() => { setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: addRole === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: addRole === r ? "white" : "#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow: addRole === r ? "0 4px 14px rgba(99,102,241,0.3)" : "none", transition:"all 0.2s", textTransform:"capitalize" }}>
                     {r}
                   </button>
                 ))}
@@ -432,6 +432,26 @@ const AdminDashboard = () => {
                       value={addForm[f.key]}
                       onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
+                      autoComplete="off"
+                      style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", transition:"all 0.2s" }}
+                      onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
+                      onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
+                    />
+                  </div>
+                ))}
+ 
+                {[
+                  { label:"Phone Number", key:"phone", type:"tel", placeholder:"Enter phone number" },
+                  { label:"Employee ID",  key:"employeeId", type:"text", placeholder:"Enter employee ID" },
+                ].map(f => (
+                  <div key={f.key} style={{ marginBottom:16 }}>
+                    <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>{f.label}</label>
+                    <input
+                      type={f.type}
+                      value={addForm[f.key]}
+                      onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder}
+                      autoComplete="off"
                       style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", transition:"all 0.2s" }}
                       onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
                       onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
@@ -456,6 +476,61 @@ const AdminDashboard = () => {
                   </div>
                 )}
  
+                {addRole === "technician" && (
+                  <>
+                    <div style={{ marginBottom:16 }}>
+                      <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
+                      <select
+                        value={addForm.department}
+                        onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))}
+                        style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }}
+                        onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
+                        onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
+                      >
+                        <option value="">Select Department</option>
+                        <option value="Civil">Civil</option>
+                        <option value="Electrical">Electrical</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom:16 }}>
+                      <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>
+                        Area <span style={{ color:"#9ca3af", fontWeight:400 }}>(select one or more)</span>
+                      </label>
+                      <div style={{ padding:"12px 14px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", display:"flex", flexWrap:"wrap", gap:8 }}>
+                        {AREAS.map(area => {
+                          const selected = (addForm.area || []).includes(area);
+                          return (
+                            <button
+                              key={area}
+                              type="button"
+                              onClick={() => setAddForm(prev => ({
+                                ...prev,
+                                area: selected
+                                  ? (prev.area || []).filter(a => a !== area)
+                                  : [...(prev.area || []), area]
+                              }))}
+                              style={{
+                                padding:"6px 14px", borderRadius:20, border:"none", fontSize:12, fontWeight:500,
+                                fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s",
+                                background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)",
+                                color: selected ? "white" : "#6366f1",
+                                boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none",
+                              }}
+                            >
+                              {selected && "✓ "}{area}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {(addForm.area || []).length > 0 && (
+                        <div style={{ fontSize:12, color:"#6366f1", marginTop:6, fontWeight:500 }}>
+                          {addForm.area.length} area{addForm.area.length > 1 ? "s" : ""} selected
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+ 
                 <div style={{ display:"flex", gap:10, marginTop:24 }}>
                   <button type="button" onClick={() => setShowAddPeople(false)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                     Cancel
@@ -475,4 +550,3 @@ const AdminDashboard = () => {
 };
  
 export default AdminDashboard;
- 
