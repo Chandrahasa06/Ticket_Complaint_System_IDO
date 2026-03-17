@@ -1,3 +1,4 @@
+
 import express from "express";
 import dotenv from "dotenv";
 import { prisma } from "../prisma/client.js";
@@ -8,11 +9,23 @@ import { checkAuth } from "../middlewares/checkAuth.js";
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const engineerRouter = express.Router();
+<<<<<<< Updated upstream
 
 engineerRouter.post("/register", async (req, res) => {
     const { username, email, password, department } = req.body;
 
     if (!username || !email || !password || !department) {
+=======
+ 
+engineerRouter.get("/dashboard", (req, res) => {
+    res.json({ message: "Engineer dashboard", user: req.user });
+});
+ 
+engineerRouter.post("/register", async(req, res) => {
+    const { username, email, password, department, phone, employeeId } = req.body;
+ 
+    if(!username || !email || !password || !department){
+>>>>>>> Stashed changes
         return res.status(400).json({ message: "All fields are required!" });
     }
 
@@ -21,24 +34,38 @@ engineerRouter.post("/register", async (req, res) => {
 
         const engineer = await prisma.engineer.create({
             data: {
-                username: username,
-                email: email,
+                username,
+                email,
                 password: hashed_password,
-                department: department,
+                department,
+                phone: phone || "",
+                employeeId: employeeId || "",
             }
         });
 
         res.status(201).json({ message: "Engineer added", id: engineer.id });
+<<<<<<< Updated upstream
     } catch (e) {
         if (e.code === "P2002") {
             return res.status(409).json({ message: "Email already exists" });
         }
+=======
+    }
+    catch(e) {
+        if(e.code === "P2002") return res.status(409).json({ message: "Email already exists" });
+        res.status(500).json({ message: "Internal server error" });
+>>>>>>> Stashed changes
         console.log(e);
         res.status(500).json({ message: "Internal server error" });
     }
 });
+<<<<<<< Updated upstream
 
 engineerRouter.post("/login", async (req, res) => {
+=======
+ 
+engineerRouter.post("/login", async(req, res) => {
+>>>>>>> Stashed changes
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -46,6 +73,7 @@ engineerRouter.post("/login", async (req, res) => {
     }
 
     try {
+<<<<<<< Updated upstream
         const engineer = await prisma.engineer.findUnique({
             where: { email: email }
         });
@@ -59,9 +87,19 @@ engineerRouter.post("/login", async (req, res) => {
             return res.status(401).json({ message: "Invalid password" });
         }
 
+=======
+        const engineer = await prisma.engineer.findUnique({ where: { email } });
+ 
+        if(!engineer) return res.status(404).json({ message: "Engineer not found" });
+ 
+        const isPasswordValid = await bcrypt.compare(password, engineer.password);
+        if(!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
+ 
+>>>>>>> Stashed changes
         const token = jwt.sign({
             id: engineer.id,
             email: engineer.email,
+            username: engineer.username,
             role: "engineer",
             department: engineer.department,
         }, JWT_SECRET, { expiresIn: "7d" });
@@ -79,6 +117,7 @@ engineerRouter.post("/login", async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+<<<<<<< Updated upstream
 
 // Protected routes below
 engineerRouter.use(checkAuth);
@@ -89,6 +128,30 @@ engineerRouter.get("/dashboard", (req, res) => {
 
 engineerRouter.get("/tickets", async (req, res) => {
     if (req.user.role !== "engineer") {
+=======
+ 
+engineerRouter.use(checkAuth);
+ 
+// GET full profile
+engineerRouter.get("/profile", async(req, res) => {
+    if(req.user.role !== "engineer"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    try {
+        const engineer = await prisma.engineer.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, username: true, email: true, department: true, phone: true, employeeId: true }
+        });
+        res.json({ engineer });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+ 
+engineerRouter.get("/tickets", async(req, res) => {
+    if(req.user.role !== "engineer"){
+>>>>>>> Stashed changes
         return res.status(403).json({ message: "Access denied" });
     }
 
@@ -96,6 +159,7 @@ engineerRouter.get("/tickets", async (req, res) => {
         const status = req.query.status;
         const pg = parseInt(req.query.pg) || 1;
         const take = 50;
+<<<<<<< Updated upstream
         const skip = (pg - 1) * take;
 
         const tickets = await prisma.ticket.findMany({
@@ -117,10 +181,32 @@ engineerRouter.get("/tickets", async (req, res) => {
             }
         });
     } catch (e) {
+=======
+        const skip = (pg-1)*take;
+ 
+        const dept = req.user.department;
+        const whereCondition = {
+            type: dept,
+            ...(status && status !== "ALL" ? { status } : {}),
+        };
+ 
+        const tickets = await prisma.ticket.findMany({
+            where: whereCondition,
+            orderBy: { createdAt: 'desc' },
+            skip, take,
+        });
+ 
+        const totalTickets = await prisma.ticket.count({ where: whereCondition });
+ 
+        res.json({ tickets, pagination: { pg, totalTickets } });
+    }
+    catch(e) {
+>>>>>>> Stashed changes
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+<<<<<<< Updated upstream
 
 engineerRouter.post("/change-password", async (req, res) => {
     const { currentPassword, newPassword } = req.body;
@@ -156,9 +242,30 @@ engineerRouter.post("/change-password", async (req, res) => {
 
         res.json({ message: "Password changed successfully" });
     } catch (e) {
+=======
+ 
+engineerRouter.get("/technicians", async(req, res) => {
+    if(req.user.role !== "engineer"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+ 
+    try {
+        const dept = req.user.department;
+        const technicians = await prisma.technician.findMany({
+            where: { department: dept },
+            orderBy: { username: 'asc' },
+        });
+        res.json({ technicians });
+    }
+    catch(e) {
+>>>>>>> Stashed changes
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+<<<<<<< Updated upstream
 
+=======
+ 
+>>>>>>> Stashed changes
 export default engineerRouter;

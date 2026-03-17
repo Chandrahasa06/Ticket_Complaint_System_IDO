@@ -15,7 +15,9 @@ const UserDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [followupTicket, setFollowupTicket] = useState(null);
   const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
-  const [formData, setFormData] = useState({ title:"", department:"", subtype:"", description:"" });
+  const [formData, setFormData] = useState({ title:"", department:"", subtype:"", description:"", area:"", location:"" });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [satisfiedIds, setSatisfiedIds] = useState([]); // track satisfied ticket ids
@@ -42,26 +44,31 @@ const UserDashboard = () => {
   };
  
   const handleSubmitTicket = async () => {
-    if (!formData.title || !formData.department || !formData.subtype || !formData.description) {
+    if (!formData.title || !formData.department || !formData.subtype || !formData.description || !formData.area || !formData.location) {
       alert("All fields are required!");
       return;
     }
     try {
+      const fd = new FormData();
+      fd.append("type", formData.department);
+      fd.append("subtype", formData.subtype);
+      fd.append("subject", formData.title);
+      fd.append("body", formData.description);
+      fd.append("area", formData.area);
+      fd.append("location", formData.location);
+      if (selectedImage) fd.append("image", selectedImage);
+ 
       const response = await fetch("http://localhost:3000/api/user/raise", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: formData.department,
-          subtype: formData.subtype,
-          subject: formData.title,
-          body: formData.description,
-        }),
+        body: fd,
       });
       const data = await response.json();
       if (!response.ok) { alert(data.message); return; }
       alert("Ticket raised successfully!");
-      setFormData({ title:"", department:"", subtype:"", description:"" });
+      setFormData({ title:"", department:"", subtype:"", description:"", area:"", location:"" });
+      setSelectedImage(null);
+      setImagePreview(null);
     } catch (error) {
       console.error(error);
       alert("Server error");
@@ -124,11 +131,16 @@ const UserDashboard = () => {
     { id:"resolved", label:"Resolved",     iconPath:"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
   ];
  
+  const AREAS = [
+    "Hostels", "KV School", "Abhinandhan Bhavan", "Academic Block",
+    "Library", "Sports Complex", "Guest House", "Faculty Quarters",
+    "Admin Block", "Cafeteria"
+  ];
+ 
   const subtypeOptions = {
-    Electrical: ["Fan", "Light", "AC", "Switchboard", "Wiring", "Other"],
-    Plumbing:   ["Tap", "Pipe Leak", "Water Pump", "Drainage", "Other"],
-    Carpentry:  ["Door", "Window", "Furniture", "Other"],
-    IT:         ["Network", "Projector", "CCTV", "Computer", "Other"],
+    Civil:       ["Plumbing", "Flooring", "Wall Damage", "Door", "Window", "Drainage", "Other"],
+    Electrical:  ["Fan", "Light", "AC", "Switchboard", "Wiring", "Other"],
+    HVAC:        ["AC Not Cooling", "AC Leaking", "Ventilation", "Heating", "Other"],
   };
  
   return (
@@ -211,10 +223,9 @@ const UserDashboard = () => {
                 setFormData({ ...formData, department: e.target.value, subtype: "" });
               }} style={{ ...inputStyle, cursor:"pointer" }}>
                 <option value="">Select Department</option>
+                <option>Civil</option>
                 <option>Electrical</option>
-                <option>Plumbing</option>
-                <option>Carpentry</option>
-                <option>IT</option>
+                <option>HVAC</option>
               </select>
             </div>
  
@@ -235,6 +246,57 @@ const UserDashboard = () => {
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+            </div>
+ 
+            {/* Area */}
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Area</label>
+              <select name="area" value={formData.area} onChange={handleInputChange} style={{ ...inputStyle, cursor:"pointer" }}>
+                <option value="">Select Area</option>
+                {AREAS.map(a => <option key={a}>{a}</option>)}
+              </select>
+            </div>
+ 
+            {/* Location */}
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Location</label>
+              <input name="location" value={formData.location} onChange={handleInputChange} placeholder="e.g., Block B, Room 204" style={inputStyle}
+                onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+                onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+            </div>
+ 
+            {/* Image Upload */}
+            <div style={{ marginBottom:24 }}>
+              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Attach Image <span style={{ color:"#9ca3af", fontWeight:400 }}>(optional)</span></label>
+              <div style={{ border:"1.5px dashed rgba(99,102,241,0.3)", borderRadius:18, padding:"20px", textAlign:"center", background:"rgba(99,102,241,0.04)", cursor:"pointer", position:"relative" }}
+                onClick={() => document.getElementById("ticketImageInput").click()}>
+                <input
+                  id="ticketImageInput"
+                  type="file"
+                  accept="image/*"
+                  style={{ display:"none" }}
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setSelectedImage(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+                {imagePreview ? (
+                  <div>
+                    <img src={imagePreview} alt="preview" style={{ maxHeight:160, borderRadius:12, marginBottom:8, maxWidth:"100%", objectFit:"cover" }} />
+                    <div style={{ fontSize:12, color:"#6366f1", fontWeight:500 }}>{selectedImage?.name}</div>
+                    <button type="button" onClick={e => { e.stopPropagation(); setSelectedImage(null); setImagePreview(null); }} style={{ marginTop:8, padding:"4px 12px", borderRadius:20, border:"1px solid rgba(239,68,68,0.3)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Remove</button>
+                  </div>
+                ) : (
+                  <div>
+                    <svg width="32" height="32" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" style={{ margin:"0 auto 8px" }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <div style={{ fontSize:13, color:"#6b7280" }}>Click to upload an image</div>
+                    <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>JPG, PNG, GIF up to 5MB</div>
+                  </div>
+                )}
+              </div>
             </div>
  
             <button onClick={handleSubmitTicket} style={{ width:"100%", padding:"15px", borderRadius:30, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:15, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 16px 48px rgba(99,102,241,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
@@ -501,4 +563,3 @@ const UserDashboard = () => {
 };
  
 export default UserDashboard;
- 
