@@ -7,6 +7,7 @@ const getStatusStyle = (status) => {
   const map = {
     overdue:      { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
     pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    "in-progress":{ color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
     resolved:     { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
     closed:       { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
@@ -17,10 +18,10 @@ const getStatusIcon = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const props = { size: 15 };
   switch (s) {
-    case "overdue":      return <AlertTriangle {...props} />;
-    case "pending":      return <Clock {...props} />;
-    case "resolved":     return <CheckCircle {...props} />;
-    case "closed":       return <XCircle {...props} />;
+    case "overdue":  return <AlertTriangle {...props} />;
+    case "pending":  return <Clock {...props} />;
+    case "resolved": return <CheckCircle {...props} />;
+    case "closed":   return <XCircle {...props} />;
     default: return null;
   }
 };
@@ -90,12 +91,8 @@ const AdminDashboard = () => {
       if (!res.ok) { alert(data.message); return; }
       setTickets(data.tickets);
       setTotalTickets(data.pagination.totalTickets);
-    } catch (e) {
-      console.error(e);
-      alert("Server error");
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); alert("Server error"); }
+    finally { setLoading(false); }
   };
  
   const fetchStats = async () => {
@@ -152,6 +149,7 @@ const AdminDashboard = () => {
     { id:"overview",    label:"Overview",    icon:"📈" },
     { id:"pending",     label:"Pending",     icon:"⏳" },
     { id:"overdue",     label:"Overdue",     icon:"⚠️" },
+    { id:"in-progress", label:"In Progress", icon:"🔄" },
     { id:"resolved",    label:"Resolved",    icon:"✅" },
     { id:"closed",      label:"Closed",      icon:"🔒" },
   ];
@@ -159,6 +157,7 @@ const AdminDashboard = () => {
   const statCards = [
     { label:"Total Tickets", value: stats.total,      icon:"📊" },
     { label:"Pending",       value: stats.pending,    icon:"⏳" },
+    { label:"In Progress",   value: stats.inProgress, icon:"🔄" },
     { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
     { label:"Resolved",      value: stats.resolved,   icon:"✅" },
   ];
@@ -169,6 +168,7 @@ const AdminDashboard = () => {
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
  
+      {/* HEADER */}
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -201,8 +201,10 @@ const AdminDashboard = () => {
         </div>
       </header>
  
+      {/* MAIN */}
       <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
  
+        {/* Stat Cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
           {statCards.map((c, i) => (
             <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
@@ -213,6 +215,7 @@ const AdminDashboard = () => {
           ))}
         </div>
  
+        {/* Tabs */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{
@@ -228,6 +231,7 @@ const AdminDashboard = () => {
           ))}
         </div>
  
+        {/* OVERVIEW */}
         {activeTab === "overview" && (
           <div>
             <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(254,226,226,0.65)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
@@ -244,11 +248,12 @@ const AdminDashboard = () => {
             </div>
             <div style={{ ...glassCard, padding:26 }}>
               <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                 {[
-                  { label:"Pending",  val: stats.pending,  color:"#d97706" },
-                  { label:"Overdue",  val: stats.overdue,  color:"#dc2626" },
-                  { label:"Resolved", val: stats.resolved, color:"#16a34a" },
+                  { label:"Pending",     val: stats.pending,    color:"#d97706" },
+                  { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
+                  { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
+                  { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
                 ].map((s,i) => (
                   <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
                     <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
@@ -260,6 +265,7 @@ const AdminDashboard = () => {
           </div>
         )}
  
+        {/* TICKET LIST */}
         {activeTab !== "overview" && (
           <div>
             {loading ? (
@@ -343,6 +349,7 @@ const AdminDashboard = () => {
         )}
       </main>
  
+      {/* TICKET MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -379,10 +386,9 @@ const AdminDashboard = () => {
         </div>
       )}
  
+      {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={() => setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
  
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
@@ -399,7 +405,6 @@ const AdminDashboard = () => {
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
  
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
@@ -409,11 +414,14 @@ const AdminDashboard = () => {
                   </button>
                 ))}
               </div>
+ 
               <form onSubmit={handleAddPeople}>
                 {[
-                  { label:"Username", key:"username", type:"text", placeholder:"Enter username" },
-                  { label:"Email", key:"email", type:"email", placeholder:"Enter email address" },
-                  { label:"Password", key:"password", type:"password", placeholder:"Set a password" },
+                  { label:"Username",     key:"username",   type:"text",     placeholder:"Enter username" },
+                  { label:"Email",        key:"email",      type:"email",    placeholder:"Enter email address" },
+                  { label:"Password",     key:"password",   type:"password", placeholder:"Set a password" },
+                  { label:"Phone Number", key:"phone",      type:"tel",      placeholder:"Enter phone number" },
+                  { label:"Employee ID",  key:"employeeId", type:"text",     placeholder:"Enter employee ID" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>{f.label}</label>
@@ -422,6 +430,7 @@ const AdminDashboard = () => {
                       value={addForm[f.key]}
                       onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
+                      autoComplete="off"
                       style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", transition:"all 0.2s" }}
                       onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
                       onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
@@ -432,16 +441,11 @@ const AdminDashboard = () => {
                 {addRole === "engineer" && (
                   <div style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
-                    <select
-                      value={addForm.department}
-                      onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))}
-                      style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }}
-                      onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
-                      onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
-                    >
+                    <select value={addForm.department} onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))} style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }} onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }} onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}>
                       <option value="">Select Department</option>
                       <option value="Civil">Civil</option>
                       <option value="Electrical">Electrical</option>
+                      <option value="HVAC">HVAC</option>
                     </select>
                   </div>
                 )}
@@ -450,16 +454,11 @@ const AdminDashboard = () => {
                   <>
                     <div style={{ marginBottom:16 }}>
                       <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
-                      <select
-                        value={addForm.department}
-                        onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))}
-                        style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }}
-                        onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
-                        onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
-                      >
+                      <select value={addForm.department} onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))} style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }} onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }} onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}>
                         <option value="">Select Department</option>
                         <option value="Civil">Civil</option>
                         <option value="Electrical">Electrical</option>
+                        <option value="HVAC">HVAC</option>
                       </select>
                     </div>
                     <div style={{ marginBottom:16 }}>
@@ -470,23 +469,7 @@ const AdminDashboard = () => {
                         {AREAS.map(area => {
                           const selected = (addForm.area || []).includes(area);
                           return (
-                            <button
-                              key={area}
-                              type="button"
-                              onClick={() => setAddForm(prev => ({
-                                ...prev,
-                                area: selected
-                                  ? (prev.area || []).filter(a => a !== area)
-                                  : [...(prev.area || []), area]
-                              }))}
-                              style={{
-                                padding:"6px 14px", borderRadius:20, border:"none", fontSize:12, fontWeight:500,
-                                fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s",
-                                background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)",
-                                color: selected ? "white" : "#6366f1",
-                                boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none",
-                              }}
-                            >
+                            <button key={area} type="button" onClick={() => setAddForm(prev => ({ ...prev, area: selected ? (prev.area || []).filter(a => a !== area) : [...(prev.area || []), area] }))} style={{ padding:"6px 14px", borderRadius:20, border:"none", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s", background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)", color: selected ? "white" : "#6366f1", boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none" }}>
                               {selected && "✓ "}{area}
                             </button>
                           );
@@ -520,3 +503,4 @@ const AdminDashboard = () => {
 };
  
 export default AdminDashboard;
+ 
