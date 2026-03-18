@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Eye, X, TrendingUp, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  
 const getStatusStyle = (status) => {
@@ -91,7 +91,6 @@ const AdminDashboard = () => {
  
   const fetchStats = async () => {
     try {
-      // Fetch counts for each status in parallel
       const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED"];
       const [allRes, ...statusRes] = await Promise.all([
         fetch("http://localhost:3000/api/admin/tickets?pg=1", { credentials:"include" }),
@@ -106,12 +105,9 @@ const AdminDashboard = () => {
         overdue:    statusData[2].pagination?.totalTickets || 0,
         resolved:   statusData[3].pagination?.totalTickets || 0,
       });
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
  
-  // Fetch when tab changes
   useEffect(() => {
     if (activeTab === "overview") {
       fetchStats();
@@ -121,12 +117,11 @@ const AdminDashboard = () => {
     }
   }, [activeTab]);
  
-  // Fetch when page changes
   useEffect(() => {
     if (activeTab !== "overview") {
       fetchTickets(activeTab, currentPage);
     }
-  }, [currentPage]);
+  }, [currentPage, activeTab]);
  
   const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
  
@@ -165,7 +160,6 @@ const AdminDashboard = () => {
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
  
-      {/* HEADER */}
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -198,10 +192,8 @@ const AdminDashboard = () => {
         </div>
       </header>
  
-      {/* MAIN */}
       <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
  
-        {/* Stat Cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
           {statCards.map((c, i) => (
             <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
@@ -212,7 +204,6 @@ const AdminDashboard = () => {
           ))}
         </div>
  
-        {/* Tabs */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{
@@ -228,7 +219,6 @@ const AdminDashboard = () => {
           ))}
         </div>
  
-        {/* OVERVIEW */}
         {activeTab === "overview" && (
           <div>
             <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(254,226,226,0.65)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
@@ -243,14 +233,13 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
- 
             <div style={{ ...glassCard, padding:26 }}>
               <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
                 {[
-                  { label:"Pending",     val: stats.pending,    color:"#d97706" },
-                  { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
-                  { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
+                  { label:"Pending",  val: stats.pending,  color:"#d97706" },
+                  { label:"Overdue",  val: stats.overdue,  color:"#dc2626" },
+                  { label:"Resolved", val: stats.resolved, color:"#16a34a" },
                 ].map((s,i) => (
                   <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
                     <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
@@ -262,7 +251,6 @@ const AdminDashboard = () => {
           </div>
         )}
  
-        {/* TICKET LIST */}
         {activeTab !== "overview" && (
           <div>
             {loading ? (
@@ -312,7 +300,6 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                       </div>
- 
                       <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)" }}>
                         <button onClick={() => setSelectedTicket(t)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
                           <Eye size={15} /> View Details
@@ -321,8 +308,6 @@ const AdminDashboard = () => {
                     </div>
                   );
                 })}
- 
-                {/* PAGINATION */}
                 {totalPages > 1 && (
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
                     <div style={{ fontSize:13, color:"#6b7280" }}>
@@ -349,7 +334,6 @@ const AdminDashboard = () => {
         )}
       </main>
  
-      {/* MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -360,7 +344,6 @@ const AdminDashboard = () => {
                 <X size={15} />
               </button>
             </div>
- 
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 {[
@@ -387,13 +370,10 @@ const AdminDashboard = () => {
         </div>
       )}
  
-      {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={() => setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
- 
-            {/* Header */}
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -407,10 +387,7 @@ const AdminDashboard = () => {
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
- 
-            <div style={{ padding:"24px 28px" }}>
- 
-              {/* Role Toggle */}
+            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
                 {["engineer","technician"].map(r => (
                   <button key={r} onClick={() => { setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: addRole === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: addRole === r ? "white" : "#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow: addRole === r ? "0 4px 14px rgba(99,102,241,0.3)" : "none", transition:"all 0.2s", textTransform:"capitalize" }}>
@@ -418,7 +395,6 @@ const AdminDashboard = () => {
                   </button>
                 ))}
               </div>
- 
               <form onSubmit={handleAddPeople}>
                 {[
                   { label:"Username", key:"username", type:"text", placeholder:"Enter username" },
@@ -438,7 +414,6 @@ const AdminDashboard = () => {
                     />
                   </div>
                 ))}
- 
                 {addRole === "engineer" && (
                   <div style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
@@ -455,7 +430,6 @@ const AdminDashboard = () => {
                     </select>
                   </div>
                 )}
- 
                 <div style={{ display:"flex", gap:10, marginTop:24 }}>
                   <button type="button" onClick={() => setShowAddPeople(false)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                     Cancel
@@ -475,4 +449,3 @@ const AdminDashboard = () => {
 };
  
 export default AdminDashboard;
- 
