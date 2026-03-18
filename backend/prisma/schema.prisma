@@ -40,29 +40,38 @@ model Engineer {
   email      String @unique
   password   String
   department String @default("General")
+  phone      String @default("")
+  employeeId String @default("")
 
   @@map("engineer")
 }
 
 model Technician {
-  id       Int    @id @default(autoincrement())
-  username String
-  email    String @unique
-  password String
+  id         Int    @id @default(autoincrement())
+  username   String
+  email      String @unique
+  password   String
+  department String @default("General")
+  area       String @default("General")
+  phone      String @default("")
+  employeeId String @default("")
 
   @@map("technician")
 }
 
 model Ticket {
-  id      Int     @id @default(autoincrement())
-  type    String
-  subtype String
-  subject String
-  body    String
-  prevId  Int?
-  prev    Ticket?  @relation("TicketChain", fields: [prevId], references: [id])
-  next    Ticket[] @relation("TicketChain")
-  status  String
+  id       Int     @id @default(autoincrement())
+  type     String
+  subtype  String
+  subject  String
+  body     String
+  area     String  @default("")
+  location String  @default("")
+  imageUrl String  @default("")
+  prevId   Int?
+  prev     Ticket?  @relation("TicketChain", fields: [prevId], references: [id])
+  next     Ticket[] @relation("TicketChain")
+  status   String
 
   satisfied Boolean @default(false)
 
