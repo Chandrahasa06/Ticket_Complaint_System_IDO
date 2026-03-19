@@ -133,11 +133,11 @@ const TechnicianDashboard = () => {
 
           {/* Right side buttons */}
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={() => { setShowChangePassword(true); setPwForm({ current:"", newPw:"", confirm:"" }); }}
+            {/* <button onClick={() => { setShowChangePassword(true); setPwForm({ current:"", newPw:"", confirm:"" }); }}
               style={{ padding:"10px 18px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(99,102,241,0.08)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:7 }}>
               <KeyRound size={15} />
               Change Password
-            </button>
+            </button> */}
             <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
               Logout
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>

@@ -175,14 +175,14 @@ userRouter.put("/tickets/:id/satisfied", async (req, res) => {
 userRouter.post("/followup", async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
  
-    const { type, subtype, subject, body, prevId } = req.body;
-    if(!type || !subtype || !subject || !body || !prevId) {
+    const { type, subject, body, prevId } = req.body;
+    if(!type || !subject || !body || !prevId) {
         return res.status(400).json({ message: "All fields are required!" });
     }
  
     try {
         const ticket = await prisma.ticket.create({
-            data: { type, subtype, subject, body, prevId, status: "PENDING", userId: req.user.id }
+            data: { type, subject, body, prevId, status: "PENDING", userId: req.user.id }
         });
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     } catch(e) {
