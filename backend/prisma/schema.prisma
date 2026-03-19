@@ -62,7 +62,6 @@ model Technician {
 model Ticket {
   id       Int     @id @default(autoincrement())
   type     String
-  subtype  String
   subject  String
   body     String
   area     String  @default("")

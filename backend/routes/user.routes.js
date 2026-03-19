@@ -132,9 +132,9 @@ userRouter.get("/tickets", async (req, res) => {
 userRouter.post("/raise", upload.single("image"), async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
  
-    const { type, subtype, subject, body, area, location } = req.body;
+    const { type, subject, body, area, location } = req.body;
  
-    if(!type || !subtype || !subject || !body || !area || !location) {
+    if(!type || !subject || !body || !area || !location) {
         return res.status(400).json({ message: "All fields are required!" });
     }
  
@@ -143,7 +143,7 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
  
         const ticket = await prisma.ticket.create({
             data: {
-                type, subtype, subject, body,
+                type, subject, body,
                 area, location, imageUrl,
                 status: "PENDING",
                 userId: req.user.id,
