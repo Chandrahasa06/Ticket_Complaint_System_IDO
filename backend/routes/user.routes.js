@@ -8,6 +8,8 @@ import { checkAuth } from "../middlewares/checkAuth.js";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import otpGenerator from "otp-generator";
+import { sendOTPEmail } from "../middlewares/OTPmailer.js";
  
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -62,6 +64,81 @@ userRouter.post("/register", async(req, res) => {
         res.status(500).json({ message: "Internal server error" });
         console.log(e);
     }
+});
+
+userRouter.post("/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.endsWith("@iiti.ac.in")) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
+
+    const user = await prisma.user.findUnique({
+        where: {
+            email: email,
+        }
+    })
+
+    if(user){
+        return res.status(409).json({ message: "Email already exists" });
+    }
+
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await prisma.otp.upsert({
+      where: { email },
+      update: { otp, expiresAt },
+      create: { email, otp, expiresAt },
+    });
+
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: "OTP sent to email" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+});
+
+userRouter.post("/verify-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const record = await prisma.otp.findUnique({
+      where: { email },
+    });
+
+    if (!record) {
+      return res.status(400).json({ message: "No OTP found" });
+    }
+
+    if (new Date() > record.expiresAt) {
+      await prisma.otp.delete({ where: { email } });
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    if (record.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    await prisma.otp.delete({
+      where: { email },
+    });
+
+    res.json({ message: "OTP verified" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
  
 userRouter.post("/login", async(req, res) => {

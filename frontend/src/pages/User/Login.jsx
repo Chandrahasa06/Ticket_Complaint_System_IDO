@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import OTPModal from "../../components/OTPModal";
  
 const UserLogin = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ const UserLogin = () => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState({ email:false, password:false, regUsername:false, regEmail:false, regPassword:false });
  
   const handleLogin = async (e) => {
@@ -31,20 +34,38 @@ const UserLogin = () => {
  
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (loading) return;
     try {
       if (!regUsername || !regEmail || !regPassword) { alert("All fields are required!"); return; }
       if (!regEmail.endsWith("@iiti.ac.in")) { alert("Only @iiti.ac.in email addresses are allowed!"); return; }
-      const res = await fetch("http://localhost:3000/api/user/register", {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: regUsername, email: regEmail, password: regPassword }),
+
+      setLoading(true);
+
+      const res = await fetch("http://localhost:3000/api/user/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: regEmail,
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Registration failed"); return; }
-      alert("Account created successfully! Please login.");
-      setMode("login");
-      setRegUsername(""); setRegEmail(""); setRegPassword("");
-    } catch (err) { console.error(err); alert("Server error"); }
+
+      if (!res.ok) {
+        alert(data.message || "Failed to send OTP");
+        return;
+      }
+
+      setShowOtpModal(true)
+    } 
+    catch (err) { 
+      console.error(err); alert("Server error"); 
+    }
+    finally {
+      setLoading(false);
+    }
   };
  
   const focus = (key) => setIsFocused(prev => ({ ...prev, [key]: true }));
@@ -154,27 +175,32 @@ const UserLogin = () => {
               </div>
             </div>
  
-            {/* iiti.ac.in info badge */}
-            <div style={{ marginBottom:20, padding:"11px 14px", borderRadius:16, background:"rgba(99,102,241,0.07)", border:"1px solid rgba(99,102,241,0.18)", display:"flex", alignItems:"center", gap:10 }}>
-              <svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24" style={{ flexShrink:0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <div style={{ fontSize:12, color:"#6b7280" }}>Only <span style={{ color:"#4f46e5", fontWeight:600 }}>@iiti.ac.in</span> email addresses are permitted</div>
-            </div>
- 
             <button type="submit" style={{ width:"100%", padding:"15px", borderRadius:30, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:15, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 16px 48px rgba(99,102,241,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+              {loading? (<>Sending OTP...</>):
+              (<>
               <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
               Create Account
               <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+              </>)}
             </button>
           </form>
         )}
  
-        <div style={{ textAlign:"center", marginTop:20, fontSize:12, color:"#9ca3af" }}>
-          By continuing, you agree to our{" "}
-          <button style={{ background:"none", border:"none", fontSize:12, color:"#6366f1", cursor:"pointer", fontFamily:"inherit" }}>Terms of Service</button>
-          {" "}and{" "}
-          <button style={{ background:"none", border:"none", fontSize:12, color:"#6366f1", cursor:"pointer", fontFamily:"inherit" }}>Privacy Policy</button>
-        </div>
       </div>
+      <OTPModal
+        isOpen={showOtpModal}
+        email={regEmail}
+        username={regUsername}
+        password={regPassword}
+        onClose={() => setShowOtpModal(false)}
+        onSuccess={() => {
+          setMode("login");
+          setRegUsername("");
+          setRegEmail("");
+          setRegPassword("");
+          alert("Account created successfully! Please login.");
+        }}
+      />
     </div>
   );
 };
