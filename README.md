@@ -36,7 +36,31 @@ root/
     ├── prisma.config.ts
     └── server.js
 ```
-
+## ✨ Features
+ 
+### 🔐 Authentication & Account Management
+- **OTP Verified Registration** — Both Users and Technicians register exclusively via OTP verification for secure onboarding
+- **Change Password** — Technicians and Engineers can securely update their passwords
+ 
+### 👤 User Dashboard
+- **Raise a Ticket** — Users can submit new complaint tickets directly from their dashboard
+- **Follow-up on Tickets** — Users can follow up on existing complaints to get updates on progress
+- **Track Complaint Status** — View the current status of all raised tickets in one place
+ 
+### 🔧 Technician Dashboard
+- **View Assigned Complaints** — Technicians can see all complaints assigned to them tot heir respective department
+- **Resolve Complaints** — Technicians can mark complaints as resolved with a single click of the **Okay** button
+- **Complaint Details** — View full details of each complaint before resolving
+ 
+### 👷 Engineer Dashboard
+- **Oversee Tickets** — Engineers can monitor and oversee all complaint tickets with respective of their departments across the system
+ 
+### 🛡️ Admin Panel
+- **Manage Engineers** — Admins can add new Engineers to the system
+- **Manage Technicians** — Admins can add new Technicians to the system
+- and overseeing the tickets as well
+ 
+---
 ---
 
 ## ⚙️ Prerequisites
@@ -88,6 +112,8 @@ cd backend
 npm install
 npx prisma generate
 npx nodemon server.js
+npm install multer
+npm install otp-generator
 ```
 
 > The backend server should now be running at `http://localhost:3000` (or whichever port you've configured).
