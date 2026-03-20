@@ -136,7 +136,10 @@ Create a `.env` file inside the `backend/` folder:
 ```dotenv
 DATABASE_URL="postgresql://<db_user>:<db_password>@<db_host>/<db_name>?sslmode=require&channel_binding=require"
 JWT_SECRET="your_jwt_secret_key_here"
+EMAIL="your_gmail_address@iiti.ac.in"
+EMAIL_PASS="your_gmail_app_password"
 ```
+> 📧 **Note on OTP Email:** For the OTP system to work, you need to use **your own Gmail address** and a **Gmail App Password** (not your regular Gmail password). You can generate one from [Google Account → Security → App Passwords](https://myaccount.google.com/apppasswords). We have not shared our credentials here for privacy reasons — kindly use your own.
 ---
 
 ## 📋 Available Scripts
