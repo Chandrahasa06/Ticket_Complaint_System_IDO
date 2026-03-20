@@ -69,6 +69,10 @@ Make sure you have the following installed before running the project:
 - [Node.js](https://nodejs.org/) (v18 or higher recommended)
 - [npm](https://www.npmjs.com/)
 - [Git](https://git-scm.com/)
+-  [Nodemon](https://www.npmjs.com/package/nodemon) — Install globally by running:
+  ```bash
+  npm install -g nodemon
+  ```
 
 ---
 
@@ -110,9 +114,9 @@ Open a **new/second terminal window**, then:
 cd backend
 npm install
 npx prisma generate
-npx nodemon server.js
-npm install multer
-npm install otp-generator
+nodemon server.js
+install multer
+install otp-generator
 ```
 
 > The backend server should now be running at `http://localhost:3000` (or whichever port you've configured).
