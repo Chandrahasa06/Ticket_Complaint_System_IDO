@@ -45,7 +45,6 @@ root/
 ### 👤 User Dashboard
 - **Raise a Ticket** — Users can submit new complaint tickets directly from their dashboard
 - **Follow-up on Tickets** — Users can follow up on existing complaints to get updates on progress
-- **Track Complaint Status** — View the current status of all raised tickets in one place
  
 ### 🔧 Technician Dashboard
 - **View Assigned Complaints** — Technicians can see all complaints assigned to them tot heir respective department
