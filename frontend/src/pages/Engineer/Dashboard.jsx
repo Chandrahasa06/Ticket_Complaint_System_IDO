@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< Updated upstream
-import { X, Mail, Activity, Clock, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
-=======
-import { X, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, Mail } from "lucide-react";
->>>>>>> Stashed changes
+import { X, Mail, Activity, Clock, AlertTriangle, CheckCircle, UserCheck, KeyRound, EyeOff, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const glassCard = {
@@ -39,7 +35,7 @@ const EngineerDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [viewTechnician, setViewTechnician] = useState(null);
 
-  // Change Password state (lives inside Profile modal)
+  // ── Change Password state ────────────────────────────────────────────────
   const [showChangePw, setShowChangePw] = useState(false);
   const [pwForm, setPwForm] = useState({ current:"", newPw:"", confirm:"" });
   const [pwShow, setPwShow] = useState({ current:false, newPw:false, confirm:false });
@@ -124,7 +120,7 @@ const EngineerDashboard = () => {
     } catch (error) { console.error("Logout error:", error); }
   };
 
-  // Reset & close change-password section
+  // ── Change Password helpers ──────────────────────────────────────────────
   const resetPwForm = () => {
     setPwForm({ current:"", newPw:"", confirm:"" });
     setPwShow({ current:false, newPw:false, confirm:false });
@@ -182,12 +178,12 @@ const EngineerDashboard = () => {
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
   const tabs = [
-    { key:"pending",     label:"Pending"   },
-    { key:"in-progress", label:"In Progress" },
-    { key:"overdue",     label:"Overdue"},
-    { key:"resolved",    label:"Resolved"},
-    { key:"closed",      label:"Closed" },
-    { key:"technicians", label:"My Team",customCount: technicians.length },
+    { key:"pending",     label:"Pending",    icon:"⏳" },
+    { key:"in-progress", label:"In Progress", icon:"🔄" },
+    { key:"overdue",     label:"Overdue",     icon:"⚠️" },
+    { key:"resolved",    label:"Resolved",    icon:"✅" },
+    { key:"closed",      label:"Closed",      icon:"🔒" },
+    { key:"technicians", label:"My Team",     icon:"👥", customCount: technicians.length },
   ];
 
   return (
@@ -195,7 +191,6 @@ const EngineerDashboard = () => {
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
 
-      {/* HEADER */}
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -206,31 +201,20 @@ const EngineerDashboard = () => {
               <svg width="22" height="22" fill="white" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" /></svg>
             </div>
             <div>
-              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Welcome, {engineerInfo.username} </div>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Welcome, {engineerInfo.username} 👋</div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
                 {engineerInfo.department} Department
               </div>
             </div>
           </div>
-<<<<<<< Updated upstream
           <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
             Logout
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           </button>
-=======
-
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-              Logout
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-            </button>
-          </div>
->>>>>>> Stashed changes
         </div>
       </header>
 
-      {/* TABS */}
       <div style={{ position:"sticky", top:68, zIndex:90, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.45)", borderBottom:"1px solid rgba(255,255,255,0.5)", boxShadow:"0 4px 16px rgba(0,0,0,0.04)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"14px 32px", display:"flex", gap:10, flexWrap:"wrap" }}>
           {tabs.map(tab => {
@@ -350,26 +334,18 @@ const EngineerDashboard = () => {
           </div>
         )}
       </div>
-<<<<<<< Updated upstream
- 
-      {/* PROFILE MODAL - higher zIndex to prevent overlap */}
-      {showProfile && profile && (
-        <div onClick={() => setShowProfile(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-=======
 
       {/* ── PROFILE MODAL with Change Password accordion inside ──────────── */}
       {showProfile && profile && (
         <div
           onClick={() => { setShowProfile(false); resetPwForm(); }}
-          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}
         >
           <div
             onClick={e => e.stopPropagation()}
             style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}
           >
             {/* Header */}
->>>>>>> Stashed changes
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Your account details</div>
@@ -383,7 +359,7 @@ const EngineerDashboard = () => {
 
             <div style={{ padding:"24px 28px", maxHeight:"80vh", overflowY:"auto" }}>
               {/* Avatar */}
-              <div style={{ textAlign:"center", marginBottom:22 }}>
+              <div style={{ textAlign:"center", marginBottom:24 }}>
                 <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:28, fontWeight:700, margin:"0 auto 12px", boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
                   {(profile.username || "E").charAt(0).toUpperCase()}
                 </div>
@@ -531,13 +507,8 @@ const EngineerDashboard = () => {
           </div>
         </div>
       )}
-<<<<<<< Updated upstream
- 
-      {/* TICKET DETAILS MODAL */}
-=======
 
-      {/* TICKET DETAIL MODAL */}
->>>>>>> Stashed changes
+      {/* TICKET DETAILS MODAL */}
       {selectedTicket && (
         <GlassModal onClose={() => setSelectedTicket(null)} title="Ticket Details">
           {[
@@ -556,13 +527,8 @@ const EngineerDashboard = () => {
           ))}
         </GlassModal>
       )}
-<<<<<<< Updated upstream
- 
-      {/* TECHNICIAN DETAILS MODAL */}
-=======
 
-      {/* TECHNICIAN DETAIL MODAL */}
->>>>>>> Stashed changes
+      {/* TECHNICIAN DETAILS MODAL */}
       {viewTechnician && (
         <GlassModal onClose={() => setViewTechnician(null)} title="Technician Profile">
           <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -572,17 +538,11 @@ const EngineerDashboard = () => {
             <div style={{ fontSize:13, color:"#9ca3af" }}>{viewTechnician.area}</div>
           </div>
           {[
-<<<<<<< Updated upstream
-            { icon: <Mail size={16} color="#6366f1" />,      label:"EMAIL",      val: viewTechnician.email },
+            { icon: <Mail size={16} color="#6366f1" />,      label:"EMAIL",       val: viewTechnician.email },
             { icon: <UserCheck size={16} color="#6366f1" />, label:"EMPLOYEE ID", val: viewTechnician.employeeId || "Not added" },
-            { icon: <Activity size={16} color="#6366f1" />,  label:"PHONE",      val: viewTechnician.phone || "Not added" },
-            { icon: <UserCheck size={16} color="#6366f1" />, label:"DEPARTMENT", val: viewTechnician.department },
-            { icon: <Activity size={16} color="#6366f1" />,  label:"AREA",       val: viewTechnician.area },
-=======
-            { icon: <Mail size={16} color="#6366f1" />,     label:"EMAIL",      val: viewTechnician.email },
-            { icon: <Activity size={16} color="#6366f1" />, label:"DEPARTMENT", val: viewTechnician.department },
-            { icon: <Activity size={16} color="#6366f1" />, label:"AREA",       val: viewTechnician.area },
->>>>>>> Stashed changes
+            { icon: <Activity size={16} color="#6366f1" />,  label:"PHONE",       val: viewTechnician.phone || "Not added" },
+            { icon: <UserCheck size={16} color="#6366f1" />, label:"DEPARTMENT",  val: viewTechnician.department },
+            { icon: <Activity size={16} color="#6366f1" />,  label:"AREA",        val: viewTechnician.area },
           ].map((f,i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
               {f.icon}
@@ -617,152 +577,5 @@ const GlassModal = ({ children, onClose, title }) => (
     </div>
   </div>
 );
-<<<<<<< Updated upstream
- 
-export default EngineerDashboard;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
 
 export default EngineerDashboard;
->>>>>>> Stashed changes
