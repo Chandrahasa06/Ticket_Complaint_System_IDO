@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
     const ext = allowed.test(path.extname(file.originalname).toLowerCase());
@@ -65,76 +65,76 @@ userRouter.post("/register", async(req, res) => {
         console.log(e);
     }
 });
-
+ 
 userRouter.post("/send-otp", async (req, res) => {
   try {
     const { email } = req.body;
-
+ 
     if (!email || !email.endsWith("@iiti.ac.in")) {
       return res.status(400).json({ message: "Invalid email" });
     }
-
+ 
     const user = await prisma.user.findUnique({
         where: {
             email: email,
         }
     })
-
+ 
     if(user){
         return res.status(409).json({ message: "Email already exists" });
     }
-
+ 
     const otp = otpGenerator.generate(6, {
       upperCaseAlphabets: false,
       lowerCaseAlphabets: false,
       specialChars: false,
     });
-
+ 
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
-
+ 
     await prisma.otp.upsert({
       where: { email },
       update: { otp, expiresAt },
       create: { email, otp, expiresAt },
     });
-
+ 
     await sendOTPEmail(email, otp);
-
+ 
     res.json({ message: "OTP sent to email" });
-
+ 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to send OTP" });
   }
 });
-
+ 
 userRouter.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
-
+ 
     const record = await prisma.otp.findUnique({
       where: { email },
     });
-
+ 
     if (!record) {
       return res.status(400).json({ message: "No OTP found" });
     }
-
+ 
     if (new Date() > record.expiresAt) {
       await prisma.otp.delete({ where: { email } });
       return res.status(400).json({ message: "OTP expired" });
     }
-
+ 
     if (record.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-
+ 
     await prisma.otp.delete({
       where: { email },
     });
-
+ 
     res.json({ message: "OTP verified" });
-
+ 
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -249,6 +249,28 @@ userRouter.put("/tickets/:id/satisfied", async (req, res) => {
     }
 });
  
+// CANCEL TICKET - deletes the ticket completely
+userRouter.delete("/tickets/:id/cancel", async(req, res) => {
+    if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
+ 
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: Number(req.params.id) }
+        });
+        if(!ticket) return res.status(404).json({ message: "Ticket not found" });
+        if(ticket.userId !== req.user.id) return res.status(403).json({ message: "Access denied" });
+        if(ticket.status !== "PENDING") return res.status(400).json({ message: "Only pending tickets can be cancelled" });
+ 
+        await prisma.ticket.delete({
+            where: { id: Number(req.params.id) }
+        });
+        res.json({ message: "Ticket cancelled successfully" });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+ 
 userRouter.post("/followup", async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
  
@@ -269,4 +291,3 @@ userRouter.post("/followup", async(req, res) => {
 });
  
 export default userRouter;
- 

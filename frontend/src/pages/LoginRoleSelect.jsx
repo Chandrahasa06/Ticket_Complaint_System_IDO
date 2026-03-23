@@ -1,10 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+ 
 const LoginRoleSelect = ({ setPage }) => {
   const [hoveredRole, setHoveredRole] = useState(null);
+  const [serverStatus, setServerStatus] = useState("checking"); // "checking" | "online" | "offline"
   const navigate = useNavigate();
-
+ 
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/health", { method: "GET" });
+        if (res.ok) setServerStatus("online");
+        else setServerStatus("offline");
+      } catch {
+        setServerStatus("offline");
+      }
+    };
+    checkServer();
+  }, []);
+ 
+  const statusConfig = {
+    checking: { color:"#fbbf24", text:"Checking...",   dot:"#fbbf24" },
+    online:   { color:"#16a34a", text:"System Online", dot:"#22c55e" },
+    offline:  { color:"#dc2626", text:"Server Offline", dot:"#ef4444" },
+  };
+  const status = statusConfig[serverStatus];
+ 
   const roles = [
     {
       id: "user-login",
@@ -52,7 +73,7 @@ const LoginRoleSelect = ({ setPage }) => {
       path: "/login/technician",
     },
   ];
-
+ 
   return (
     <div style={{
       minHeight: "100vh",
@@ -67,17 +88,13 @@ const LoginRoleSelect = ({ setPage }) => {
       fontFamily: "'Inter','Segoe UI',sans-serif",
       color: "#111827",
     }}>
-
-      {/* Blobs */}
+ 
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.5, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.5, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
-
-      {/* Content */}
+ 
       <div style={{ position:"relative", zIndex:10, width:"100%", maxWidth:860 }}>
-
-        {/* Header */}
+ 
         <div style={{ textAlign:"center", marginBottom:52 }}>
-          {/* Logo icon */}
           <div style={{
             display:"inline-flex", alignItems:"center", justifyContent:"center",
             width:70, height:70, borderRadius:22,
@@ -89,7 +106,7 @@ const LoginRoleSelect = ({ setPage }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-
+ 
           <div style={{ fontSize:42, fontWeight:600, lineHeight:1.15, marginBottom:12 }}>
             <span style={{ background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
               Ticket Management
@@ -101,10 +118,9 @@ const LoginRoleSelect = ({ setPage }) => {
           </div>
           <div style={{ fontSize:16, color:"#6b7280" }}>Select your role to continue</div>
         </div>
-
-        {/* Role Cards Grid */}
+ 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-          {roles.map((role, index) => (
+          {roles.map((role) => (
             <button
               key={role.id}
               onClick={() => navigate(role.path)}
@@ -127,7 +143,6 @@ const LoginRoleSelect = ({ setPage }) => {
                 fontFamily: "'Inter','Segoe UI',sans-serif",
               }}
             >
-              {/* Icon */}
               <div style={{
                 display:"inline-flex", alignItems:"center", justifyContent:"center",
                 width:58, height:58, borderRadius:18,
@@ -139,43 +154,37 @@ const LoginRoleSelect = ({ setPage }) => {
               }}>
                 {role.icon}
               </div>
-
-              {/* Text */}
-              <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:6 }}>
-                {role.title}
-              </div>
-              <div style={{ fontSize:14, color:"#6b7280", marginBottom:20 }}>
-                {role.description}
-              </div>
-
-              {/* Continue arrow */}
+              <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:6 }}>{role.title}</div>
+              <div style={{ fontSize:14, color:"#6b7280", marginBottom:20 }}>{role.description}</div>
               <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:13, fontWeight:500, color: hoveredRole === role.id ? "#6366f1" : "#9ca3af", transition:"color 0.2s" }}>
                 Continue
-                <svg
-                  width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  style={{ transform: hoveredRole === role.id ? "translateX(4px)" : "translateX(0)", transition:"transform 0.2s ease" }}
-                >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  style={{ transform: hoveredRole === role.id ? "translateX(4px)" : "translateX(0)", transition:"transform 0.2s ease" }}>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </div>
             </button>
           ))}
         </div>
-
-        {/* Footer */}
+ 
         <div style={{ textAlign:"center", marginTop:40 }}>
           <div style={{ fontSize:13, color:"#9ca3af", marginBottom:10 }}>
             Secure access to your ticketing portal
           </div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
-            <span style={{ width:8, height:8, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
-            <span style={{ fontSize:12, fontWeight:500, color:"#16a34a" }}>System Online</span>
+            <span style={{
+              width:8, height:8, borderRadius:"50%",
+              background: status.dot,
+              display:"inline-block",
+              boxShadow: serverStatus === "online" ? "0 0 6px #22c55e" : serverStatus === "offline" ? "0 0 6px #ef4444" : "none",
+            }} />
+            <span style={{ fontSize:12, fontWeight:500, color: status.color }}>{status.text}</span>
           </div>
         </div>
-
+ 
       </div>
     </div>
   );
 };
-
+ 
 export default LoginRoleSelect;

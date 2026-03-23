@@ -16,7 +16,6 @@ const UserDashboard = () => {
   const [followupTicket, setFollowupTicket] = useState(null);
   const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
   const [formData, setFormData] = useState({ title:"", department:"", description:"", area:"", location:"" });
-  // const [formData, setFormData] = useState({ title:"", department:"", subtype:"", description:"", area:"", location:"" });
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [tickets, setTickets] = useState([]);
@@ -52,7 +51,6 @@ const UserDashboard = () => {
     try {
       const fd = new FormData();
       fd.append("type", formData.department);
-      // fd.append("subtype", formData.subtype);
       fd.append("subject", formData.title);
       fd.append("body", formData.description);
       fd.append("area", formData.area);
@@ -67,11 +65,28 @@ const UserDashboard = () => {
       const data = await response.json();
       if (!response.ok) { alert(data.message); return; }
       alert("Ticket raised successfully!");
-      // setFormData({ title:"", department:"", subtype:"", description:"", area:"", location:"" });
       setFormData({ title:"", department:"", description:"", area:"", location:"" });
       setSelectedImage(null);
       setImagePreview(null);
     } catch (error) {
+      console.error(error);
+      alert("Server error");
+    }
+  };
+ 
+  const handleCancelTicket = async (id) => {
+    if(!window.confirm("Are you sure you want to cancel this ticket?")) return;
+    try {
+      const response = await fetch(`http://localhost:3000/api/user/tickets/${id}/cancel`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await response.json();
+      if(!response.ok) { alert(data.message); return; }
+      alert("Ticket cancelled successfully!");
+      setSelectedTicket(null);
+      fetchTickets("PENDING");
+    } catch(error) {
       console.error(error);
       alert("Server error");
     }
@@ -89,7 +104,7 @@ const UserDashboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: followupTicket.type,
-          // subtype: followupTicket.subtype,
+          subtype: followupTicket.subtype,
           subject: followupForm.title,
           body: followupForm.description,
           prevId: followupTicket.id,
@@ -213,9 +228,16 @@ const UserDashboard = () => {
             </div>
  
             <div style={{ marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Complaint Title</label>
+              <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle}
+                onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+                onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+            </div>
+ 
+            <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
               <select name="department" value={formData.department} onChange={e => {
-                setFormData({ ...formData, department: e.target.value });
+                setFormData({ ...formData, department: e.target.value, subtype: "" });
               }} style={{ ...inputStyle, cursor:"pointer" }}>
                 <option value="">Select Department</option>
                 <option>Civil</option>
@@ -223,7 +245,16 @@ const UserDashboard = () => {
                 <option>HVAC</option>
               </select>
             </div>
-
+ 
+ 
+ 
+            <div style={{ marginBottom:24 }}>
+              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
+              <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
+                onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+                onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+            </div>
+ 
             {/* Area */}
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Area</label>
@@ -240,33 +271,6 @@ const UserDashboard = () => {
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
-
-            <div style={{ marginBottom:20 }}>
-              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Complaint Title</label>
-              <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle}
-                onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-            </div>
- 
-            {/* {formData.department && (
-              <div style={{ marginBottom:20 }}>
-                <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Issue Type</label>
-                <select name="subtype" value={formData.subtype} onChange={handleInputChange} style={{ ...inputStyle, cursor:"pointer" }}>
-                  <option value="">Select Issue Type</option>
-                  {(subtypeOptions[formData.department] || []).map(opt => (
-                    <option key={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-            )} */}
- 
-            <div style={{ marginBottom:24 }}>
-              <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
-              <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
-                onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-            </div>
- 
  
             {/* Image Upload */}
             <div style={{ marginBottom:24 }}>
@@ -344,10 +348,10 @@ const UserDashboard = () => {
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                           {new Date(ticket.createdAt).toLocaleDateString()}
                         </div>
-                        {/* <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
                           {ticket.subtype}
-                        </div> */}
+                        </div>
                       </div>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -402,10 +406,10 @@ const UserDashboard = () => {
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                             {ticket.type}
                           </div>
-                          {/* <div style={{ display:"flex", alignItems:"center", gap:6, color:"#16a34a" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, color:"#16a34a" }}>
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
                             <span style={{ fontWeight:500 }}>{ticket.subtype}</span>
-                          </div> */}
+                          </div>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             {new Date(ticket.createdAt).toLocaleDateString()}
@@ -476,7 +480,7 @@ const UserDashboard = () => {
                 {[
                   { label:"ISSUE TITLE",  val: selectedTicket.subject, span: true },
                   { label:"DEPARTMENT",   val: selectedTicket.type },
-                  // { label:"ISSUE TYPE",   val: selectedTicket.subtype },
+                  { label:"ISSUE TYPE",   val: selectedTicket.subtype },
                   { label:"CREATED DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
                   { label:"TICKET ID",    val: selectedTicket.id },
                 ].map((f, i) => (
@@ -495,7 +499,7 @@ const UserDashboard = () => {
                   Close
                 </button>
                 {selectedTicket.status === "PENDING" && (
-                  <button style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                  <button onClick={() => handleCancelTicket(selectedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     Cancel Ticket
                   </button>
@@ -530,10 +534,10 @@ const UserDashboard = () => {
                   <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
                   <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
                 </div>
-                {/* <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                   <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>ISSUE TYPE</div>
                   <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.subtype}</div>
-                </div> */}
+                </div>
               </div>
               <div style={{ marginBottom:16 }}>
                 <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>

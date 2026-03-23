@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Star, Phone, Mail, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye } from "lucide-react";
+import { X, Mail, Activity, Clock, AlertTriangle, CheckCircle, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  
 const glassCard = {
@@ -140,20 +140,10 @@ const EngineerDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Right side buttons */}
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <button
-              onClick={() => { setShowChangePassword(true); setPwForm({ current:"", newPw:"", confirm:"" }); }}
-              style={{ padding:"10px 18px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(99,102,241,0.08)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:7 }}>
-              <KeyRound size={15} />
-              Change Password
-            </button>
-            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-              Logout
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-            </button>
-          </div>
+          <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            Logout
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
         </div>
       </header>
  
@@ -277,9 +267,9 @@ const EngineerDashboard = () => {
         )}
       </div>
  
-      {/* PROFILE MODAL */}
+      {/* PROFILE MODAL - higher zIndex to prevent overlap */}
       {showProfile && profile && (
-        <div onClick={() => setShowProfile(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+        <div onClick={() => setShowProfile(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
@@ -311,6 +301,7 @@ const EngineerDashboard = () => {
         </div>
       )}
  
+      {/* TICKET DETAILS MODAL */}
       {selectedTicket && (
         <GlassModal onClose={() => setSelectedTicket(null)} title="Ticket Details">
           {[
@@ -330,6 +321,7 @@ const EngineerDashboard = () => {
         </GlassModal>
       )}
  
+      {/* TECHNICIAN DETAILS MODAL */}
       {viewTechnician && (
         <GlassModal onClose={() => setViewTechnician(null)} title="Technician Profile">
           <div style={{ textAlign:"center", marginBottom:20 }}>
@@ -340,6 +332,8 @@ const EngineerDashboard = () => {
           </div>
           {[
             { icon: <Mail size={16} color="#6366f1" />,      label:"EMAIL",      val: viewTechnician.email },
+            { icon: <UserCheck size={16} color="#6366f1" />, label:"EMPLOYEE ID", val: viewTechnician.employeeId || "Not added" },
+            { icon: <Activity size={16} color="#6366f1" />,  label:"PHONE",      val: viewTechnician.phone || "Not added" },
             { icon: <UserCheck size={16} color="#6366f1" />, label:"DEPARTMENT", val: viewTechnician.department },
             { icon: <Activity size={16} color="#6366f1" />,  label:"AREA",       val: viewTechnician.area },
           ].map((f,i) => (
@@ -376,3 +370,145 @@ const GlassModal = ({ children, onClose, title }) => (
 );
  
 export default EngineerDashboard;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
