@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
- 
+
 const glassCard = {
   borderRadius: 28,
   backdropFilter: "blur(30px)",
@@ -8,11 +8,13 @@ const glassCard = {
   background: "rgba(255,255,255,0.6)",
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
 };
- 
+
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [prevTicket, setPrevTicket] = useState(null);       // previous ticket shown inside modal
+  const [prevTicketLoading, setPrevTicketLoading] = useState(false);
   const [followupTicket, setFollowupTicket] = useState(null);
   const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
   const [formData, setFormData] = useState({ title:"", department:"", description:"", area:"", location:"" });
@@ -20,8 +22,8 @@ const UserDashboard = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [satisfiedIds, setSatisfiedIds] = useState([]); // track satisfied ticket ids
- 
+  const [satisfiedIds, setSatisfiedIds] = useState([]);
+
   const fetchTickets = async (status) => {
     setLoading(true);
     try {
@@ -38,11 +40,33 @@ const UserDashboard = () => {
       setLoading(false);
     }
   };
- 
+
+  // Fetch a single ticket by ID — used to load the previous ticket inside the modal
+  const fetchTicketById = async (id) => {
+    setPrevTicketLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/user/tickets/${id}`, { credentials: "include" });
+      const data = await response.json();
+      if (!response.ok) { alert(data.message); return; }
+      setPrevTicket(data.ticket);
+    } catch (error) {
+      console.error(error);
+      alert("Server error");
+    } finally {
+      setPrevTicketLoading(false);
+    }
+  };
+
+  // Close modal and reset both ticket states
+  const closeModal = () => {
+    setSelectedTicket(null);
+    setPrevTicket(null);
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
- 
+
   const handleSubmitTicket = async () => {
     if (!formData.title || !formData.department || !formData.description || !formData.area || !formData.location) {
       alert("All fields are required!");
@@ -56,7 +80,7 @@ const UserDashboard = () => {
       fd.append("area", formData.area);
       fd.append("location", formData.location);
       if (selectedImage) fd.append("image", selectedImage);
- 
+
       const response = await fetch("http://localhost:3000/api/user/raise", {
         method: "POST",
         credentials: "include",
@@ -73,7 +97,7 @@ const UserDashboard = () => {
       alert("Server error");
     }
   };
- 
+
   const handleCancelTicket = async (id) => {
     if(!window.confirm("Are you sure you want to cancel this ticket?")) return;
     try {
@@ -84,14 +108,14 @@ const UserDashboard = () => {
       const data = await response.json();
       if(!response.ok) { alert(data.message); return; }
       alert("Ticket cancelled successfully!");
-      setSelectedTicket(null);
+      closeModal();
       fetchTickets("PENDING");
     } catch(error) {
       console.error(error);
       alert("Server error");
     }
   };
- 
+
   const handleSubmitFollowup = async () => {
     if (!followupForm.title || !followupForm.description) {
       alert("All fields are required!");
@@ -121,7 +145,7 @@ const UserDashboard = () => {
       alert("Server error");
     }
   };
- 
+
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -132,7 +156,7 @@ const UserDashboard = () => {
       console.error("Logout error:", error);
     }
   };
- 
+
   const inputStyle = {
     width:"100%", padding:"13px 16px",
     borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)",
@@ -141,31 +165,29 @@ const UserDashboard = () => {
     boxSizing:"border-box", display:"block",
     transition:"border-color 0.2s, box-shadow 0.2s",
   };
- 
+
   const tabs = [
     { id:"raise",    label:"Raise Ticket", iconPath:"M12 4v16m8-8H4" },
     { id:"pending",  label:"Pending",      iconPath:"M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
     { id:"resolved", label:"Resolved",     iconPath:"M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
   ];
- 
+
   const AREAS = [
     "Hostels", "KV School", "Abhinandhan Bhavan", "Academic Block",
     "Library", "Sports Complex", "Guest House", "Faculty Quarters",
     "Admin Block", "Cafeteria"
   ];
- 
-  const subtypeOptions = {
-    Civil:       ["Plumbing", "Flooring", "Wall Damage", "Door", "Window", "Drainage", "Other"],
-    Electrical:  ["Fan", "Light", "AC", "Switchboard", "Wiring", "Other"],
-    HVAC:        ["AC Not Cooling", "AC Leaking", "Ventilation", "Heating", "Other"],
-  };
- 
+
+  // The ticket whose details are currently shown in the modal
+  // If user clicked "View Previous Ticket", show prevTicket; otherwise show selectedTicket
+  const displayedTicket = prevTicket ?? selectedTicket;
+
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
- 
+
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
- 
+
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -187,9 +209,9 @@ const UserDashboard = () => {
           </button>
         </div>
       </header>
- 
+
       <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
- 
+
         <div style={{ display:"flex", gap:8, marginBottom:28, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => {
@@ -211,7 +233,7 @@ const UserDashboard = () => {
             </button>
           ))}
         </div>
- 
+
         {/* RAISE TICKET */}
         {activeTab === "raise" && (
           <div style={{ ...glassCard, padding:"36px 40px", maxWidth:780 }}>
@@ -226,14 +248,14 @@ const UserDashboard = () => {
                 <div style={{ fontSize:13, color:"#6b7280", marginTop:3 }}>Fill in the details below to submit your request</div>
               </div>
             </div>
- 
+
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Complaint Title</label>
               <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
- 
+
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
               <select name="department" value={formData.department} onChange={e => {
@@ -245,17 +267,14 @@ const UserDashboard = () => {
                 <option>HVAC</option>
               </select>
             </div>
- 
- 
- 
+
             <div style={{ marginBottom:24 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
               <textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Provide detailed information about the issue..." rows={5} style={{ ...inputStyle, resize:"none", height:"auto" }}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
- 
-            {/* Area */}
+
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Area</label>
               <select name="area" value={formData.area} onChange={handleInputChange} style={{ ...inputStyle, cursor:"pointer" }}>
@@ -263,16 +282,14 @@ const UserDashboard = () => {
                 {AREAS.map(a => <option key={a}>{a}</option>)}
               </select>
             </div>
- 
-            {/* Location */}
+
             <div style={{ marginBottom:20 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Location</label>
               <input name="location" value={formData.location} onChange={handleInputChange} placeholder="e.g., Block B, Room 204" style={inputStyle}
                 onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
                 onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
             </div>
- 
-            {/* Image Upload */}
+
             <div style={{ marginBottom:24 }}>
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Attach Image <span style={{ color:"#9ca3af", fontWeight:400 }}>(optional)</span></label>
               <div style={{ border:"1.5px dashed rgba(99,102,241,0.3)", borderRadius:18, padding:"20px", textAlign:"center", background:"rgba(99,102,241,0.04)", cursor:"pointer", position:"relative" }}
@@ -305,7 +322,7 @@ const UserDashboard = () => {
                 )}
               </div>
             </div>
- 
+
             <button onClick={handleSubmitTicket} style={{ width:"100%", padding:"15px", borderRadius:30, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:15, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 16px 48px rgba(99,102,241,0.4)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
               Submit Ticket
               <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24">
@@ -314,7 +331,7 @@ const UserDashboard = () => {
             </button>
           </div>
         )}
- 
+
         {/* PENDING TICKETS */}
         {activeTab === "pending" && (
           <div>
@@ -325,7 +342,7 @@ const UserDashboard = () => {
               </div>
               <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#d97706", background:"rgba(254,243,199,0.85)", border:"1px solid rgba(245,158,11,0.25)" }}>{tickets.length} Active</span>
             </div>
- 
+
             {loading && <div style={{ textAlign:"center", padding:40, color:"#6b7280" }}>Loading tickets...</div>}
             {!loading && tickets.length === 0 && (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
@@ -338,7 +355,15 @@ const UserDashboard = () => {
                 <div style={{ padding:"22px 26px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:8 }}>{ticket.subject}</div>
+                      <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:8 }}>
+                        {ticket.subject}
+                        {/* Follow-up badge */}
+                        {ticket.prevId && (
+                          <span style={{ marginLeft:10, padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:600, color:"#7c3aed", background:"rgba(124,58,237,0.10)", border:"1px solid rgba(124,58,237,0.18)", verticalAlign:"middle" }}>
+                            Follow-up
+                          </span>
+                        )}
+                      </div>
                       <div style={{ display:"flex", flexWrap:"wrap", gap:16, fontSize:13, color:"#6b7280" }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -348,10 +373,6 @@ const UserDashboard = () => {
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                           {new Date(ticket.createdAt).toLocaleDateString()}
                         </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                          {ticket.subtype}
-                        </div>
                       </div>
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -359,7 +380,7 @@ const UserDashboard = () => {
                       <span style={{ fontSize:12, fontWeight:600, color:"#d97706" }}>Pending</span>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedTicket(ticket)} style={{ width:"100%", padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)", marginTop:4 }}>
+                  <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ width:"100%", padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)", marginTop:4 }}>
                     View Details
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </button>
@@ -368,7 +389,7 @@ const UserDashboard = () => {
             ))}
           </div>
         )}
- 
+
         {/* RESOLVED TICKETS */}
         {activeTab === "resolved" && (
           <div>
@@ -379,7 +400,7 @@ const UserDashboard = () => {
               </div>
               <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"1px solid rgba(34,197,94,0.25)" }}>{tickets.length} Completed</span>
             </div>
- 
+
             {loading && <div style={{ textAlign:"center", padding:40, color:"#6b7280" }}>Loading tickets...</div>}
             {!loading && tickets.length === 0 && (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
@@ -387,7 +408,7 @@ const UserDashboard = () => {
                 <div style={{ fontSize:13, color:"#9ca3af" }}>You have no resolved service requests yet.</div>
               </div>
             )}
- 
+
             {!loading && tickets.map((ticket) => {
               const isSatisfied = satisfiedIds.includes(ticket.id);
               return (
@@ -416,8 +437,6 @@ const UserDashboard = () => {
                           </div>
                         </div>
                       </div>
- 
-                      {/* Badge */}
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         <svg width="16" height="16" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
                         <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>
@@ -425,11 +444,10 @@ const UserDashboard = () => {
                         </span>
                       </div>
                     </div>
- 
-                    {/* Buttons — hide all if satisfied */}
+
                     {!isSatisfied && (
                       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:4 }}>
-                        <button onClick={() => setSelectedTicket(ticket)} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                        <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                           Details
                         </button>
@@ -450,39 +468,95 @@ const UserDashboard = () => {
           </div>
         )}
       </main>
- 
-      {/* TICKET DETAILS MODAL */}
+
+      {/* ─── TICKET DETAILS MODAL ─── */}
       {selectedTicket && (
-        <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+        <div onClick={closeModal} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:660, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+
+            {/* Modal header — title changes when viewing previous ticket */}
+            <div style={{ padding:"24px 28px", background: prevTicket ? "linear-gradient(135deg,#7c3aed,#6366f1)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Ticket Details</div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Complete information about your request</div>
+                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>
+                    {prevTicket ? "Previous Ticket Details" : "Ticket Details"}
+                  </div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>
+                    {prevTicket ? `Referenced by Ticket #${selectedTicket.id}` : "Complete information about your request"}
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+              <button onClick={closeModal} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
+
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
+
+              {/* ← Back button — shown only when viewing the previous ticket */}
+              {prevTicket && (
+                <button
+                  onClick={() => setPrevTicket(null)}
+                  style={{ marginBottom:18, background:"none", border:"none", color:"#6366f1", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, padding:0 }}
+                >
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Follow-up Ticket #{selectedTicket.id}
+                </button>
+              )}
+
+              {/* Status row */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px", borderRadius:18, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.12)", marginBottom:18 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em" }}>TICKET STATUS</div>
-                <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:600, color: selectedTicket.status === "PENDING" ? "#d97706" : "#16a34a", background: selectedTicket.status === "PENDING" ? "rgba(254,243,199,0.85)" : "rgba(220,252,231,0.85)", border: `1px solid ${selectedTicket.status === "PENDING" ? "rgba(245,158,11,0.25)" : "rgba(34,197,94,0.25)"}` }}>
-                  {selectedTicket.status}
+                <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:600, color: displayedTicket.status === "PENDING" ? "#d97706" : "#16a34a", background: displayedTicket.status === "PENDING" ? "rgba(254,243,199,0.85)" : "rgba(220,252,231,0.85)", border: `1px solid ${displayedTicket.status === "PENDING" ? "rgba(245,158,11,0.25)" : "rgba(34,197,94,0.25)"}` }}>
+                  {displayedTicket.status}
                 </span>
               </div>
+
+              {/* Previous ticket reference link — only shown on the follow-up ticket, not when already viewing prev */}
+              {!prevTicket && selectedTicket.prevId && (
+                <div style={{ marginBottom:18, padding:"12px 16px", borderRadius:16, background:"rgba(124,58,237,0.06)", border:"1px solid rgba(124,58,237,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <svg width="15" height="15" fill="none" stroke="#7c3aed" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span style={{ fontSize:13, color:"#374151" }}>
+                      This is a follow-up to{" "}
+                      <span style={{ fontWeight:600, color:"#7c3aed" }}>Ticket #{selectedTicket.prevId}</span>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => fetchTicketById(selectedTicket.prevId)}
+                    disabled={prevTicketLoading}
+                    style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}
+                  >
+                    {prevTicketLoading ? (
+                      "Loading..."
+                    ) : (
+                      <>
+                        <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        View Previous Ticket
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Ticket fields — driven by displayedTicket */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
-                  { label:"ISSUE TITLE",  val: selectedTicket.subject, span: true },
-                  { label:"DEPARTMENT",   val: selectedTicket.type },
-                  { label:"ISSUE TYPE",   val: selectedTicket.subtype },
-                  { label:"CREATED DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
-                  { label:"TICKET ID",    val: selectedTicket.id },
+                  { label:"ISSUE TITLE",  val: displayedTicket.subject, span: true },
+                  { label:"DEPARTMENT",   val: displayedTicket.type },
+                  { label:"ISSUE TYPE",   val: displayedTicket.subtype },
+                  { label:"CREATED DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString() },
+                  { label:"TICKET ID",    val: displayedTicket.id },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -490,16 +564,19 @@ const UserDashboard = () => {
                   </div>
                 ))}
               </div>
+
               <div style={{ padding:"14px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:20 }}>
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:6 }}>DETAILED DESCRIPTION</div>
-                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{selectedTicket.body}</div>
+                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{displayedTicket.body}</div>
               </div>
+
               <div style={{ display:"flex", gap:10 }}>
-                <button onClick={() => setSelectedTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
+                <button onClick={closeModal} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                   Close
                 </button>
-                {selectedTicket.status === "PENDING" && (
-                  <button onClick={() => handleCancelTicket(selectedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                {/* Cancel only available on the original follow-up ticket, not when viewing prev */}
+                {!prevTicket && displayedTicket.status === "PENDING" && (
+                  <button onClick={() => handleCancelTicket(displayedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     Cancel Ticket
                   </button>
@@ -509,8 +586,8 @@ const UserDashboard = () => {
           </div>
         </div>
       )}
- 
-      {/* FOLLOW-UP MODAL */}
+
+      {/* ─── FOLLOW-UP MODAL ─── */}
       {followupTicket && (
         <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -564,9 +641,9 @@ const UserDashboard = () => {
           </div>
         </div>
       )}
- 
+
     </div>
   );
 };
- 
+
 export default UserDashboard;
