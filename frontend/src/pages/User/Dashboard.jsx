@@ -13,7 +13,7 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("raise");
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [prevTicket, setPrevTicket] = useState(null);       // previous ticket shown inside modal
+  const [prevTicket, setPrevTicket] = useState(null);
   const [prevTicketLoading, setPrevTicketLoading] = useState(false);
   const [followupTicket, setFollowupTicket] = useState(null);
   const [followupForm, setFollowupForm] = useState({ title:"", description:"" });
@@ -41,7 +41,6 @@ const UserDashboard = () => {
     }
   };
 
-  // Fetch a single ticket by ID — used to load the previous ticket inside the modal
   const fetchTicketById = async (id) => {
     setPrevTicketLoading(true);
     try {
@@ -57,7 +56,6 @@ const UserDashboard = () => {
     }
   };
 
-  // Close modal and reset both ticket states
   const closeModal = () => {
     setSelectedTicket(null);
     setPrevTicket(null);
@@ -115,8 +113,7 @@ const UserDashboard = () => {
       alert("Server error");
     }
   };
-
-  const handleSubmitFollowup = async () => {
+const handleSubmitFollowup = async () => {
     if (!followupForm.title || !followupForm.description) {
       alert("All fields are required!");
       return;
@@ -127,11 +124,10 @@ const UserDashboard = () => {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: followupTicket.type,
-          subtype: followupTicket.subtype,
-          subject: followupForm.title,
-          body: followupForm.description,
-          prevId: followupTicket.id,
+          type: followupTicket.type,          // ✅ Department
+          subject: followupForm.title,        // ✅ Title
+          body: followupForm.description,     // ✅ Description
+          prevId: followupTicket.id,          // ✅ Original ticket ID
         }),
       });
       const data = await response.json();
@@ -178,8 +174,6 @@ const UserDashboard = () => {
     "Admin Block", "Cafeteria"
   ];
 
-  // The ticket whose details are currently shown in the modal
-  // If user clicked "View Previous Ticket", show prevTicket; otherwise show selectedTicket
   const displayedTicket = prevTicket ?? selectedTicket;
 
   return (
@@ -294,17 +288,10 @@ const UserDashboard = () => {
               <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Attach Image <span style={{ color:"#9ca3af", fontWeight:400 }}>(optional)</span></label>
               <div style={{ border:"1.5px dashed rgba(99,102,241,0.3)", borderRadius:18, padding:"20px", textAlign:"center", background:"rgba(99,102,241,0.04)", cursor:"pointer", position:"relative" }}
                 onClick={() => document.getElementById("ticketImageInput").click()}>
-                <input
-                  id="ticketImageInput"
-                  type="file"
-                  accept="image/*"
-                  style={{ display:"none" }}
+                <input id="ticketImageInput" type="file" accept="image/*" style={{ display:"none" }}
                   onChange={e => {
                     const file = e.target.files[0];
-                    if (file) {
-                      setSelectedImage(file);
-                      setImagePreview(URL.createObjectURL(file));
-                    }
+                    if (file) { setSelectedImage(file); setImagePreview(URL.createObjectURL(file)); }
                   }}
                 />
                 {imagePreview ? (
@@ -357,7 +344,6 @@ const UserDashboard = () => {
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:8 }}>
                         {ticket.subject}
-                        {/* Follow-up badge */}
                         {ticket.prevId && (
                           <span style={{ marginLeft:10, padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:600, color:"#7c3aed", background:"rgba(124,58,237,0.10)", border:"1px solid rgba(124,58,237,0.18)", verticalAlign:"middle" }}>
                             Follow-up
@@ -412,12 +398,7 @@ const UserDashboard = () => {
             {!loading && tickets.map((ticket) => {
               const isSatisfied = satisfiedIds.includes(ticket.id);
               return (
-                <div key={ticket.id} style={{
-                  ...glassCard,
-                  marginBottom:14,
-                  background: isSatisfied ? "rgba(220,252,231,0.7)" : "rgba(255,255,255,0.6)",
-                  border: isSatisfied ? "1.5px solid rgba(34,197,94,0.3)" : "none",
-                }}>
+                <div key={ticket.id} style={{ ...glassCard, marginBottom:14, background: isSatisfied ? "rgba(220,252,231,0.7)" : "rgba(255,255,255,0.6)", border: isSatisfied ? "1.5px solid rgba(34,197,94,0.3)" : "none" }}>
                   <div style={{ padding:"22px 26px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
                       <div style={{ flex:1 }}>
@@ -427,10 +408,6 @@ const UserDashboard = () => {
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                             {ticket.type}
                           </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, color:"#16a34a" }}>
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                            <span style={{ fontWeight:500 }}>{ticket.subtype}</span>
-                          </div>
                           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             {new Date(ticket.createdAt).toLocaleDateString()}
@@ -439,12 +416,9 @@ const UserDashboard = () => {
                       </div>
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         <svg width="16" height="16" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>
-                          {isSatisfied ? "Resolved ✓" : "Resolved"}
-                        </span>
+                        <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>{isSatisfied ? "Resolved ✓" : "Resolved"}</span>
                       </div>
                     </div>
-
                     {!isSatisfied && (
                       <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginTop:4 }}>
                         <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
@@ -473,20 +447,14 @@ const UserDashboard = () => {
       {selectedTicket && (
         <div onClick={closeModal} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:660, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-
-            {/* Modal header — title changes when viewing previous ticket */}
             <div style={{ padding:"24px 28px", background: prevTicket ? "linear-gradient(135deg,#7c3aed,#6366f1)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>
-                    {prevTicket ? "Previous Ticket Details" : "Ticket Details"}
-                  </div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>
-                    {prevTicket ? `Referenced by Ticket #${selectedTicket.id}` : "Complete information about your request"}
-                  </div>
+                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>{prevTicket ? "Previous Ticket Details" : "Ticket Details"}</div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>{prevTicket ? `Referenced by Ticket #${selectedTicket.id}` : "Complete information about your request"}</div>
                 </div>
               </div>
               <button onClick={closeModal} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
@@ -495,21 +463,13 @@ const UserDashboard = () => {
             </div>
 
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
-
-              {/* ← Back button — shown only when viewing the previous ticket */}
               {prevTicket && (
-                <button
-                  onClick={() => setPrevTicket(null)}
-                  style={{ marginBottom:18, background:"none", border:"none", color:"#6366f1", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, padding:0 }}
-                >
-                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                <button onClick={() => setPrevTicket(null)} style={{ marginBottom:18, background:"none", border:"none", color:"#6366f1", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, padding:0 }}>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   Back to Follow-up Ticket #{selectedTicket.id}
                 </button>
               )}
 
-              {/* Status row */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px", borderRadius:18, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.12)", marginBottom:18 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em" }}>TICKET STATUS</div>
                 <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:600, color: displayedTicket.status === "PENDING" ? "#d97706" : "#16a34a", background: displayedTicket.status === "PENDING" ? "rgba(254,243,199,0.85)" : "rgba(220,252,231,0.85)", border: `1px solid ${displayedTicket.status === "PENDING" ? "rgba(245,158,11,0.25)" : "rgba(34,197,94,0.25)"}` }}>
@@ -517,44 +477,24 @@ const UserDashboard = () => {
                 </span>
               </div>
 
-              {/* Previous ticket reference link — only shown on the follow-up ticket, not when already viewing prev */}
               {!prevTicket && selectedTicket.prevId && (
                 <div style={{ marginBottom:18, padding:"12px 16px", borderRadius:16, background:"rgba(124,58,237,0.06)", border:"1px solid rgba(124,58,237,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <svg width="15" height="15" fill="none" stroke="#7c3aed" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    <span style={{ fontSize:13, color:"#374151" }}>
-                      This is a follow-up to{" "}
-                      <span style={{ fontWeight:600, color:"#7c3aed" }}>Ticket #{selectedTicket.prevId}</span>
-                    </span>
+                    <svg width="15" height="15" fill="none" stroke="#7c3aed" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    <span style={{ fontSize:13, color:"#374151" }}>This is a follow-up to <span style={{ fontWeight:600, color:"#7c3aed" }}>Ticket #{selectedTicket.prevId}</span></span>
                   </div>
-                  <button
-                    onClick={() => fetchTicketById(selectedTicket.prevId)}
-                    disabled={prevTicketLoading}
-                    style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}
-                  >
-                    {prevTicketLoading ? (
-                      "Loading..."
-                    ) : (
-                      <>
-                        <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        View Previous Ticket
-                      </>
-                    )}
+                  <button onClick={() => fetchTicketById(selectedTicket.prevId)} disabled={prevTicketLoading} style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}>
+                    {prevTicketLoading ? "Loading..." : (<><svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>View Previous Ticket</>)}
                   </button>
                 </div>
               )}
 
-              {/* Ticket fields — driven by displayedTicket */}
+              {/* ── Ticket fields — ISSUE TYPE replaced with LOCATION ── */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
-                  { label:"ISSUE TITLE",  val: displayedTicket.subject, span: true },
+                  { label:"ISSUE TITLE",  val: displayedTicket.subject,                                  span: true },
                   { label:"DEPARTMENT",   val: displayedTicket.type },
-                  { label:"ISSUE TYPE",   val: displayedTicket.subtype },
+                  { label:"LOCATION",     val: displayedTicket.location || "—" },
                   { label:"CREATED DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString() },
                   { label:"TICKET ID",    val: displayedTicket.id },
                 ].map((f, i) => (
@@ -571,10 +511,7 @@ const UserDashboard = () => {
               </div>
 
               <div style={{ display:"flex", gap:10 }}>
-                <button onClick={closeModal} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
-                  Close
-                </button>
-                {/* Cancel only available on the original follow-up ticket, not when viewing prev */}
+                <button onClick={closeModal} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
                 {!prevTicket && displayedTicket.status === "PENDING" && (
                   <button onClick={() => handleCancelTicket(displayedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -612,8 +549,8 @@ const UserDashboard = () => {
                   <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
                 </div>
                 <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>ISSUE TYPE</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.subtype}</div>
+                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>LOCATION</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.location || "—"}</div>
                 </div>
               </div>
               <div style={{ marginBottom:16 }}>
@@ -629,9 +566,7 @@ const UserDashboard = () => {
                   onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
               </div>
               <div style={{ display:"flex", gap:10 }}>
-                <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
-                  Cancel
-                </button>
+                <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
                 <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#dc2626,#f97316)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(220,38,38,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                   <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                   Submit Follow-up Ticket
@@ -641,7 +576,6 @@ const UserDashboard = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

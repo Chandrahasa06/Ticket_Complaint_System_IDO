@@ -35,7 +35,6 @@ const EngineerDashboard = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [viewTechnician, setViewTechnician] = useState(null);
 
-  // ── Change Password state ────────────────────────────────────────────────
   const [showChangePw, setShowChangePw] = useState(false);
   const [pwForm, setPwForm] = useState({ current:"", newPw:"", confirm:"" });
   const [pwShow, setPwShow] = useState({ current:false, newPw:false, confirm:false });
@@ -48,10 +47,7 @@ const EngineerDashboard = () => {
       try {
         const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials:"include" });
         const data = await res.json();
-        if(res.ok) setEngineerInfo({
-          username: data.user?.username || "Engineer",
-          department: data.user?.department || "",
-        });
+        if(res.ok) setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
       } catch(e) { console.error(e); }
     };
     const fetchProfile = async () => {
@@ -77,27 +73,18 @@ const EngineerDashboard = () => {
     setLoading(true);
     try {
       let url = "http://localhost:3000/api/engineer/tickets?pg=1";
-      if (status && status !== "technicians") {
-        url += `&status=${status.toUpperCase().replace("-","_")}`;
-      }
+      if (status && status !== "technicians") url += `&status=${status.toUpperCase().replace("-","_")}`;
       const res = await fetch(url, { credentials:"include" });
       const data = await res.json();
       if (!res.ok) { alert(data.message); return; }
       setTickets(data.tickets);
-    } catch (e) {
-      console.error(e);
-      alert("Server error");
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); alert("Server error"); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
-    if (activeTab === "technicians") {
-      fetchTechnicians();
-    } else {
-      fetchTickets(activeTab);
-    }
+    if (activeTab === "technicians") fetchTechnicians();
+    else fetchTickets(activeTab);
   }, [activeTab]);
 
   const getStatusIcon = (status) => {
@@ -120,7 +107,6 @@ const EngineerDashboard = () => {
     } catch (error) { console.error("Logout error:", error); }
   };
 
-  // ── Change Password helpers ──────────────────────────────────────────────
   const resetPwForm = () => {
     setPwForm({ current:"", newPw:"", confirm:"" });
     setPwShow({ current:false, newPw:false, confirm:false });
@@ -131,23 +117,14 @@ const EngineerDashboard = () => {
 
   const handleChangePassword = async () => {
     setPwError("");
-    if (!pwForm.current || !pwForm.newPw || !pwForm.confirm) {
-      setPwError("All fields are required."); return;
-    }
-    if (pwForm.newPw.length < 6) {
-      setPwError("New password must be at least 6 characters."); return;
-    }
-    if (pwForm.newPw !== pwForm.confirm) {
-      setPwError("New passwords do not match."); return;
-    }
-    if (pwForm.current === pwForm.newPw) {
-      setPwError("New password must differ from current password."); return;
-    }
+    if (!pwForm.current || !pwForm.newPw || !pwForm.confirm) { setPwError("All fields are required."); return; }
+    if (pwForm.newPw.length < 6) { setPwError("New password must be at least 6 characters."); return; }
+    if (pwForm.newPw !== pwForm.confirm) { setPwError("New passwords do not match."); return; }
+    if (pwForm.current === pwForm.newPw) { setPwError("New password must differ from current password."); return; }
     setPwLoading(true);
     try {
       const res = await fetch("http://localhost:3000/api/engineer/change-password", {
-        method: "PATCH",
-        credentials: "include",
+        method: "PATCH", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.newPw }),
       });
@@ -155,12 +132,8 @@ const EngineerDashboard = () => {
       if (!res.ok) { setPwError(data.message || "Failed to change password."); return; }
       setPwSuccess(true);
       setTimeout(() => resetPwForm(), 2200);
-    } catch(e) {
-      console.error(e);
-      setPwError("Server error. Please try again.");
-    } finally {
-      setPwLoading(false);
-    }
+    } catch(e) { console.error(e); setPwError("Server error. Please try again."); }
+    finally { setPwLoading(false); }
   };
 
   const pwInputStyle = {
@@ -178,7 +151,7 @@ const EngineerDashboard = () => {
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
   const tabs = [
-    { key:"pending",     label:"Pending",    icon:"⏳" },
+    { key:"pending",     label:"Pending",     icon:"⏳" },
     { key:"in-progress", label:"In Progress", icon:"🔄" },
     { key:"overdue",     label:"Overdue",     icon:"⚠️" },
     { key:"resolved",    label:"Resolved",    icon:"✅" },
@@ -194,10 +167,7 @@ const EngineerDashboard = () => {
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            <div
-              onClick={() => { setShowProfile(true); resetPwForm(); }}
-              style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer" }}
-            >
+            <div onClick={() => { setShowProfile(true); resetPwForm(); }} style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer" }}>
               <svg width="22" height="22" fill="white" viewBox="0 0 20 20"><path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" /></svg>
             </div>
             <div>
@@ -233,13 +203,10 @@ const EngineerDashboard = () => {
       </div>
 
       <div style={{ maxWidth:1280, margin:"0 auto", padding:"28px 32px", position:"relative", zIndex:1 }}>
-
         {activeTab !== "technicians" && (
           <div>
             {loading ? (
-              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
-              </div>
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}><div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div></div>
             ) : tickets.length === 0 ? (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
                 <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(99,102,241,0.08)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
@@ -258,9 +225,7 @@ const EngineerDashboard = () => {
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
                         <div style={{ flex:1 }}>
                           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                            <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", flexShrink:0 }}>
-                              {getStatusIcon(ticket.status)}
-                            </div>
+                            <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", flexShrink:0 }}>{getStatusIcon(ticket.status)}</div>
                             <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{ticket.id}</span>
                           </div>
                           <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{ticket.subject}</div>
@@ -271,18 +236,13 @@ const EngineerDashboard = () => {
                               <div><div style={{ fontSize:11, color:"#9ca3af" }}>Department</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{ticket.type}</div></div>
                             </div>
                             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                              <svg width="14" height="14" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                              <div><div style={{ fontSize:11, color:"#9ca3af" }}>Issue Type</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{ticket.subtype}</div></div>
-                            </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                               <svg width="14" height="14" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                               <div><div style={{ fontSize:11, color:"#9ca3af" }}>Date</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{new Date(ticket.createdAt).toLocaleDateString()}</div></div>
                             </div>
                           </div>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.bg, border:`1px solid ${ss.border}`, whiteSpace:"nowrap" }}>
-                          {getStatusIcon(ticket.status)}
-                          {ticket.status}
+                          {getStatusIcon(ticket.status)}{ticket.status}
                         </div>
                       </div>
                     </div>
@@ -335,39 +295,21 @@ const EngineerDashboard = () => {
         )}
       </div>
 
-      {/* ── PROFILE MODAL with Change Password accordion inside ──────────── */}
+      {/* PROFILE MODAL */}
       {showProfile && profile && (
-        <div
-          onClick={() => { setShowProfile(false); resetPwForm(); }}
-          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}
-          >
-            {/* Header */}
+        <div onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Your account details</div>
-              <button
-                onClick={() => { setShowProfile(false); resetPwForm(); }}
-                style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}
-              >
-                <X size={15} />
-              </button>
+              <button onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
-
             <div style={{ padding:"24px 28px", maxHeight:"80vh", overflowY:"auto" }}>
-              {/* Avatar */}
               <div style={{ textAlign:"center", marginBottom:24 }}>
-                <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:28, fontWeight:700, margin:"0 auto 12px", boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
-                  {(profile.username || "E").charAt(0).toUpperCase()}
-                </div>
+                <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:28, fontWeight:700, margin:"0 auto 12px", boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>{(profile.username || "E").charAt(0).toUpperCase()}</div>
                 <div style={{ fontSize:20, fontWeight:700, color:"#111827" }}>{profile.username}</div>
                 <div style={{ fontSize:13, color:"#6b7280", marginTop:4 }}>{profile.department} Department</div>
               </div>
-
-              {/* Info fields */}
               {[
                 { label:"EMAIL",       val: profile.email },
                 { label:"PHONE",       val: profile.phone || "Not added" },
@@ -379,53 +321,30 @@ const EngineerDashboard = () => {
                   <div style={{ fontSize:14, fontWeight:500, color:"#111827" }}>{f.val}</div>
                 </div>
               ))}
-
-              {/* ── Change Password accordion ─────────────────────────── */}
               <div style={{ marginTop:16, borderRadius:18, border:"1.5px solid rgba(99,102,241,0.18)", overflow:"hidden" }}>
-
-                {/* Toggle row */}
-                <button
-                  onClick={() => { setShowChangePw(v => !v); setPwError(""); setPwSuccess(false); }}
-                  style={{ width:"100%", padding:"14px 16px", background: showChangePw ? "rgba(99,102,241,0.09)" : "rgba(99,102,241,0.04)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", fontFamily:"inherit" }}
-                >
+                <button onClick={() => { setShowChangePw(v => !v); setPwError(""); setPwSuccess(false); }} style={{ width:"100%", padding:"14px 16px", background: showChangePw ? "rgba(99,102,241,0.09)" : "rgba(99,102,241,0.04)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", fontFamily:"inherit" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:32, height:32, borderRadius:10, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <KeyRound size={14} color="white" />
-                    </div>
+                    <div style={{ width:32, height:32, borderRadius:10, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center" }}><KeyRound size={14} color="white" /></div>
                     <span style={{ fontSize:14, fontWeight:600, color:"#374151" }}>Change Password</span>
                   </div>
-                  <svg
-                    width="16" height="16" fill="none" stroke="#6366f1" viewBox="0 0 24 24"
-                    style={{ transition:"transform 0.25s", transform: showChangePw ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0 }}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <svg width="16" height="16" fill="none" stroke="#6366f1" viewBox="0 0 24 24" style={{ transition:"transform 0.25s", transform: showChangePw ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </button>
-
-                {/* Collapsible body */}
                 {showChangePw && (
                   <div style={{ padding:"18px 16px", borderTop:"1px solid rgba(99,102,241,0.12)", background:"rgba(255,255,255,0.55)" }}>
-
-                    {/* Success state */}
                     {pwSuccess ? (
                       <div style={{ textAlign:"center", padding:"14px 0" }}>
-                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(34,197,94,0.1)", border:"2px solid rgba(34,197,94,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
-                          <CheckCircle size={26} color="#16a34a" />
-                        </div>
+                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(34,197,94,0.1)", border:"2px solid rgba(34,197,94,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}><CheckCircle size={26} color="#16a34a" /></div>
                         <div style={{ fontSize:15, fontWeight:600, color:"#16a34a", marginBottom:4 }}>Password Updated!</div>
                         <div style={{ fontSize:12, color:"#6b7280" }}>Your password has been changed successfully.</div>
                       </div>
                     ) : (
                       <>
-                        {/* Error banner */}
                         {pwError && (
                           <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.18)", display:"flex", alignItems:"center", gap:9 }}>
                             <AlertTriangle size={14} color="#dc2626" style={{ flexShrink:0 }} />
                             <span style={{ fontSize:12, color:"#dc2626" }}>{pwError}</span>
                           </div>
                         )}
-
-                        {/* Password fields */}
                         {[
                           { key:"current", label:"Current Password",    placeholder:"Enter current password" },
                           { key:"newPw",   label:"New Password",         placeholder:"At least 6 characters" },
@@ -434,60 +353,24 @@ const EngineerDashboard = () => {
                           <div key={key} style={{ marginBottom:14 }}>
                             <label style={{ display:"block", fontSize:12, fontWeight:500, color:"#374151", marginBottom:6 }}>{label}</label>
                             <div style={{ position:"relative" }}>
-                              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#6366f1", display:"flex", pointerEvents:"none" }}>
-                                <KeyRound size={13} />
-                              </span>
-                              <input
-                                type={pwShow[key] ? "text" : "password"}
-                                value={pwForm[key]}
-                                onChange={e => setPwForm(prev => ({ ...prev, [key]: e.target.value }))}
-                                placeholder={placeholder}
-                                style={pwInputStyle}
-                                disabled={pwLoading}
-                                onKeyDown={e => e.key === "Enter" && handleChangePassword()}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setPwShow(prev => ({ ...prev, [key]: !prev[key] }))}
-                                style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#6366f1", display:"flex", padding:4 }}
-                              >
+                              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#6366f1", display:"flex", pointerEvents:"none" }}><KeyRound size={13} /></span>
+                              <input type={pwShow[key] ? "text" : "password"} value={pwForm[key]} onChange={e => setPwForm(prev => ({ ...prev, [key]: e.target.value }))} placeholder={placeholder} style={pwInputStyle} disabled={pwLoading} onKeyDown={e => e.key === "Enter" && handleChangePassword()} />
+                              <button type="button" onClick={() => setPwShow(prev => ({ ...prev, [key]: !prev[key] }))} style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#6366f1", display:"flex", padding:4 }}>
                                 {pwShow[key] ? <EyeOff size={13} /> : <Eye size={13} />}
                               </button>
                             </div>
-                            {/* Strength bar — only on new password field */}
                             {key === "newPw" && pwForm.newPw && (
                               <div style={{ marginTop:7, display:"flex", alignItems:"center", gap:5 }}>
-                                {[1,2,3,4].map(i => (
-                                  <div key={i} style={{ flex:1, height:3, borderRadius:4, background: i <= pwScore ? pwStrengthColors[pwScore-1] : "rgba(0,0,0,0.08)", transition:"background 0.3s" }} />
-                                ))}
+                                {[1,2,3,4].map(i => (<div key={i} style={{ flex:1, height:3, borderRadius:4, background: i <= pwScore ? pwStrengthColors[pwScore-1] : "rgba(0,0,0,0.08)", transition:"background 0.3s" }} />))}
                                 <span style={{ fontSize:11, color:"#9ca3af", marginLeft:4, minWidth:30 }}>{pwStrengthLabels[pwScore]}</span>
                               </div>
                             )}
                           </div>
                         ))}
-
-                        {/* Buttons */}
                         <div style={{ display:"flex", gap:10, marginTop:6 }}>
-                          <button
-                            onClick={resetPwForm}
-                            disabled={pwLoading}
-                            style={{ flex:1, padding:"10px", borderRadius:14, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleChangePassword}
-                            disabled={pwLoading}
-                            style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: pwLoading ? "not-allowed" : "pointer", boxShadow: pwLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}
-                          >
-                            {pwLoading ? (
-                              <>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation:"spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                                Updating...
-                              </>
-                            ) : (
-                              <><KeyRound size={13} /> Update Password</>
-                            )}
+                          <button onClick={resetPwForm} disabled={pwLoading} style={{ flex:1, padding:"10px", borderRadius:14, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}>Cancel</button>
+                          <button onClick={handleChangePassword} disabled={pwLoading} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: pwLoading ? "not-allowed" : "pointer", boxShadow: pwLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                            {pwLoading ? (<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation:"spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Updating...</>) : (<><KeyRound size={13} /> Update Password</>)}
                           </button>
                         </div>
                       </>
@@ -495,27 +378,20 @@ const EngineerDashboard = () => {
                   </div>
                 )}
               </div>
-              {/* ── end Change Password ──────────────────────────────────── */}
-
-              <button
-                onClick={() => { setShowProfile(false); resetPwForm(); }}
-                style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}
-              >
-                Close
-              </button>
+              <button onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* TICKET DETAILS MODAL */}
+      {/* TICKET DETAILS MODAL — ISSUE TYPE replaced with LOCATION */}
       {selectedTicket && (
         <GlassModal onClose={() => setSelectedTicket(null)} title="Ticket Details">
           {[
             { label:"TICKET ID",   val: selectedTicket.id },
             { label:"SUBJECT",     val: selectedTicket.subject },
             { label:"DEPARTMENT",  val: selectedTicket.type },
-            { label:"ISSUE TYPE",  val: selectedTicket.subtype },
+            { label:"LOCATION",    val: selectedTicket.location || "—" },
             { label:"STATUS",      val: selectedTicket.status },
             { label:"DATE",        val: new Date(selectedTicket.createdAt).toLocaleDateString() },
             { label:"DESCRIPTION", val: selectedTicket.body },

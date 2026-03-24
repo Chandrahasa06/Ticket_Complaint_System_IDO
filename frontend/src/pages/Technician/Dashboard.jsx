@@ -336,7 +336,6 @@ const TechnicianDashboard = () => {
                   { label:"STATUS",       val: selectedTicket.status,                                   span: false },
                   { label:"SUBJECT",      val: selectedTicket.subject,                                  span: true  },
                   { label:"DEPARTMENT",   val: selectedTicket.type,                                     span: false },
-                  { label:"ISSUE TYPE",   val: selectedTicket.subtype,                                  span: false },
                   { label:"AREA",         val: selectedTicket.area,                                     span: false },
                   { label:"LOCATION",     val: selectedTicket.location || "—",                          span: false },
                   { label:"RAISED BY",    val: selectedTicket.user?.username || "—",                    span: false },
