@@ -151,7 +151,6 @@ const EngineerDashboard = () => {
 
   const tabs = [
     { key:"pending",     label:"Pending",    },
-    { key:"in-progress", label:"In Progress",  },
     { key:"overdue",     label:"Overdue",      },
     { key:"resolved",    label:"Resolved",    },
     { key:"closed",      label:"Closed",      },

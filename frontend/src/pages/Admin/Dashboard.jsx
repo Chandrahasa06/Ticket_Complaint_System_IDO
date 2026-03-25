@@ -50,7 +50,7 @@ const AdminDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [totalTickets, setTotalTickets] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0 });
+  const [stats, setStats] = useState({ total:0, pending:0, overdue:0, resolved:0 });
   const navigate = useNavigate();
 
   const [showAddPeople, setShowAddPeople] = useState(false);
@@ -171,7 +171,6 @@ const AdminDashboard = () => {
       setStats({
         total:      allData.pagination?.totalTickets || 0,
         pending:    statusData[0].pagination?.totalTickets || 0,
-        inProgress: statusData[1].pagination?.totalTickets || 0,
         overdue:    statusData[2].pagination?.totalTickets || 0,
         resolved:   statusData[3].pagination?.totalTickets || 0,
       });
@@ -203,7 +202,6 @@ const AdminDashboard = () => {
     { id:"overview",    label:"Overview",    icon:"📈" },
     { id:"pending",     label:"Pending",     icon:"⏳" },
     { id:"overdue",     label:"Overdue",     icon:"⚠️" },
-    { id:"in-progress", label:"In Progress", icon:"🔄" },
     { id:"resolved",    label:"Resolved",    icon:"✅" },
     { id:"closed",      label:"Closed",      icon:"🔒" },
   ];
@@ -211,7 +209,6 @@ const AdminDashboard = () => {
   const statCards = [
     { label:"Total Tickets", value: stats.total,      icon:"📊" },
     { label:"Pending",       value: stats.pending,    icon:"⏳" },
-    { label:"In Progress",   value: stats.inProgress, icon:"🔄" },
     { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
     { label:"Resolved",      value: stats.resolved,   icon:"✅" },
   ];
@@ -291,7 +288,6 @@ const AdminDashboard = () => {
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                 {[
                   { label:"Pending",     val: stats.pending,    color:"#d97706" },
-                  { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
                   { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
                   { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
                 ].map((s, i) => (

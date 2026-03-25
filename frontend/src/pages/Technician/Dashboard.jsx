@@ -178,7 +178,6 @@ const TechnicianDashboard = () => {
   const stats = [
     { label:"Total Assigned",  value: tickets.length},
     { label:"Pending",         value: tickets.filter(t => t.status === "PENDING").length },
-    { label:"In Progress",     value: tickets.filter(t => t.status === "IN_PROGRESS").length },
     { label:"Resolved",        value: tickets.filter(t => t.status === "RESOLVED").length },
   ];
 
