@@ -5,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    overdue:      { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
-    pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    "in-progress":{ color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
-    resolved:     { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
-    closed:       { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+    overdue:       { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
+    pending:       { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    "in-progress": { color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
+    resolved:      { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
+    closed:        { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
   return map[s] || map.closed;
 };
@@ -51,10 +51,22 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0 });
   const navigate = useNavigate();
+
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [addRole, setAddRole] = useState("engineer");
   const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
   const [addLoading, setAddLoading] = useState(false);
+
+  const [showManagePeople, setShowManagePeople] = useState(false);
+  const [engineers, setEngineers] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [peopleLoading, setPeopleLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Edit area state
+  const [editTech, setEditTech] = useState(null); // { id, name, area: [...] }
+  const [editAreaLoading, setEditAreaLoading] = useState(false);
+  const [editAreaError, setEditAreaError] = useState("");
 
   const handleAddPeople = async (e) => {
     e.preventDefault();
@@ -79,6 +91,57 @@ const AdminDashboard = () => {
       setShowAddPeople(false);
     } catch (err) { console.error(err); alert("Server error"); }
     finally { setAddLoading(false); }
+  };
+
+  const fetchPeople = async () => {
+    setPeopleLoading(true);
+    try {
+      const [engRes, techRes] = await Promise.all([
+        fetch("http://localhost:3000/api/admin/engineers", { credentials:"include" }),
+        fetch("http://localhost:3000/api/admin/technicians", { credentials:"include" }),
+      ]);
+      const engData = await engRes.json();
+      const techData = await techRes.json();
+      if(engRes.ok) setEngineers(engData.engineers);
+      if(techRes.ok) setTechnicians(techData.technicians);
+    } catch(e) { console.error(e); }
+    finally { setPeopleLoading(false); }
+  };
+
+  const handleDelete = async () => {
+    if(!deleteConfirm) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/${deleteConfirm.role}/${deleteConfirm.id}`, {
+        method: "DELETE", credentials: "include",
+      });
+      const data = await res.json();
+      if(!res.ok) { alert(data.message); return; }
+      if(deleteConfirm.role === "engineer") setEngineers(prev => prev.filter(e => e.id !== deleteConfirm.id));
+      else setTechnicians(prev => prev.filter(t => t.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+    } catch(e) { console.error(e); alert("Server error"); }
+  };
+
+  const handleEditArea = async () => {
+    setEditAreaError("");
+    if(!editTech || editTech.area.length === 0){
+      setEditAreaError("Please select at least one area."); return;
+    }
+    setEditAreaLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/technician/${editTech.id}/area`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ area: editTech.area }),
+      });
+      const data = await res.json();
+      if(!res.ok){ setEditAreaError(data.message || "Failed to update area."); return; }
+      setTechnicians(prev => prev.map(t =>
+        t.id === editTech.id ? { ...t, area: editTech.area.join(",") } : t
+      ));
+      setEditTech(null);
+    } catch(e) { console.error(e); setEditAreaError("Server error. Please try again."); }
+    finally { setEditAreaLoading(false); }
   };
 
   const fetchTickets = async (status, page = 1) => {
@@ -124,7 +187,6 @@ const AdminDashboard = () => {
   }, [currentPage, activeTab]);
 
   const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
-
   const handleTabChange = (tab) => { setActiveTab(tab); setCurrentPage(1); };
 
   const handleLogout = async () => {
@@ -176,6 +238,10 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <button onClick={() => { setShowManagePeople(true); fetchPeople(); }} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.3)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Manage People
+            </button>
             <button onClick={() => setShowAddPeople(true)} style={{ padding:"10px 20px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"white", cursor:"pointer", display:"flex", alignItems:"center", gap:6, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
               <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
               Add People
@@ -227,7 +293,7 @@ const AdminDashboard = () => {
                   { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
                   { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
                   { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
-                ].map((s,i) => (
+                ].map((s, i) => (
                   <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
                     <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
                     <div style={{ fontSize:13, color:"#6b7280" }}>{s.label}</div>
@@ -314,7 +380,7 @@ const AdminDashboard = () => {
         )}
       </main>
 
-      {/* TICKET MODAL — ISSUE TYPE replaced with LOCATION */}
+      {/* TICKET MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -326,12 +392,12 @@ const AdminDashboard = () => {
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 {[
-                  { label:"TICKET ID",   val: selectedTicket.id },
-                  { label:"SUBJECT",     val: selectedTicket.subject },
-                  { label:"DEPARTMENT",  val: selectedTicket.type },
-                  { label:"LOCATION",    val: selectedTicket.location || "—" },
-                  { label:"STATUS",      val: selectedTicket.status },
-                  { label:"DATE",        val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+                  { label:"TICKET ID",  val: selectedTicket.id },
+                  { label:"SUBJECT",    val: selectedTicket.subject },
+                  { label:"DEPARTMENT", val: selectedTicket.type },
+                  { label:"LOCATION",   val: selectedTicket.location || "—" },
+                  { label:"STATUS",     val: selectedTicket.status },
+                  { label:"DATE",       val: new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -349,7 +415,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* ADD PEOPLE MODAL — unchanged */}
+      {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={() => setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
@@ -364,7 +430,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <button onClick={() => setShowAddPeople(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <X size={15} />
               </button>
             </div>
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
@@ -427,6 +493,142 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* MANAGE PEOPLE MODAL */}
+      {showManagePeople && (
+        <div onClick={() => setShowManagePeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"90vh", display:"flex", flexDirection:"column" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
+              <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Manage People</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>View, edit and remove engineers & technicians</div>
+              <button onClick={() => setShowManagePeople(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
+            </div>
+            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
+              {peopleLoading ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div>
+              ) : (
+                <>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#374151", marginBottom:12 }}>Engineers ({engineers.length})</div>
+                  {engineers.length === 0 ? (
+                    <div style={{ fontSize:13, color:"#9ca3af", marginBottom:20 }}>No engineers found.</div>
+                  ) : engineers.map(eng => (
+                    <div key={eng.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                      <div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{eng.username}</div>
+                        <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{eng.email} · {eng.department}</div>
+                      </div>
+                      <button onClick={() => setDeleteConfirm({ role:"engineer", id: eng.id, name: eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(239,68,68,0.25)", background:"rgba(239,68,68,0.07)", color:"#dc2626", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                    </div>
+                  ))}
+
+                  <div style={{ fontSize:14, fontWeight:600, color:"#374151", marginBottom:12, marginTop:20 }}>Technicians ({technicians.length})</div>
+                  {technicians.length === 0 ? (
+                    <div style={{ fontSize:13, color:"#9ca3af" }}>No technicians found.</div>
+                  ) : technicians.map(tech => (
+                    <div key={tech.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{tech.username}</div>
+                        <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{tech.email} · {tech.department}</div>
+                        <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>Areas: {tech.area || "—"}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
+                        <button
+                          onClick={() => {
+                            const currentAreas = tech.area ? tech.area.split(",").map(a => a.trim()) : [];
+                            setEditTech({ id: tech.id, name: tech.username, area: currentAreas });
+                            setEditAreaError("");
+                          }}
+                          style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.07)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}
+                        >
+                          Edit Area
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ role:"technician", id: tech.id, name: tech.username })}
+                          style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(239,68,68,0.25)", background:"rgba(239,68,68,0.07)", color:"#dc2626", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT AREA MODAL */}
+      {editTech && (
+        <div onClick={() => setEditTech(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:480, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+              <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Edit Area</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Update areas for {editTech.name}</div>
+              <button onClick={() => setEditTech(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
+            </div>
+            <div style={{ padding:"24px 28px" }}>
+              <div style={{ fontSize:13, fontWeight:500, color:"#374151", marginBottom:10 }}>
+                Select Areas <span style={{ color:"#9ca3af", fontWeight:400 }}>(one or more)</span>
+              </div>
+              <div style={{ padding:"14px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.15)", background:"rgba(99,102,241,0.03)", display:"flex", flexWrap:"wrap", gap:8, marginBottom:14 }}>
+                {AREAS.map(area => {
+                  const selected = editTech.area.includes(area);
+                  return (
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => setEditTech(prev => ({
+                        ...prev,
+                        area: selected ? prev.area.filter(a => a !== area) : [...prev.area, area]
+                      }))}
+                      style={{ padding:"7px 16px", borderRadius:20, border:"none", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s", background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)", color: selected ? "white" : "#6366f1", boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none" }}
+                    >
+                      {selected && "✓ "}{area}
+                    </button>
+                  );
+                })}
+              </div>
+              {editTech.area.length > 0 && (
+                <div style={{ fontSize:12, color:"#6366f1", marginBottom:14, fontWeight:500 }}>
+                  {editTech.area.length} area{editTech.area.length > 1 ? "s" : ""} selected: {editTech.area.join(", ")}
+                </div>
+              )}
+              {editAreaError && (
+                <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.18)", display:"flex", alignItems:"center", gap:9 }}>
+                  <AlertTriangle size={14} color="#dc2626" />
+                  <span style={{ fontSize:12, color:"#dc2626" }}>{editAreaError}</span>
+                </div>
+              )}
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setEditTech(null)} disabled={editAreaLoading} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: editAreaLoading ? "not-allowed" : "pointer" }}>Cancel</button>
+                <button onClick={handleEditArea} disabled={editAreaLoading} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background: editAreaLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor: editAreaLoading ? "not-allowed" : "pointer", boxShadow: editAreaLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                  {editAreaLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRM MODAL */}
+      {deleteConfirm && (
+        <div onClick={() => setDeleteConfirm(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#dc2626" }}><AlertTriangle size={28} /></div>
+            <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Remove {deleteConfirm.role === "engineer" ? "Engineer" : "Technician"}?</div>
+            <div style={{ fontSize:14, color:"#6b7280", marginBottom:6 }}>Are you sure you want to remove</div>
+            <div style={{ fontSize:15, fontWeight:600, color:"#6366f1", marginBottom:8 }}>{deleteConfirm.name}</div>
+            <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
+            <div style={{ display:"flex", gap:12 }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
+              <button onClick={handleDelete} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#ef4444,#dc2626)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(239,68,68,0.3)" }}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
