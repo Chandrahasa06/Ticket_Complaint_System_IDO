@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
- 
+import Cookies from "js-cookie";
+
+
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
     overdue:      { color:"#dc2626", background:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
-    pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    "in-progress":{ color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
+    pending:      { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" }, 
     resolved:     { color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
     closed:       { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
@@ -55,6 +56,12 @@ const AdminDashboard = () => {
   const [addRole, setAddRole] = useState("engineer");
   const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
   const [addLoading, setAddLoading] = useState(false);
+
+  const logout = () => {
+  Cookies.remove("token");
+  Cookies.remove("role");
+  navigate("/");
+};
  
   const handleAddPeople = async (e) => {
     e.preventDefault();

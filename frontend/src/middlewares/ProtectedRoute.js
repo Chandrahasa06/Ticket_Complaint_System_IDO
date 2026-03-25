@@ -1,26 +1,34 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AccessDenied from "../pages/AccessDenied";
 
 const ProtectedRoute = ({ children, roles }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:3000/protectedRoute", {
-      credentials: "include"
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
+    const checkAuth = () => {
+      fetch("http://localhost:3000/protectedRoute", {
+        credentials: "include"
       })
-      .then((data) => {
-        setUser(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(false);
-        setLoading(false);
-      });
+        .then((res) => {
+          if (res.status === 401) {
+            navigate("/");
+            return;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (data) setUser(data);
+          setLoading(false);
+        })
+        .catch(() => navigate("/"));
+    };
+
+    checkAuth(); // initial check
+    const interval = setInterval(checkAuth, 5000); 
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) return null;

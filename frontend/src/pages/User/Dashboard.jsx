@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
- 
+import Cookies from "js-cookie";
+
 const glassCard = {
   borderRadius: 28,
   backdropFilter: "blur(30px)",
@@ -116,6 +117,11 @@ const UserDashboard = () => {
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+    const logout = () => {
+    Cookies.remove("token");
+    Cookies.remove("role");
+    navigate("/");
   };
  
   const inputStyle = {

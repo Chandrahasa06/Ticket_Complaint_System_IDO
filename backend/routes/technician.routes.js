@@ -65,14 +65,13 @@ technicianRouter.post("/login", async(req, res) => {
             username: technician.username,
             role: "technician",
             department: technician.department,
-            area: technician.area,
-        }, JWT_SECRET, { expiresIn: "7d" });
- 
-        res.cookie("token", token, {
+        }, JWT_SECRET, { expiresIn: "15m" });
+    
+        res.cookie("token", token , {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 15 * 60 * 1000, // 15 minutes
         });
  
         res.json({ message: "Login successful", id: technician.id });
