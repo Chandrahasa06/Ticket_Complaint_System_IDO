@@ -13,6 +13,7 @@ import adminRouter from "./routes/admin.routes.js";
 import "./cron/overdue.js";
 
 
+
 dotenv.config();
 const app = express();
 app.use(cors({
@@ -37,7 +38,7 @@ app.use("/api/user", userRouter);
 app.use("/api/engineer", engineerRouter);
 app.use("/api/technician", technicianRouter);
 app.use("/api/admin", adminRouter);
-
+app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.post("/logout", (req, res)=>{
     res.clearCookie("token");
     res.json({message: "Logged out successfully"});

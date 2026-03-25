@@ -14,7 +14,7 @@ const getStatusStyle = (status) => {
   };
   return map[s] || map.closed;
 };
- 
+
 const getStatusIcon = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const props = { size: 15 };
@@ -26,7 +26,7 @@ const getStatusIcon = (status) => {
     default: return null;
   }
 };
- 
+
 const glassCard = {
   borderRadius: 28,
   backdropFilter: "blur(30px)",
@@ -34,15 +34,15 @@ const glassCard = {
   background: "rgba(255,255,255,0.6)",
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
 };
- 
+
 const TICKETS_PER_PAGE = 3;
- 
+
 const AREAS = [
   "Hostels", "KV School", "Abhinandhan Bhavan", "Academic Block",
   "Library", "Sports Complex", "Guest House", "Faculty Quarters",
   "Admin Block", "Cafeteria"
 ];
- 
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -52,17 +52,23 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0 });
   const navigate = useNavigate();
+
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [addRole, setAddRole] = useState("engineer");
   const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
   const [addLoading, setAddLoading] = useState(false);
 
-  const logout = () => {
-  Cookies.remove("token");
-  Cookies.remove("role");
-  navigate("/");
-};
- 
+  const [showManagePeople, setShowManagePeople] = useState(false);
+  const [engineers, setEngineers] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
+  const [peopleLoading, setPeopleLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Edit area state
+  const [editTech, setEditTech] = useState(null); // { id, name, area: [...] }
+  const [editAreaLoading, setEditAreaLoading] = useState(false);
+  const [editAreaError, setEditAreaError] = useState("");
+
   const handleAddPeople = async (e) => {
     e.preventDefault();
     if (!addForm.username || !addForm.email || !addForm.password) { alert("All fields are required!"); return; }
@@ -87,7 +93,58 @@ const AdminDashboard = () => {
     } catch (err) { console.error(err); alert("Server error"); }
     finally { setAddLoading(false); }
   };
- 
+
+  const fetchPeople = async () => {
+    setPeopleLoading(true);
+    try {
+      const [engRes, techRes] = await Promise.all([
+        fetch("http://localhost:3000/api/admin/engineers", { credentials:"include" }),
+        fetch("http://localhost:3000/api/admin/technicians", { credentials:"include" }),
+      ]);
+      const engData = await engRes.json();
+      const techData = await techRes.json();
+      if(engRes.ok) setEngineers(engData.engineers);
+      if(techRes.ok) setTechnicians(techData.technicians);
+    } catch(e) { console.error(e); }
+    finally { setPeopleLoading(false); }
+  };
+
+  const handleDelete = async () => {
+    if(!deleteConfirm) return;
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/${deleteConfirm.role}/${deleteConfirm.id}`, {
+        method: "DELETE", credentials: "include",
+      });
+      const data = await res.json();
+      if(!res.ok) { alert(data.message); return; }
+      if(deleteConfirm.role === "engineer") setEngineers(prev => prev.filter(e => e.id !== deleteConfirm.id));
+      else setTechnicians(prev => prev.filter(t => t.id !== deleteConfirm.id));
+      setDeleteConfirm(null);
+    } catch(e) { console.error(e); alert("Server error"); }
+  };
+
+  const handleEditArea = async () => {
+    setEditAreaError("");
+    if(!editTech || editTech.area.length === 0){
+      setEditAreaError("Please select at least one area."); return;
+    }
+    setEditAreaLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/admin/technician/${editTech.id}/area`, {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ area: editTech.area }),
+      });
+      const data = await res.json();
+      if(!res.ok){ setEditAreaError(data.message || "Failed to update area."); return; }
+      setTechnicians(prev => prev.map(t =>
+        t.id === editTech.id ? { ...t, area: editTech.area.join(",") } : t
+      ));
+      setEditTech(null);
+    } catch(e) { console.error(e); setEditAreaError("Server error. Please try again."); }
+    finally { setEditAreaLoading(false); }
+  };
+
   const fetchTickets = async (status, page = 1) => {
     setLoading(true);
     try {
@@ -101,7 +158,7 @@ const AdminDashboard = () => {
     } catch (e) { console.error(e); alert("Server error"); }
     finally { setLoading(false); }
   };
- 
+
   const fetchStats = async () => {
     try {
       const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED"];
@@ -120,29 +177,19 @@ const AdminDashboard = () => {
       });
     } catch (e) { console.error(e); }
   };
- 
+
   useEffect(() => {
-    if (activeTab === "overview") {
-      fetchStats();
-    } else {
-      setCurrentPage(1);
-      fetchTickets(activeTab, 1);
-    }
+    if (activeTab === "overview") { fetchStats(); }
+    else { setCurrentPage(1); fetchTickets(activeTab, 1); }
   }, [activeTab]);
- 
+
   useEffect(() => {
-    if (activeTab !== "overview") {
-      fetchTickets(activeTab, currentPage);
-    }
+    if (activeTab !== "overview") { fetchTickets(activeTab, currentPage); }
   }, [currentPage, activeTab]);
- 
+
   const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
- 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setCurrentPage(1);
-  };
- 
+  const handleTabChange = (tab) => { setActiveTab(tab); setCurrentPage(1); };
+
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -151,7 +198,7 @@ const AdminDashboard = () => {
       navigate("/LoginRoleSelect");
     } catch (error) { console.error("Logout error:", error); }
   };
- 
+
   const tabs = [
     { id:"overview",    label:"Overview",    icon:"📈" },
     { id:"pending",     label:"Pending",     icon:"⏳" },
@@ -160,7 +207,7 @@ const AdminDashboard = () => {
     { id:"resolved",    label:"Resolved",    icon:"✅" },
     { id:"closed",      label:"Closed",      icon:"🔒" },
   ];
- 
+
   const statCards = [
     { label:"Total Tickets", value: stats.total,      icon:"📊" },
     { label:"Pending",       value: stats.pending,    icon:"⏳" },
@@ -168,14 +215,12 @@ const AdminDashboard = () => {
     { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
     { label:"Resolved",      value: stats.resolved,   icon:"✅" },
   ];
- 
+
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
- 
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
- 
-      {/* HEADER */}
+
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -194,24 +239,23 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <button onClick={() => { setShowManagePeople(true); fetchPeople(); }} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.3)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              Manage People
+            </button>
             <button onClick={() => setShowAddPeople(true)} style={{ padding:"10px 20px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"white", cursor:"pointer", display:"flex", alignItems:"center", gap:6, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
               <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
               Add People
             </button>
             <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
               Logout
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
           </div>
         </div>
       </header>
- 
-      {/* MAIN */}
+
       <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
- 
-        {/* Stat Cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
           {statCards.map((c, i) => (
             <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
@@ -221,30 +265,19 @@ const AdminDashboard = () => {
             </div>
           ))}
         </div>
- 
-        {/* Tabs */}
+
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{
-              padding:"10px 18px", borderRadius:15, border:"none",
-              fontSize:13, fontWeight:500, fontFamily:"inherit",
-              cursor:"pointer", display:"flex", alignItems:"center", gap:6,
-              background: activeTab === tab.id ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent",
-              color: activeTab === tab.id ? "white" : "#6b7280",
-              boxShadow: activeTab === tab.id ? "0 8px 24px rgba(99,102,241,0.3)" : "none",
-            }}>
+            <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{ padding:"10px 18px", borderRadius:15, border:"none", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:6, background: activeTab === tab.id ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: activeTab === tab.id ? "white" : "#6b7280", boxShadow: activeTab === tab.id ? "0 8px 24px rgba(99,102,241,0.3)" : "none" }}>
               <span>{tab.icon}</span>{tab.label}
             </button>
           ))}
         </div>
- 
-        {/* OVERVIEW */}
+
         {activeTab === "overview" && (
           <div>
             <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(254,226,226,0.65)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
-              <div style={{ width:44, height:44, borderRadius:14, background:"rgba(239,68,68,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#ef4444", flexShrink:0 }}>
-                <AlertTriangle size={20} />
-              </div>
+              <div style={{ width:44, height:44, borderRadius:14, background:"rgba(239,68,68,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#ef4444", flexShrink:0 }}><AlertTriangle size={20} /></div>
               <div>
                 <div style={{ fontSize:15, fontWeight:600, color:"#991b1b", marginBottom:8 }}>⚠️ Critical Alerts</div>
                 <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
@@ -261,7 +294,7 @@ const AdminDashboard = () => {
                   { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
                   { label:"Overdue",     val: stats.overdue,    color:"#dc2626" },
                   { label:"Resolved",    val: stats.resolved,   color:"#16a34a" },
-                ].map((s,i) => (
+                ].map((s, i) => (
                   <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
                     <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
                     <div style={{ fontSize:13, color:"#6b7280" }}>{s.label}</div>
@@ -271,14 +304,11 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
- 
-        {/* TICKET LIST */}
+
         {activeTab !== "overview" && (
           <div>
             {loading ? (
-              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
-              </div>
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}><div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div></div>
             ) : tickets.length === 0 ? (
               <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
                 <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", color:"#6366f1" }}>
@@ -305,7 +335,7 @@ const AdminDashboard = () => {
                             <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                               {[
                                 { label:"Department", val: t.type },
-                                { label:"Issue Type",  val: t.subtype },
+                                { label:"Location",   val: t.location || "—" },
                                 { label:"Created",    val: new Date(t.createdAt).toLocaleDateString() },
                                 { label:"Status",     val: t.status },
                               ].map((m, i) => (
@@ -317,8 +347,7 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.background, border:`1px solid ${ss.border}`, whiteSpace:"nowrap" }}>
-                            {getStatusIcon(statusKey)}
-                            {t.status}
+                            {getStatusIcon(statusKey)}{t.status}
                           </div>
                         </div>
                       </div>
@@ -332,17 +361,13 @@ const AdminDashboard = () => {
                 })}
                 {totalPages > 1 && (
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
-                    <div style={{ fontSize:13, color:"#6b7280" }}>
-                      Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets
-                    </div>
+                    <div style={{ fontSize:13, color:"#6b7280" }}>Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets</div>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background: currentPage === 1 ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === 1 ? "#d1d5db" : "#374151", cursor: currentPage === 1 ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
                       {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(page => (
-                        <button key={page} onClick={() => setCurrentPage(page)} style={{ width:36, height:36, borderRadius:12, border: currentPage === page ? "none" : "1px solid rgba(0,0,0,0.08)", background: currentPage === page ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.8)", color: currentPage === page ? "white" : "#374151", fontSize:13, fontWeight: currentPage === page ? 700 : 500, cursor:"pointer", fontFamily:"inherit", boxShadow: currentPage === page ? "0 4px 14px rgba(99,102,241,0.35)" : "none" }}>
-                          {page}
-                        </button>
+                        <button key={page} onClick={() => setCurrentPage(page)} style={{ width:36, height:36, borderRadius:12, border: currentPage === page ? "none" : "1px solid rgba(0,0,0,0.08)", background: currentPage === page ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.8)", color: currentPage === page ? "white" : "#374151", fontSize:13, fontWeight: currentPage === page ? 700 : 500, cursor:"pointer", fontFamily:"inherit", boxShadow: currentPage === page ? "0 4px 14px rgba(99,102,241,0.35)" : "none" }}>{page}</button>
                       ))}
                       <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background: currentPage === totalPages ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === totalPages ? "#d1d5db" : "#374151", cursor: currentPage === totalPages ? "not-allowed" : "pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -355,7 +380,7 @@ const AdminDashboard = () => {
           </div>
         )}
       </main>
- 
+
       {/* TICKET MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
@@ -363,19 +388,17 @@ const AdminDashboard = () => {
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Ticket Details</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Complete information about this ticket</div>
-              <button onClick={() => setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-                <X size={15} />
-              </button>
+              <button onClick={() => setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 {[
-                  { label:"TICKET ID",   val: selectedTicket.id },
-                  { label:"SUBJECT",     val: selectedTicket.subject },
-                  { label:"DEPARTMENT",  val: selectedTicket.type },
-                  { label:"ISSUE TYPE",  val: selectedTicket.subtype },
-                  { label:"STATUS",      val: selectedTicket.status },
-                  { label:"DATE",        val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+                  { label:"TICKET ID",  val: selectedTicket.id },
+                  { label:"SUBJECT",    val: selectedTicket.subject },
+                  { label:"DEPARTMENT", val: selectedTicket.type },
+                  { label:"LOCATION",   val: selectedTicket.location || "—" },
+                  { label:"STATUS",     val: selectedTicket.status },
+                  { label:"DATE",       val: new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -392,12 +415,11 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
- 
+
       {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={() => setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
- 
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -409,19 +431,15 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <button onClick={() => setShowAddPeople(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <X size={15} />
               </button>
             </div>
- 
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
                 {["engineer","technician"].map(r => (
-                  <button key={r} onClick={() => { setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: addRole === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: addRole === r ? "white" : "#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow: addRole === r ? "0 4px 14px rgba(99,102,241,0.3)" : "none", transition:"all 0.2s", textTransform:"capitalize" }}>
-                    {r}
-                  </button>
+                  <button key={r} onClick={() => { setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: addRole === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: addRole === r ? "white" : "#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow: addRole === r ? "0 4px 14px rgba(99,102,241,0.3)" : "none", transition:"all 0.2s", textTransform:"capitalize" }}>{r}</button>
                 ))}
               </div>
- 
               <form onSubmit={handleAddPeople}>
                 {[
                   { label:"Username",     key:"username",   type:"text",     placeholder:"Enter username" },
@@ -432,20 +450,10 @@ const AdminDashboard = () => {
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>{f.label}</label>
-                    <input
-                      type={f.type}
-                      value={addForm[f.key]}
-                      onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                      autoComplete="off"
-                      style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", transition:"all 0.2s" }}
-                      onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }}
-                      onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}
-                    />
+                    <input type={f.type} value={addForm[f.key]} onChange={e => setAddForm(prev => ({ ...prev, [f.key]: e.target.value }))} placeholder={f.placeholder} autoComplete="off" style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", transition:"all 0.2s" }} onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }} onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
                   </div>
                 ))}
- 
-                {addRole === "engineer" && (
+                {(addRole === "engineer" || addRole === "technician") && (
                   <div style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
                     <select value={addForm.department} onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))} style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }} onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }} onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}>
@@ -456,45 +464,26 @@ const AdminDashboard = () => {
                     </select>
                   </div>
                 )}
- 
                 {addRole === "technician" && (
-                  <>
-                    <div style={{ marginBottom:16 }}>
-                      <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Department</label>
-                      <select value={addForm.department} onChange={e => setAddForm(prev => ({ ...prev, department: e.target.value }))} style={{ width:"100%", padding:"13px 16px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", fontSize:14, fontFamily:"inherit", color:"#111827", outline:"none", boxSizing:"border-box", cursor:"pointer" }} onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.12)"; }} onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }}>
-                        <option value="">Select Department</option>
-                        <option value="Civil">Civil</option>
-                        <option value="Electrical">Electrical</option>
-                        <option value="HVAC">HVAC</option>
-                      </select>
+                  <div style={{ marginBottom:16 }}>
+                    <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Area <span style={{ color:"#9ca3af", fontWeight:400 }}>(select one or more)</span></label>
+                    <div style={{ padding:"12px 14px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", display:"flex", flexWrap:"wrap", gap:8 }}>
+                      {AREAS.map(area => {
+                        const selected = (addForm.area || []).includes(area);
+                        return (
+                          <button key={area} type="button" onClick={() => setAddForm(prev => ({ ...prev, area: selected ? (prev.area || []).filter(a => a !== area) : [...(prev.area || []), area] }))} style={{ padding:"6px 14px", borderRadius:20, border:"none", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s", background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)", color: selected ? "white" : "#6366f1", boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none" }}>
+                            {selected && "✓ "}{area}
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div style={{ marginBottom:16 }}>
-                      <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>
-                        Area <span style={{ color:"#9ca3af", fontWeight:400 }}>(select one or more)</span>
-                      </label>
-                      <div style={{ padding:"12px 14px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)", background:"rgba(255,255,255,0.9)", display:"flex", flexWrap:"wrap", gap:8 }}>
-                        {AREAS.map(area => {
-                          const selected = (addForm.area || []).includes(area);
-                          return (
-                            <button key={area} type="button" onClick={() => setAddForm(prev => ({ ...prev, area: selected ? (prev.area || []).filter(a => a !== area) : [...(prev.area || []), area] }))} style={{ padding:"6px 14px", borderRadius:20, border:"none", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s", background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)", color: selected ? "white" : "#6366f1", boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none" }}>
-                              {selected && "✓ "}{area}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {(addForm.area || []).length > 0 && (
-                        <div style={{ fontSize:12, color:"#6366f1", marginTop:6, fontWeight:500 }}>
-                          {addForm.area.length} area{addForm.area.length > 1 ? "s" : ""} selected
-                        </div>
-                      )}
-                    </div>
-                  </>
+                    {(addForm.area || []).length > 0 && (
+                      <div style={{ fontSize:12, color:"#6366f1", marginTop:6, fontWeight:500 }}>{addForm.area.length} area{addForm.area.length > 1 ? "s" : ""} selected</div>
+                    )}
+                  </div>
                 )}
- 
                 <div style={{ display:"flex", gap:10, marginTop:24 }}>
-                  <button type="button" onClick={() => setShowAddPeople(false)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
-                    Cancel
-                  </button>
+                  <button type="button" onClick={() => setShowAddPeople(false)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
                   <button type="submit" disabled={addLoading} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:8, opacity: addLoading ? 0.7 : 1 }}>
                     <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                     {addLoading ? "Adding..." : `Add ${addRole.charAt(0).toUpperCase() + addRole.slice(1)}`}
@@ -505,9 +494,144 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* MANAGE PEOPLE MODAL */}
+      {showManagePeople && (
+        <div onClick={() => setShowManagePeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"90vh", display:"flex", flexDirection:"column" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
+              <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Manage People</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>View, edit and remove engineers & technicians</div>
+              <button onClick={() => setShowManagePeople(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
+            </div>
+            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
+              {peopleLoading ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div>
+              ) : (
+                <>
+                  <div style={{ fontSize:14, fontWeight:600, color:"#374151", marginBottom:12 }}>Engineers ({engineers.length})</div>
+                  {engineers.length === 0 ? (
+                    <div style={{ fontSize:13, color:"#9ca3af", marginBottom:20 }}>No engineers found.</div>
+                  ) : engineers.map(eng => (
+                    <div key={eng.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                      <div>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{eng.username}</div>
+                        <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{eng.email} · {eng.department}</div>
+                      </div>
+                      <button onClick={() => setDeleteConfirm({ role:"engineer", id: eng.id, name: eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(239,68,68,0.25)", background:"rgba(239,68,68,0.07)", color:"#dc2626", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                    </div>
+                  ))}
+
+                  <div style={{ fontSize:14, fontWeight:600, color:"#374151", marginBottom:12, marginTop:20 }}>Technicians ({technicians.length})</div>
+                  {technicians.length === 0 ? (
+                    <div style={{ fontSize:13, color:"#9ca3af" }}>No technicians found.</div>
+                  ) : technicians.map(tech => (
+                    <div key={tech.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{tech.username}</div>
+                        <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{tech.email} · {tech.department}</div>
+                        <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>Areas: {tech.area || "—"}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
+                        <button
+                          onClick={() => {
+                            const currentAreas = tech.area ? tech.area.split(",").map(a => a.trim()) : [];
+                            setEditTech({ id: tech.id, name: tech.username, area: currentAreas });
+                            setEditAreaError("");
+                          }}
+                          style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.07)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}
+                        >
+                          Edit Area
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm({ role:"technician", id: tech.id, name: tech.username })}
+                          style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(239,68,68,0.25)", background:"rgba(239,68,68,0.07)", color:"#dc2626", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT AREA MODAL */}
+      {editTech && (
+        <div onClick={() => setEditTech(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:480, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+              <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Edit Area</div>
+              <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Update areas for {editTech.name}</div>
+              <button onClick={() => setEditTech(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
+            </div>
+            <div style={{ padding:"24px 28px" }}>
+              <div style={{ fontSize:13, fontWeight:500, color:"#374151", marginBottom:10 }}>
+                Select Areas <span style={{ color:"#9ca3af", fontWeight:400 }}>(one or more)</span>
+              </div>
+              <div style={{ padding:"14px", borderRadius:18, border:"1.5px solid rgba(99,102,241,0.15)", background:"rgba(99,102,241,0.03)", display:"flex", flexWrap:"wrap", gap:8, marginBottom:14 }}>
+                {AREAS.map(area => {
+                  const selected = editTech.area.includes(area);
+                  return (
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => setEditTech(prev => ({
+                        ...prev,
+                        area: selected ? prev.area.filter(a => a !== area) : [...prev.area, area]
+                      }))}
+                      style={{ padding:"7px 16px", borderRadius:20, border:"none", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer", transition:"all 0.15s", background: selected ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(99,102,241,0.08)", color: selected ? "white" : "#6366f1", boxShadow: selected ? "0 4px 12px rgba(99,102,241,0.3)" : "none" }}
+                    >
+                      {selected && "✓ "}{area}
+                    </button>
+                  );
+                })}
+              </div>
+              {editTech.area.length > 0 && (
+                <div style={{ fontSize:12, color:"#6366f1", marginBottom:14, fontWeight:500 }}>
+                  {editTech.area.length} area{editTech.area.length > 1 ? "s" : ""} selected: {editTech.area.join(", ")}
+                </div>
+              )}
+              {editAreaError && (
+                <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.18)", display:"flex", alignItems:"center", gap:9 }}>
+                  <AlertTriangle size={14} color="#dc2626" />
+                  <span style={{ fontSize:12, color:"#dc2626" }}>{editAreaError}</span>
+                </div>
+              )}
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setEditTech(null)} disabled={editAreaLoading} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: editAreaLoading ? "not-allowed" : "pointer" }}>Cancel</button>
+                <button onClick={handleEditArea} disabled={editAreaLoading} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background: editAreaLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor: editAreaLoading ? "not-allowed" : "pointer", boxShadow: editAreaLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                  {editAreaLoading ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRM MODAL */}
+      {deleteConfirm && (
+        <div onClick={() => setDeleteConfirm(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#dc2626" }}><AlertTriangle size={28} /></div>
+            <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Remove {deleteConfirm.role === "engineer" ? "Engineer" : "Technician"}?</div>
+            <div style={{ fontSize:14, color:"#6b7280", marginBottom:6 }}>Are you sure you want to remove</div>
+            <div style={{ fontSize:15, fontWeight:600, color:"#6366f1", marginBottom:8 }}>{deleteConfirm.name}</div>
+            <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
+            <div style={{ display:"flex", gap:12 }}>
+              <button onClick={() => setDeleteConfirm(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
+              <button onClick={handleDelete} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#ef4444,#dc2626)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(239,68,68,0.3)" }}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };
- 
+
 export default AdminDashboard;
- 
