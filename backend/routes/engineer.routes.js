@@ -9,10 +9,6 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const engineerRouter = express.Router();
 
-engineerRouter.get("/dashboard", (req, res) => {
-    res.json({ message: "Engineer dashboard", user: req.user });
-});
-
 engineerRouter.post("/register", async(req, res) => {
     const { username, email, password, department, phone, employeeId } = req.body;
 
@@ -83,6 +79,11 @@ engineerRouter.post("/login", async(req, res) => {
 // ── All routes below require authentication ──────────────────────────────────
 engineerRouter.use(checkAuth);
 
+// ✅ Moved here so req.user is available from checkAuth
+engineerRouter.get("/dashboard", (req, res) => {
+    res.json({ message: "Engineer dashboard", user: req.user });
+});
+
 // GET full profile
 engineerRouter.get("/profile", async(req, res) => {
     if(req.user.role !== "engineer"){
@@ -117,7 +118,6 @@ engineerRouter.patch("/change-password", async(req, res) => {
     }
 
     try {
-        // Fetch current hashed password from DB
         const engineer = await prisma.engineer.findUnique({
             where: { id: req.user.id },
             select: { password: true },
@@ -127,19 +127,16 @@ engineerRouter.patch("/change-password", async(req, res) => {
             return res.status(404).json({ message: "Engineer not found." });
         }
 
-        // Verify current password
         const isMatch = await bcrypt.compare(currentPassword, engineer.password);
         if(!isMatch){
             return res.status(401).json({ message: "Current password is incorrect." });
         }
 
-        // Prevent reusing the same password
         const isSame = await bcrypt.compare(newPassword, engineer.password);
         if(isSame){
             return res.status(400).json({ message: "New password must differ from your current password." });
         }
 
-        // Hash and save new password
         const hashedNew = await bcrypt.hash(newPassword, 10);
         await prisma.engineer.update({
             where: { id: req.user.id },

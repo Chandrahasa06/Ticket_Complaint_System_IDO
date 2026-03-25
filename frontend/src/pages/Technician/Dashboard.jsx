@@ -27,6 +27,8 @@ const TechnicianDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [prevTicket, setPrevTicket] = useState(null);
+  const [prevTicketLoading, setPrevTicketLoading] = useState(false);
   const [confirmCloseTicket, setConfirmCloseTicket] = useState(null);
   const [techInfo, setTechInfo] = useState({ username:"", department:"", area:"" });
   const [profile, setProfile] = useState(null);
@@ -53,6 +55,26 @@ const TechnicianDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchTicketById = async (id) => {
+    setPrevTicketLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/technician/tickets/${id}`, { credentials:"include" });
+      const data = await res.json();
+      if(!res.ok) { alert(data.message); return; }
+      setPrevTicket(data.ticket);
+    } catch(e) {
+      console.error(e);
+      alert("Server error");
+    } finally {
+      setPrevTicketLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setSelectedTicket(null);
+    setPrevTicket(null);
   };
 
   useEffect(() => {
@@ -174,6 +196,9 @@ const TechnicianDashboard = () => {
   const pwStrengthColors = ["#ef4444","#f97316","#eab308","#22c55e"];
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
+  // The ticket whose fields are currently displayed in the modal
+  const displayedTicket = prevTicket ?? selectedTicket;
+
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
@@ -258,6 +283,11 @@ const TechnicianDashboard = () => {
                   <div style={{ flex:1 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
                       <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{t.id}</span>
+                      {t.prevId && (
+                        <span style={{ padding:"2px 10px", borderRadius:20, fontSize:11, fontWeight:600, color:"#7c3aed", background:"rgba(124,58,237,0.10)", border:"1px solid rgba(124,58,237,0.18)" }}>
+                          Follow-up
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{t.subject}</div>
                     <div style={{ fontSize:13, color:"#6b7280", marginBottom:14 }}>{t.body}</div>
@@ -292,7 +322,7 @@ const TechnicianDashboard = () => {
               </div>
 
               <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)", flexWrap:"wrap" }}>
-                <button onClick={() => setSelectedTicket(t)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                <button onClick={() => { setPrevTicket(null); setSelectedTicket(t); }} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
                   <Eye size={15} /> View Details
                 </button>
                 <button
@@ -315,31 +345,75 @@ const TechnicianDashboard = () => {
         })}
       </div>
 
-      {/* VIEW DETAILS MODAL */}
+      {/* ─── VIEW DETAILS MODAL ─── */}
       {selectedTicket && (
-        <div onClick={() => setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+        <div onClick={closeModal} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
+
+            {/* Modal header — turns purple when viewing the previous ticket */}
+            <div style={{ padding:"24px 28px", background: prevTicket ? "linear-gradient(135deg,#7c3aed,#6366f1)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}><Wrench size={22} color="white" /></div>
+                <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Wrench size={22} color="white" />
+                </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Ticket Details</div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Complete ticket information</div>
+                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>
+                    {prevTicket ? "Previous Ticket Details" : "Ticket Details"}
+                  </div>
+                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>
+                    {prevTicket ? `Referenced by Ticket #${selectedTicket.id}` : "Complete ticket information"}
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
+              <button onClick={closeModal} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+                <X size={15} />
+              </button>
             </div>
+
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
+
+              {/* Back button — only visible when viewing the previous ticket */}
+              {prevTicket && (
+                <button onClick={() => setPrevTicket(null)} style={{ marginBottom:18, background:"none", border:"none", color:"#6366f1", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, padding:0 }}>
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  Back to Ticket #{selectedTicket.id}
+                </button>
+              )}
+
+              {/* Follow-up banner — only shown on the follow-up ticket itself, not when viewing the previous one */}
+              {!prevTicket && selectedTicket.prevId && (
+                <div style={{ marginBottom:18, padding:"12px 16px", borderRadius:16, background:"rgba(124,58,237,0.06)", border:"1px solid rgba(124,58,237,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <svg width="15" height="15" fill="none" stroke="#7c3aed" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    <span style={{ fontSize:13, color:"#374151" }}>
+                      This is a follow-up to <span style={{ fontWeight:600, color:"#7c3aed" }}>Ticket #{selectedTicket.prevId}</span>
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => fetchTicketById(selectedTicket.prevId)}
+                    disabled={prevTicketLoading}
+                    style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}
+                  >
+                    {prevTicketLoading ? "Loading..." : (
+                      <>
+                        <Eye size={12} /> View Previous Ticket
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Fields — switch between prevTicket and selectedTicket */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
-                  { label:"TICKET ID",    val: selectedTicket.id,                                       span: false },
-                  { label:"STATUS",       val: selectedTicket.status,                                   span: false },
-                  { label:"SUBJECT",      val: selectedTicket.subject,                                  span: true  },
-                  { label:"DEPARTMENT",   val: selectedTicket.type,                                     span: false },
-                  { label:"AREA",         val: selectedTicket.area,                                     span: false },
-                  { label:"LOCATION",     val: selectedTicket.location || "—",                          span: false },
-                  { label:"RAISED BY",    val: selectedTicket.user?.username || "—",                    span: false },
-                  { label:"DATE",         val: new Date(selectedTicket.createdAt).toLocaleDateString(), span: false },
+                  { label:"TICKET ID",  val: displayedTicket.id,                                        span: false },
+                  { label:"STATUS",     val: displayedTicket.status,                                    span: false },
+                  { label:"SUBJECT",    val: displayedTicket.subject,                                   span: true  },
+                  { label:"DEPARTMENT", val: displayedTicket.type,                                      span: false },
+                  { label:"AREA",       val: displayedTicket.area,                                      span: false },
+                  { label:"LOCATION",   val: displayedTicket.location || "—",                           span: false },
+                  { label:"RAISED BY",  val: displayedTicket.user?.username || "—",                     span: false },
+                  { label:"DATE",       val: new Date(displayedTicket.createdAt).toLocaleDateString(),  span: false },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -347,17 +421,20 @@ const TechnicianDashboard = () => {
                   </div>
                 ))}
               </div>
+
               <div style={{ padding:"14px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:16 }}>
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:6 }}>DESCRIPTION</div>
-                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{selectedTicket.body}</div>
+                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{displayedTicket.body}</div>
               </div>
-              {selectedTicket.imageUrl && (
+
+              {displayedTicket.imageUrl && (
                 <div style={{ marginBottom:16 }}>
                   <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:8 }}>ATTACHED IMAGE</div>
-                  <img src={`http://localhost:3000${selectedTicket.imageUrl}`} alt="ticket" style={{ width:"100%", borderRadius:16, maxHeight:240, objectFit:"cover" }} />
+                  <img src={`http://localhost:3000${displayedTicket.imageUrl}`} alt="ticket" style={{ width:"100%", borderRadius:16, maxHeight:240, objectFit:"cover" }} />
                 </div>
               )}
-              <button onClick={() => setSelectedTicket(null)} style={{ width:"100%", padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
+
+              <button onClick={closeModal} style={{ width:"100%", padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
             </div>
           </div>
         </div>

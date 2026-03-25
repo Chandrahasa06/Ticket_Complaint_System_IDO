@@ -4,13 +4,10 @@ import { prisma } from "../prisma/client.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
+
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 const technicianRouter = express.Router();
-
-technicianRouter.get("/dashboard", (req, res) => {
-    res.json({ message: "Technician dashboard", user: req.user });
-});
 
 technicianRouter.post("/register", async(req, res) => {
     const { username, email, password, department, area, phone, employeeId } = req.body;
@@ -85,6 +82,11 @@ technicianRouter.post("/login", async(req, res) => {
 // ── All routes below require authentication ──────────────────────────────────
 technicianRouter.use(checkAuth);
 
+// ✅ Moved here so req.user is available from checkAuth
+technicianRouter.get("/dashboard", (req, res) => {
+    res.json({ message: "Technician dashboard", user: req.user });
+});
+
 // GET full profile
 technicianRouter.get("/profile", async(req, res) => {
     if(req.user.role !== "technician"){
@@ -119,7 +121,6 @@ technicianRouter.patch("/change-password", async(req, res) => {
     }
 
     try {
-        // Fetch current hashed password from DB
         const technician = await prisma.technician.findUnique({
             where: { id: req.user.id },
             select: { password: true },
@@ -129,19 +130,16 @@ technicianRouter.patch("/change-password", async(req, res) => {
             return res.status(404).json({ message: "Technician not found." });
         }
 
-        // Verify current password
         const isMatch = await bcrypt.compare(currentPassword, technician.password);
         if(!isMatch){
             return res.status(401).json({ message: "Current password is incorrect." });
         }
 
-        // Prevent reusing the same password
         const isSame = await bcrypt.compare(newPassword, technician.password);
         if(isSame){
             return res.status(400).json({ message: "New password must differ from your current password." });
         }
 
-        // Hash and save new password
         const hashedNew = await bcrypt.hash(newPassword, 10);
         await prisma.technician.update({
             where: { id: req.user.id },
@@ -183,6 +181,25 @@ technicianRouter.get("/tickets", async(req, res) => {
         );
 
         res.json({ tickets, total: tickets.length });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// GET single ticket by ID
+technicianRouter.get("/tickets/:id", async(req, res) => {
+    if(req.user.role !== "technician"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: Number(req.params.id) },
+            include: { user: { select: { username: true, email: true } } },
+        });
+        if(!ticket) return res.status(404).json({ message: "Ticket not found" });
+        res.json({ ticket });
     }
     catch(e) {
         console.log(e);
