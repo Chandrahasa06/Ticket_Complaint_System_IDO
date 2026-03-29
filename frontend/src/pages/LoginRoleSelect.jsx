@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
- 
+import logo from "../assets/logo.png";
+
 const LoginRoleSelect = ({ setPage }) => {
   const [hoveredRole, setHoveredRole] = useState(null);
-  const [serverStatus, setServerStatus] = useState("checking"); // "checking" | "online" | "offline"
+  const [serverStatus, setServerStatus] = useState("checking");
   const navigate = useNavigate();
- 
+
   useEffect(() => {
     const checkServer = async () => {
       try {
@@ -18,14 +19,14 @@ const LoginRoleSelect = ({ setPage }) => {
     };
     checkServer();
   }, []);
- 
+
   const statusConfig = {
-    checking: { color:"#fbbf24", text:"Checking...",   dot:"#fbbf24" },
-    online:   { color:"#16a34a", text:"System Online", dot:"#22c55e" },
+    checking: { color:"#fbbf24", text:"Checking...",    dot:"#fbbf24" },
+    online:   { color:"#16a34a", text:"System Online",  dot:"#22c55e" },
     offline:  { color:"#dc2626", text:"Server Offline", dot:"#ef4444" },
   };
   const status = statusConfig[serverStatus];
- 
+
   const roles = [
     {
       id: "user-login",
@@ -73,7 +74,7 @@ const LoginRoleSelect = ({ setPage }) => {
       path: "/login/technician",
     },
   ];
- 
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -88,26 +89,45 @@ const LoginRoleSelect = ({ setPage }) => {
       fontFamily: "'Inter','Segoe UI',sans-serif",
       color: "#111827",
     }}>
- 
+
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.5, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.5, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
- 
+
       <div style={{ position:"relative", zIndex:10, width:"100%", maxWidth:860 }}>
- 
-        <div style={{ textAlign:"center", marginBottom:52 }}>
+
+        {/* ── Header ── */}
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", marginBottom:52 }}>
+
+          {/* Logo */}
           <div style={{
-            display:"inline-flex", alignItems:"center", justifyContent:"center",
-            width:70, height:70, borderRadius:22,
-            background:"linear-gradient(135deg,#6366f1,#0ea5e9)",
-            boxShadow:"0 20px 50px rgba(99,102,241,0.4)",
-            marginBottom:24,
+            marginBottom:20,
+            padding:6,
+            borderRadius:24,
+            background:"rgba(255,255,255,0.7)",
+            backdropFilter:"blur(20px)",
+            WebkitBackdropFilter:"blur(20px)",
+            boxShadow:"0 8px 32px rgba(99,102,241,0.15), inset 0 1px 0 rgba(255,255,255,0.9)",
+            border:"1px solid rgba(255,255,255,0.8)",
           }}>
-            <svg width="32" height="32" fill="none" stroke="white" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <img
+              src={logo}
+              alt="IIT Indore Logo"
+              style={{
+                width: 96,
+                height: 96,
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
           </div>
- 
-          <div style={{ fontSize:42, fontWeight:600, lineHeight:1.15, marginBottom:12 }}>
+
+          {/* Institute name */}
+          <div style={{ fontSize:13, fontWeight:600, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase", marginBottom:16 }}>
+            Indian Institute of Technology Indore
+          </div>
+
+          {/* Title */}
+          <div style={{ fontSize:42, fontWeight:700, lineHeight:1.15, marginBottom:12, textAlign:"center" }}>
             <span style={{ background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
               Ticket Management
             </span>
@@ -116,9 +136,11 @@ const LoginRoleSelect = ({ setPage }) => {
               System
             </span>
           </div>
+
           <div style={{ fontSize:16, color:"#6b7280" }}>Select your role to continue</div>
         </div>
- 
+
+        {/* ── Role Cards ── */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
           {roles.map((role) => (
             <button
@@ -166,7 +188,8 @@ const LoginRoleSelect = ({ setPage }) => {
             </button>
           ))}
         </div>
- 
+
+        {/* ── Footer ── */}
         <div style={{ textAlign:"center", marginTop:40 }}>
           <div style={{ fontSize:13, color:"#9ca3af", marginBottom:10 }}>
             Secure access to your ticketing portal
@@ -181,10 +204,10 @@ const LoginRoleSelect = ({ setPage }) => {
             <span style={{ fontSize:12, fontWeight:500, color: status.color }}>{status.text}</span>
           </div>
         </div>
- 
+
       </div>
     </div>
   );
 };
- 
+
 export default LoginRoleSelect;

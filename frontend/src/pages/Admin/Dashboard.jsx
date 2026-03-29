@@ -199,20 +199,20 @@ const AdminDashboard = () => {
   };
 
   const tabs = [
-    { id:"overview",    label:"Overview",    icon:"📈" },
-    { id:"pending",     label:"Pending",     icon:"⏳" },
-    { id:"overdue",     label:"Overdue",     icon:"⚠️" },
-    { id:"in-progress", label:"In Progress", icon:"🔄" },
-    { id:"resolved",    label:"Resolved",    icon:"✅" },
-    { id:"closed",      label:"Closed",      icon:"🔒" },
+    { id:"overview",    label:"Overview",    },
+    { id:"pending",     label:"Pending",      },
+    { id:"overdue",     label:"Overdue",     },
+    { id:"in-progress", label:"In Progress",  },
+    { id:"resolved",    label:"Resolved",     },
+    { id:"closed",      label:"Closed",      },
   ];
 
   const statCards = [
-    { label:"Total Tickets", value: stats.total,      icon:"📊" },
-    { label:"Pending",       value: stats.pending,    icon:"⏳" },
-    { label:"In Progress",   value: stats.inProgress, icon:"🔄" },
-    { label:"Overdue",       value: stats.overdue,    icon:"⚠️" },
-    { label:"Resolved",      value: stats.resolved,   icon:"✅" },
+    { label:"Total Tickets", value: stats.total,       },
+    { label:"Pending",       value: stats.pending,    },
+    { label:"In Progress",   value: stats.inProgress,  },
+    { label:"Overdue",       value: stats.overdue,    },
+    { label:"Resolved",      value: stats.resolved,   },
   ];
 
   return (
@@ -223,12 +223,10 @@ const AdminDashboard = () => {
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            <div style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
-              <svg width="22" height="22" fill="white" viewBox="0 0 20 20">
-                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <div style={{ width:46, height:46, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, overflow:"hidden", position:"relative" }}>
+  <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", width:34, height:22, borderRadius:"50% 50% 0 0", background:"rgba(255,255,255,0.9)" }} />
+  <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
+</div>
             <div>
               <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Admin Dashboard</div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
