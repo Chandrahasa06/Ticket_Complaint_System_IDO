@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, Mail } from "lucide-react";
+import { X, Star, Phone, Mail, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const glassCard = {
   borderRadius: 28,
@@ -13,8 +14,7 @@ const glassCard = {
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    "in-progress": { color:"#7c3aed", bg:"rgba(237,233,254,0.85)", border:"rgba(139,92,246,0.25)" },
+    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },  
     overdue:       { color:"#dc2626", bg:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
     resolved:      { color:"#16a34a", bg:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
     closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
@@ -97,7 +97,6 @@ const EngineerDashboard = () => {
       default: return null;
     }
   };
-
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -152,7 +151,6 @@ const EngineerDashboard = () => {
 
   const tabs = [
     { key:"pending",     label:"Pending",    },
-    { key:"in-progress", label:"In Progress",  },
     { key:"overdue",     label:"Overdue",      },
     { key:"resolved",    label:"Resolved",    },
     { key:"closed",      label:"Closed",      },

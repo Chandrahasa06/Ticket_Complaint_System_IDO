@@ -60,13 +60,13 @@ engineerRouter.post("/login", async(req, res) => {
             username: engineer.username,
             role: "engineer",
             department: engineer.department,
-        }, JWT_SECRET, { expiresIn: "7d" });
-
-        res.cookie("token", token, {
+        }, JWT_SECRET, { expiresIn: "15m" });
+    
+        res.cookie("token", token , {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
         res.json({ message: "Login successful", id: engineer.id, department: engineer.department });

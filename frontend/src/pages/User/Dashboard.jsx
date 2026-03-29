@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const glassCard = {
   borderRadius: 28,
@@ -152,7 +153,6 @@ const handleSubmitFollowup = async () => {
       console.error("Logout error:", error);
     }
   };
-
   const inputStyle = {
     width:"100%", padding:"13px 16px",
     borderRadius:18, border:"1.5px solid rgba(0,0,0,0.09)",

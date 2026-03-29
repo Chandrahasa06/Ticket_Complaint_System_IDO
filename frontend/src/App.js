@@ -1,9 +1,8 @@
-import { Routes, Route, Navigate} from "react-router-dom";
-
-// Middlewares
+import { Routes, Route, Navigate } from "react-router-dom";
+import PublicRoute from "./middlewares/PublicRoute";
 import ProtectedRoute from "./middlewares/ProtectedRoute";
 
-// Role Selection 
+// Role Selection
 import LoginRoleSelect from "./pages/LoginRoleSelect";
 
 // Login pages
@@ -19,17 +18,23 @@ import EngineerDashboard from "./pages/Engineer/Dashboard";
 import TechnicianDashboard from "./pages/Technician/Dashboard";
 
 function App() {
-
   return (
     <Routes>
       {/* ROLE SELECTION */}
-      <Route path="/" element={<LoginRoleSelect />} />
+      <Route
+        path="/"
+        element={
+          <PublicRoute>
+            <LoginRoleSelect />
+          </PublicRoute>
+        }
+      />
 
       {/* LOGIN ROUTES */}
-      <Route path="/login/user" element={<UserLogin />} />
-      <Route path="/login/admin" element={<AdminLogin />} />
-      <Route path="/login/engineer" element={<EngineerLogin />} />
-      <Route path="/login/technician" element={<TechnicianLogin />} />
+      <Route path="/login/user" element={<PublicRoute><UserLogin /></PublicRoute>} />
+      <Route path="/login/admin" element={<PublicRoute><AdminLogin /></PublicRoute>} />
+      <Route path="/login/engineer" element={<PublicRoute><EngineerLogin /></PublicRoute>} />
+      <Route path="/login/technician" element={<PublicRoute><TechnicianLogin /></PublicRoute>} />
 
       {/* DASHBOARDS */}
       <Route path="/user/dashboard" element={<ProtectedRoute roles={["user"]}><UserDashboard /></ProtectedRoute>} />
@@ -38,7 +43,7 @@ function App() {
       <Route path="/technician/dashboard" element={<ProtectedRoute roles={["technician"]}><TechnicianDashboard /></ProtectedRoute>} />
 
       {/* FALLBACK */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
