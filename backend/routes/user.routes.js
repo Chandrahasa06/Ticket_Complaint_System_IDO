@@ -177,6 +177,70 @@ userRouter.post("/login", async(req, res) => {
     }
 });
 
+// FORGOT PASSWORD - send OTP (only for existing users)
+userRouter.post("/forgot-password/send-otp", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.endsWith("@iiti.ac.in")) {
+      return res.status(400).json({ message: "Invalid email" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "No account found with this email" });
+    }
+
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    await prisma.otp.upsert({
+      where: { email },
+      update: { otp, expiresAt },
+      create: { email, otp, expiresAt },
+    });
+
+    await sendOTPEmail(email, otp);
+
+    res.json({ message: "OTP sent to email" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+});
+
+// FORGOT PASSWORD - verify OTP then reset password
+userRouter.post("/forgot-password/reset", async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;  // ← remove otp from here
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { email },
+      data: { password: hashed },
+    });
+
+    res.json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 userRouter.use(checkAuth);
 
 userRouter.get("/tickets", async (req, res) => {
