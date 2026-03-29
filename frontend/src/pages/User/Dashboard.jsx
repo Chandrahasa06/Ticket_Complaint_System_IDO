@@ -496,7 +496,7 @@ const handleSubmitFollowup = async () => {
                   { label:"ISSUE TITLE",  val: displayedTicket.subject,                                  span: true },
                   { label:"DEPARTMENT",   val: displayedTicket.type },
                   { label:"LOCATION",     val: displayedTicket.location || "—" },
-                  { label:"CREATED DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString() },
+                  { label:"CREATED DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString("en-GB")  },
                   { label:"TICKET ID",    val: displayedTicket.id },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
