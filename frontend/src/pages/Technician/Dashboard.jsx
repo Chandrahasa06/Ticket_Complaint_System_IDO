@@ -15,9 +15,9 @@ const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_", "-");
   const map = {
     pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    resolved:      { color:"#16a34a", bg:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
+    resolved:      { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
     closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
-    overdue:       { color:"#dc2626", bg:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
+    overdue:       { color:"#1e293b", bg:"rgba(241,245,249,0.92)", border:"rgba(100,116,139,0.25)" },
   };
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
 };
@@ -34,7 +34,6 @@ const TechnicianDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
 
-  // Change Password state (lives inside Profile modal)
   const [showChangePw, setShowChangePw] = useState(false);
   const [pwForm, setPwForm] = useState({ current:"", newPw:"", confirm:"" });
   const [pwShow, setPwShow] = useState({ current:false, newPw:false, confirm:false });
@@ -192,10 +191,9 @@ const TechnicianDashboard = () => {
     const v = pwForm.newPw;
     return [v.length >= 6, v.length >= 10, /[A-Z]/.test(v)||/[0-9]/.test(v), /[^a-zA-Z0-9]/.test(v)].filter(Boolean).length;
   })();
-  const pwStrengthColors = ["#ef4444","#f97316","#eab308","#22c55e"];
+  const pwStrengthColors = ["#334155","#475569","#eab308","#10b981"];
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
-  // The ticket whose fields are currently displayed in the modal
   const displayedTicket = prevTicket ?? selectedTicket;
 
   return (
@@ -208,16 +206,16 @@ const TechnicianDashboard = () => {
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
             <div
-  onClick={() => { setShowProfile(true); resetPwForm(); }}
-  style={{ width:46, height:46, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer", overflow:"hidden", position:"relative" }}
->
-  <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", width:34, height:22, borderRadius:"50% 50% 0 0", background:"rgba(255,255,255,0.9)" }} />
-  <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
-</div>
+              onClick={() => { setShowProfile(true); resetPwForm(); }}
+              style={{ width:46, height:46, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer", overflow:"hidden", position:"relative" }}
+            >
+              <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", width:34, height:22, borderRadius:"50% 50% 0 0", background:"rgba(255,255,255,0.9)" }} />
+              <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
+            </div>
             <div>
               <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Welcome, {techInfo.username} </div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#10b981", display:"inline-block" }} />
                 {techInfo.department} · {techInfo.area}
               </div>
             </div>
@@ -328,14 +326,14 @@ const TechnicianDashboard = () => {
                 <button
                   onClick={() => !isDone && handleResolve(t.id)}
                   disabled={isDone}
-                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(34,197,94,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(34,197,94,0.08)", color: isDone ? "#9ca3af" : "#16a34a", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
+                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(16,185,129,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(16,185,129,0.08)", color: isDone ? "#9ca3af" : "#059669", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
                   <CheckCircle size={15} />
                   {isResolved ? "Resolved ✓" : "Mark as Resolved"}
                 </button>
                 <button
                   onClick={() => !isDone && setConfirmCloseTicket(t)}
                   disabled={isDone}
-                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(239,68,68,0.08)", color: isDone ? "#9ca3af" : "#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
+                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(100,116,139,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(100,116,139,0.08)", color: isDone ? "#9ca3af" : "#334155", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
                   <X size={15} />
                   {isClosed ? "Closed ✓" : "Close Ticket"}
                 </button>
@@ -349,8 +347,6 @@ const TechnicianDashboard = () => {
       {selectedTicket && (
         <div onClick={closeModal} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-
-            {/* Modal header — turns purple when viewing the previous ticket */}
             <div style={{ padding:"24px 28px", background: prevTicket ? "linear-gradient(135deg,#7c3aed,#6366f1)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -371,8 +367,6 @@ const TechnicianDashboard = () => {
             </div>
 
             <div style={{ padding:"24px 28px", maxHeight:"68vh", overflowY:"auto" }}>
-
-              {/* Back button — only visible when viewing the previous ticket */}
               {prevTicket && (
                 <button onClick={() => setPrevTicket(null)} style={{ marginBottom:18, background:"none", border:"none", color:"#6366f1", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, padding:0 }}>
                   <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -380,7 +374,6 @@ const TechnicianDashboard = () => {
                 </button>
               )}
 
-              {/* Follow-up banner — only shown on the follow-up ticket itself, not when viewing the previous one */}
               {!prevTicket && selectedTicket.prevId && (
                 <div style={{ marginBottom:18, padding:"12px 16px", borderRadius:16, background:"rgba(124,58,237,0.06)", border:"1px solid rgba(124,58,237,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -395,15 +388,12 @@ const TechnicianDashboard = () => {
                     style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}
                   >
                     {prevTicketLoading ? "Loading..." : (
-                      <>
-                        <Eye size={12} /> View Previous Ticket
-                      </>
+                      <><Eye size={12} /> View Previous Ticket</>
                     )}
                   </button>
                 </div>
               )}
 
-              {/* Fields — switch between prevTicket and selectedTicket */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
                   { label:"TICKET ID",  val: displayedTicket.id,                                        span: false },
@@ -440,7 +430,7 @@ const TechnicianDashboard = () => {
         </div>
       )}
 
-      {/* ── PROFILE MODAL with Change Password accordion inside ──────────── */}
+      {/* ── PROFILE MODAL ──────────────────────────────────────────────────── */}
       {showProfile && profile && (
         <div
           onClick={() => { setShowProfile(false); resetPwForm(); }}
@@ -450,7 +440,6 @@ const TechnicianDashboard = () => {
             onClick={e => e.stopPropagation()}
             style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}
           >
-            {/* Header */}
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Your account details</div>
@@ -463,7 +452,6 @@ const TechnicianDashboard = () => {
             </div>
 
             <div style={{ padding:"24px 28px", maxHeight:"80vh", overflowY:"auto" }}>
-              {/* Avatar */}
               <div style={{ textAlign:"center", marginBottom:22 }}>
                 <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", color:"white", fontSize:28, fontWeight:700, margin:"0 auto 12px", boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
                   {(profile.username || "T").charAt(0).toUpperCase()}
@@ -472,7 +460,6 @@ const TechnicianDashboard = () => {
                 <div style={{ fontSize:13, color:"#6b7280", marginTop:4 }}>{profile.department} · {profile.area}</div>
               </div>
 
-              {/* Info fields */}
               {[
                 { label:"EMAIL",       val: profile.email },
                 { label:"PHONE",       val: profile.phone || "Not added" },
@@ -486,10 +473,8 @@ const TechnicianDashboard = () => {
                 </div>
               ))}
 
-              {/* ── Change Password accordion ─────────────────────────── */}
+              {/* Change Password accordion */}
               <div style={{ marginTop:16, borderRadius:18, border:"1.5px solid rgba(99,102,241,0.18)", overflow:"hidden" }}>
-
-                {/* Toggle row */}
                 <button
                   onClick={() => { setShowChangePw(v => !v); setPwError(""); setPwSuccess(false); }}
                   style={{ width:"100%", padding:"14px 16px", background: showChangePw ? "rgba(99,102,241,0.09)" : "rgba(99,102,241,0.04)", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", fontFamily:"inherit" }}
@@ -500,38 +485,30 @@ const TechnicianDashboard = () => {
                     </div>
                     <span style={{ fontSize:14, fontWeight:600, color:"#374151" }}>Change Password</span>
                   </div>
-                  <svg
-                    width="16" height="16" fill="none" stroke="#6366f1" viewBox="0 0 24 24"
-                    style={{ transition:"transform 0.25s", transform: showChangePw ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0 }}
-                  >
+                  <svg width="16" height="16" fill="none" stroke="#6366f1" viewBox="0 0 24 24" style={{ transition:"transform 0.25s", transform: showChangePw ? "rotate(180deg)" : "rotate(0deg)", flexShrink:0 }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {/* Collapsible body */}
                 {showChangePw && (
                   <div style={{ padding:"18px 16px", borderTop:"1px solid rgba(99,102,241,0.12)", background:"rgba(255,255,255,0.55)" }}>
-
-                    {/* Success state */}
                     {pwSuccess ? (
                       <div style={{ textAlign:"center", padding:"14px 0" }}>
-                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(34,197,94,0.1)", border:"2px solid rgba(34,197,94,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
-                          <CheckCircle size={26} color="#16a34a" />
+                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(16,185,129,0.1)", border:"2px solid rgba(16,185,129,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+                          <CheckCircle size={26} color="#059669" />
                         </div>
-                        <div style={{ fontSize:15, fontWeight:600, color:"#16a34a", marginBottom:4 }}>Password Updated!</div>
+                        <div style={{ fontSize:15, fontWeight:600, color:"#059669", marginBottom:4 }}>Password Updated!</div>
                         <div style={{ fontSize:12, color:"#6b7280" }}>Your password has been changed successfully.</div>
                       </div>
                     ) : (
                       <>
-                        {/* Error banner */}
                         {pwError && (
-                          <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.18)", display:"flex", alignItems:"center", gap:9 }}>
-                            <AlertTriangle size={14} color="#dc2626" style={{ flexShrink:0 }} />
-                            <span style={{ fontSize:12, color:"#dc2626" }}>{pwError}</span>
+                          <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(100,116,139,0.07)", border:"1px solid rgba(100,116,139,0.18)", display:"flex", alignItems:"center", gap:9 }}>
+                            <AlertTriangle size={14} color="#334155" style={{ flexShrink:0 }} />
+                            <span style={{ fontSize:12, color:"#334155" }}>{pwError}</span>
                           </div>
                         )}
 
-                        {/* Password fields */}
                         {[
                           { key:"current", label:"Current Password",    placeholder:"Enter current password" },
                           { key:"newPw",   label:"New Password",         placeholder:"At least 6 characters" },
@@ -560,7 +537,6 @@ const TechnicianDashboard = () => {
                                 {pwShow[key] ? <EyeOff size={13} /> : <Eye size={13} />}
                               </button>
                             </div>
-                            {/* Strength bar — only on new password field */}
                             {key === "newPw" && pwForm.newPw && (
                               <div style={{ marginTop:7, display:"flex", alignItems:"center", gap:5 }}>
                                 {[1,2,3,4].map(i => (
@@ -572,7 +548,6 @@ const TechnicianDashboard = () => {
                           </div>
                         ))}
 
-                        {/* Buttons */}
                         <div style={{ display:"flex", gap:10, marginTop:6 }}>
                           <button
                             onClick={resetPwForm}
@@ -601,7 +576,6 @@ const TechnicianDashboard = () => {
                   </div>
                 )}
               </div>
-              {/* ── end Change Password ──────────────────────────────────── */}
 
               <button
                 onClick={() => { setShowProfile(false); resetPwForm(); }}
@@ -618,14 +592,14 @@ const TechnicianDashboard = () => {
       {confirmCloseTicket && (
         <div onClick={() => setConfirmCloseTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}>
-            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(239,68,68,0.1)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#dc2626" }}><AlertTriangle size={28} /></div>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(100,116,139,0.1)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#334155" }}><AlertTriangle size={28} /></div>
             <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Close Ticket?</div>
             <div style={{ fontSize:14, color:"#6b7280", marginBottom:6 }}>Are you sure you want to close</div>
             <div style={{ fontSize:14, fontWeight:600, color:"#6366f1", marginBottom:8 }}>#{confirmCloseTicket.id} — {confirmCloseTicket.subject}</div>
             <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
             <div style={{ display:"flex", gap:12 }}>
               <button onClick={() => setConfirmCloseTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-              <button onClick={() => handleClose(confirmCloseTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#ef4444,#dc2626)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(239,68,68,0.3)" }}>Yes, Close Ticket</button>
+              <button onClick={() => handleClose(confirmCloseTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#334155)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.3)" }}>Yes, Close Ticket</button>
             </div>
           </div>
         </div>

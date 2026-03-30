@@ -299,7 +299,7 @@ const handleSubmitFollowup = async () => {
                   <div>
                     <img src={imagePreview} alt="preview" style={{ maxHeight:160, borderRadius:12, marginBottom:8, maxWidth:"100%", objectFit:"cover" }} />
                     <div style={{ fontSize:12, color:"#6366f1", fontWeight:500 }}>{selectedImage?.name}</div>
-                    <button type="button" onClick={e => { e.stopPropagation(); setSelectedImage(null); setImagePreview(null); }} style={{ marginTop:8, padding:"4px 12px", borderRadius:20, border:"1px solid rgba(239,68,68,0.3)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Remove</button>
+                    <button type="button" onClick={e => { e.stopPropagation(); setSelectedImage(null); setImagePreview(null); }} style={{ marginTop:8, padding:"4px 12px", borderRadius:20, border:"1px solid rgba(30,41,59,0.2)", background:"rgba(100,116,139,0.08)", color:"#1e293b", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Remove</button>
                   </div>
                 ) : (
                   <div>
@@ -385,7 +385,7 @@ const handleSubmitFollowup = async () => {
                 <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>Resolved Complaints</div>
                 <div style={{ fontSize:13, color:"#6b7280", marginTop:3 }}>Review completed service requests</div>
               </div>
-              <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#16a34a", background:"rgba(220,252,231,0.85)", border:"1px solid rgba(34,197,94,0.25)" }}>{tickets.length} Completed</span>
+              <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#059669", background:"rgba(236,253,245,0.88)", border:"1px solid rgba(16,185,129,0.22)" }}>{tickets.length} Completed</span>
             </div>
 
             {loading && <div style={{ textAlign:"center", padding:40, color:"#6b7280" }}>Loading tickets...</div>}
@@ -399,7 +399,7 @@ const handleSubmitFollowup = async () => {
             {!loading && tickets.map((ticket) => {
               const isSatisfied = satisfiedIds.includes(ticket.id);
               return (
-                <div key={ticket.id} style={{ ...glassCard, marginBottom:14, background: isSatisfied ? "rgba(220,252,231,0.7)" : "rgba(255,255,255,0.6)", border: isSatisfied ? "1.5px solid rgba(34,197,94,0.3)" : "none" }}>
+                <div key={ticket.id} style={{ ...glassCard, marginBottom:14, background: isSatisfied ? "rgba(236,253,245,0.75)" : "rgba(255,255,255,0.6)", border: isSatisfied ? "1.5px solid rgba(16,185,129,0.28)" : "none" }}>
                   <div style={{ padding:"22px 26px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
                       <div style={{ flex:1 }}>
@@ -416,8 +416,8 @@ const handleSubmitFollowup = async () => {
                         </div>
                       </div>
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                        <svg width="16" height="16" fill="#22c55e" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        <span style={{ fontSize:12, fontWeight:600, color:"#16a34a" }}>{isSatisfied ? "Resolved ✓" : "Resolved"}</span>
+                        <svg width="16" height="16" fill="#10b981" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                        <span style={{ fontSize:12, fontWeight:600, color:"#059669" }}>{isSatisfied ? "Resolved ✓" : "Resolved"}</span>
                       </div>
                     </div>
                     {!isSatisfied && (
@@ -426,11 +426,11 @@ const handleSubmitFollowup = async () => {
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                           Details
                         </button>
-                        <button onClick={() => setSatisfiedIds(prev => [...prev, ticket.id])} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(34,197,94,0.2)", background:"rgba(34,197,94,0.12)", color:"#16a34a", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                        <button onClick={() => setSatisfiedIds(prev => [...prev, ticket.id])} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(16,185,129,0.18)", background:"rgba(16,185,129,0.10)", color:"#059669", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                           Satisfied
                         </button>
-                        <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"", description:"" }); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.08)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                        <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"", description:"" }); }} style={{ flex:1, minWidth:130, padding:"11px", borderRadius:18, border:"1px solid rgba(100,116,139,0.2)", background:"rgba(100,116,139,0.08)", color:"#1e293b", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                           Follow-up
                         </button>
@@ -473,7 +473,7 @@ const handleSubmitFollowup = async () => {
 
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px", borderRadius:18, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.12)", marginBottom:18 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em" }}>TICKET STATUS</div>
-                <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:600, color: displayedTicket.status === "PENDING" ? "#d97706" : "#16a34a", background: displayedTicket.status === "PENDING" ? "rgba(254,243,199,0.85)" : "rgba(220,252,231,0.85)", border: `1px solid ${displayedTicket.status === "PENDING" ? "rgba(245,158,11,0.25)" : "rgba(34,197,94,0.25)"}` }}>
+                <span style={{ padding:"5px 14px", borderRadius:20, fontSize:12, fontWeight:600, color: displayedTicket.status === "PENDING" ? "#d97706" : "#059669", background: displayedTicket.status === "PENDING" ? "rgba(254,243,199,0.85)" : "rgba(236,253,245,0.88)", border: `1px solid ${displayedTicket.status === "PENDING" ? "rgba(245,158,11,0.25)" : "rgba(16,185,129,0.22)"}` }}>
                   {displayedTicket.status}
                 </span>
               </div>
@@ -490,7 +490,6 @@ const handleSubmitFollowup = async () => {
                 </div>
               )}
 
-              {/* ── Ticket fields — ISSUE TYPE replaced with LOCATION ── */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
                   { label:"ISSUE TITLE",  val: displayedTicket.subject,                                  span: true },
@@ -514,7 +513,7 @@ const handleSubmitFollowup = async () => {
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={closeModal} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
                 {!prevTicket && displayedTicket.status === "PENDING" && (
-                  <button onClick={() => handleCancelTicket(displayedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.1)", color:"#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
+                  <button onClick={() => handleCancelTicket(displayedTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(100,116,139,0.2)", background:"rgba(100,116,139,0.1)", color:"#1e293b", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     Cancel Ticket
                   </button>
@@ -529,7 +528,7 @@ const handleSubmitFollowup = async () => {
       {followupTicket && (
         <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#dc2626,#f97316)", position:"relative" }}>
+            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#1e293b,#475569)", position:"relative" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
@@ -568,7 +567,7 @@ const handleSubmitFollowup = async () => {
               </div>
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-                <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#dc2626,#f97316)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(220,38,38,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#475569)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.2)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                   <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                   Submit Follow-up Ticket
                 </button>
