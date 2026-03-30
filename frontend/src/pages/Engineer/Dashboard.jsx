@@ -14,9 +14,9 @@ const glassCard = {
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },  
-    overdue:       { color:"#dc2626", bg:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
-    resolved:      { color:"#16a34a", bg:"rgba(220,252,231,0.85)", border:"rgba(34,197,94,0.25)" },
+    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    overdue:       { color:"#1e293b", bg:"rgba(241,245,249,0.92)", border:"rgba(100,116,139,0.25)" },
+    resolved:      { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
     closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
@@ -97,6 +97,7 @@ const EngineerDashboard = () => {
       default: return null;
     }
   };
+
   const handleLogout = async () => {
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -146,15 +147,15 @@ const EngineerDashboard = () => {
     const v = pwForm.newPw;
     return [v.length >= 6, v.length >= 10, /[A-Z]/.test(v)||/[0-9]/.test(v), /[^a-zA-Z0-9]/.test(v)].filter(Boolean).length;
   })();
-  const pwStrengthColors = ["#ef4444","#f97316","#eab308","#22c55e"];
+  const pwStrengthColors = ["#334155","#475569","#eab308","#10b981"];
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
   const tabs = [
     { key:"pending",     label:"Pending",    },
-    { key:"overdue",     label:"Overdue",      },
-    { key:"resolved",    label:"Resolved",    },
-    { key:"closed",      label:"Closed",      },
-    { key:"technicians", label:"My Team",   customCount: technicians.length },
+    { key:"overdue",     label:"Overdue",    },
+    { key:"resolved",    label:"Resolved",   },
+    { key:"closed",      label:"Closed",     },
+    { key:"technicians", label:"My Team",    customCount: technicians.length },
   ];
 
   return (
@@ -165,14 +166,14 @@ const EngineerDashboard = () => {
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-           <div onClick={() => { setShowProfile(true); resetPwForm(); }} style={{ width:46, height:46, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer", overflow:"hidden", position:"relative" }}>
-  <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", width:34, height:22, borderRadius:"50% 50% 0 0", background:"rgba(255,255,255,0.9)" }} />
-  <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
-</div>
+            <div onClick={() => { setShowProfile(true); resetPwForm(); }} style={{ width:46, height:46, borderRadius:"50%", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0, cursor:"pointer", overflow:"hidden", position:"relative" }}>
+              <div style={{ position:"absolute", bottom:-6, left:"50%", transform:"translateX(-50%)", width:34, height:22, borderRadius:"50% 50% 0 0", background:"rgba(255,255,255,0.9)" }} />
+              <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
+            </div>
             <div>
               <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Welcome, {engineerInfo.username} </div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", display:"inline-block" }} />
+                <span style={{ width:7, height:7, borderRadius:"50%", background:"#10b981", display:"inline-block" }} />
                 {engineerInfo.department} Department
               </div>
             </div>
@@ -276,29 +277,16 @@ const EngineerDashboard = () => {
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:20 }}>
                 {technicians.map((tech) => (
                   <div key={tech.id} style={{ ...glassCard, overflow:"hidden" }}>
-                    {/* Banner */}
                     <div style={{ height:60, background:"linear-gradient(135deg,#6366f1,#0ea5e9)" }} />
-
-                    {/* Avatar — fully below the banner, no overlap */}
                     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"16px 24px 24px" }}>
-                      <div style={{
-                        width: 72, height: 72, borderRadius: 20,
-                        background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 28, fontWeight: 700,
-                        color: "white",
-                        boxShadow: "0 8px 24px rgba(99,102,241,0.35)",
-                        flexShrink: 0,
-                      }}>
+                      <div style={{ width:72, height:72, borderRadius:20, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:700, color:"white", boxShadow:"0 8px 24px rgba(99,102,241,0.35)", flexShrink:0 }}>
                         {(tech.username || "T").charAt(0).toUpperCase()}
                       </div>
-
                       <div style={{ textAlign:"center", marginTop:12, marginBottom:14 }}>
                         <div style={{ fontSize:16, fontWeight:700, color:"#111827", marginBottom:3 }}>{tech.username || "—"}</div>
                         <div style={{ fontSize:13, color:"#6b7280", marginBottom:2 }}>{tech.department}</div>
                         <div style={{ fontSize:12, color:"#9ca3af" }}>{tech.area}</div>
                       </div>
-
                       <button onClick={() => setViewTechnician(tech)} style={{ width:"100%", padding:"11px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         View Details
@@ -314,14 +302,8 @@ const EngineerDashboard = () => {
 
       {/* PROFILE MODAL */}
       {showProfile && profile && (
-        <div
-          onClick={() => { setShowProfile(false); resetPwForm(); }}
-          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}
-          >
+        <div onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Your account details</div>
@@ -356,16 +338,16 @@ const EngineerDashboard = () => {
                   <div style={{ padding:"18px 16px", borderTop:"1px solid rgba(99,102,241,0.12)", background:"rgba(255,255,255,0.55)" }}>
                     {pwSuccess ? (
                       <div style={{ textAlign:"center", padding:"14px 0" }}>
-                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(34,197,94,0.1)", border:"2px solid rgba(34,197,94,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}><CheckCircle size={26} color="#16a34a" /></div>
-                        <div style={{ fontSize:15, fontWeight:600, color:"#16a34a", marginBottom:4 }}>Password Updated!</div>
+                        <div style={{ width:52, height:52, borderRadius:"50%", background:"rgba(16,185,129,0.1)", border:"2px solid rgba(16,185,129,0.3)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}><CheckCircle size={26} color="#059669" /></div>
+                        <div style={{ fontSize:15, fontWeight:600, color:"#059669", marginBottom:4 }}>Password Updated!</div>
                         <div style={{ fontSize:12, color:"#6b7280" }}>Your password has been changed successfully.</div>
                       </div>
                     ) : (
                       <>
                         {pwError && (
-                          <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(239,68,68,0.07)", border:"1px solid rgba(239,68,68,0.18)", display:"flex", alignItems:"center", gap:9 }}>
-                            <AlertTriangle size={14} color="#dc2626" style={{ flexShrink:0 }} />
-                            <span style={{ fontSize:12, color:"#dc2626" }}>{pwError}</span>
+                          <div style={{ marginBottom:14, padding:"10px 13px", borderRadius:12, background:"rgba(100,116,139,0.07)", border:"1px solid rgba(100,116,139,0.18)", display:"flex", alignItems:"center", gap:9 }}>
+                            <AlertTriangle size={14} color="#334155" style={{ flexShrink:0 }} />
+                            <span style={{ fontSize:12, color:"#334155" }}>{pwError}</span>
                           </div>
                         )}
                         {[

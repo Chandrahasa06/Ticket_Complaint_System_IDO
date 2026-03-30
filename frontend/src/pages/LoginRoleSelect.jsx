@@ -30,7 +30,7 @@ const LoginRoleSelect = ({ setPage }) => {
   const roles = [
     {
       id: "user-login",
-      title: "User",
+      title: "Student",
       description: "Submit and track tickets",
       icon: (
         <svg width="28" height="28" fill="none" stroke="white" viewBox="0 0 24 24">
