@@ -10,6 +10,9 @@ import path from "path";
 import fs from "fs";
 import otpGenerator from "otp-generator";
 import { sendOTPEmail } from "../middlewares/OTPmailer.js";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -42,28 +45,59 @@ userRouter.get("/dashboard", (req, res) => {
     res.json({ message: "User dashboard", user: req.user });
 });
 
-userRouter.post("/register", async(req, res) => {
-    const { username, email, password } = req.body;
+userRouter.post("/register", async (req, res) => {
+  const { username, email, password } = req.body;
 
-    if(!username || !email || !password){
-        return res.status(400).json({ message: "All fields are required!" });
-    }
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: "All fields are required!" });
+  }
 
-    if(!email.endsWith("@iiti.ac.in")){
-        return res.status(400).json({ message: "Only @iiti.ac.in email addresses are allowed!" });
-    }
+  if (!email.endsWith("@iiti.ac.in")) {
+    return res.status(400).json({
+      message: "Only @iiti.ac.in email addresses are allowed!"
+    });
+  }
 
-    try {
-        const hashed_password = await bcrypt.hash(password, 10);
-        const user = await prisma.user.create({
-            data: { username, email, password: hashed_password }
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      if (existingUser.isGoogle) {
+        return res.status(409).json({
+          message: "This account uses Google login.",
+          useGoogle: true
         });
-        res.status(201).json({ message: "User added", id: user.id });
-    } catch(e) {
-        if(e.code === "P2002") return res.status(409).json({ message: "Email already exists" });
-        res.status(500).json({ message: "Internal server error" });
-        console.log(e);
+      }
+
+      return res.status(409).json({
+        message: "Email already exists"
+      });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+        isGoogle: false
+      }
+    });
+
+    return res.status(201).json({
+      message: "User added",
+      id: user.id
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
 });
 
 userRouter.post("/send-otp", async (req, res) => {
@@ -141,40 +175,157 @@ userRouter.post("/verify-otp", async (req, res) => {
   }
 });
 
-userRouter.post("/login", async(req, res) => {
-    const { email, password } = req.body;
+userRouter.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-    if(!email || !password){
-        return res.status(400).json({ message: "All fields are required!" });
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are required!" });
+  }
+
+  if (!email.endsWith("@iiti.ac.in")) {
+    return res.status(400).json({
+      message: "Only @iiti.ac.in email addresses are allowed!"
+    });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    if(!email.endsWith("@iiti.ac.in")){
-        return res.status(400).json({ message: "Only @iiti.ac.in email addresses are allowed!" });
+    if (user.isGoogle && !user.password) {
+      return res.status(400).json({
+        message: "This account uses Google login.",
+        useGoogle: true
+      });
     }
 
-    try {
-        const user = await prisma.user.findUnique({ where: { email } });
-        if(!user) return res.status(404).json({ message: "User not found" });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if(!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
-
-        const token = jwt.sign({
-            id: user.id, username: user.username, email: user.email, role: "user",
-        }, JWT_SECRET, { expiresIn: "7d" });
-
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 15 * 60 * 1000, // 15 minutes
-        });
-
-        res.json({ message: "Login successful", id: user.id });
-    } catch(e) {
-        console.log(e);
-        return res.status(500).json({ message: "Internal server error" });
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid password" });
     }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: "user"
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000
+    });
+
+    return res.json({
+      message: "Login successful",
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+});
+
+userRouter.post("/google-login", async(req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        message: "Google credential missing"
+      });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    const email = payload.email;
+    const username = payload.name;
+
+    if (!email || !email.endsWith("@iiti.ac.in")) {
+      return res.status(400).json({
+        message: "Only @iiti.ac.in Google accounts are allowed"
+      });
+    }
+
+    let user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    // Existing normal account → attach Google login too
+    if (user && !user.isGoogle) {
+      user = await prisma.user.update({
+        where: { email },
+        data: {
+          isGoogle: true
+        }
+      });
+    }
+
+    // First time Google user
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          username,
+          email,
+          password: null,
+          isGoogle: true
+        }
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: "user"
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000
+    });
+
+    return res.json({
+      message: "Google login successful",
+      id: user.id,
+      username: user.username,
+      email: user.email,
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Google login failed"
+    });
+  }
 });
 
 // FORGOT PASSWORD - send OTP (only for existing users)
