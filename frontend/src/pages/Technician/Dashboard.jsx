@@ -213,7 +213,7 @@ const TechnicianDashboard = () => {
               <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
             </div>
             <div>
-              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Welcome, {techInfo.username} </div>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>{techInfo.username} </div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:"#10b981", display:"inline-block" }} />
                 {techInfo.department} · {techInfo.area}

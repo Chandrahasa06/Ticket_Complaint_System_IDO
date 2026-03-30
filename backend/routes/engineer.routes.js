@@ -91,13 +91,13 @@ engineerRouter.post("/login", async(req, res) => {
             username: engineer.username,
             role: "engineer",
             department: engineer.department,
-        }, JWT_SECRET, { expiresIn: "15m" });
+        }, JWT_SECRET, { expiresIn: "7d" });
     
         res.cookie("token", token , {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 15 minutes
         });
 
         return res.json({
@@ -160,9 +160,10 @@ engineerRouter.post("/google-login", async(req, res) => {
     const token = jwt.sign(
       {
         id: engineer.id,
-        username: engineer.username,
-        email: engineer.email,
-        role: "engineer"
+            email: engineer.email,
+            username: engineer.username,
+            role: "engineer",
+            department: engineer.department,
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -172,7 +173,7 @@ engineerRouter.post("/google-login", async(req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({

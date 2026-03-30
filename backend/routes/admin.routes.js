@@ -75,16 +75,18 @@ adminRouter.post("/login", async(req, res) => {
     }
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         if(!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
+
         const token = jwt.sign({
             id: admin.id,
+            username: admin.username,
             email: admin.email,
             role: "admin",
-        }, JWT_SECRET, { expiresIn: "15m" });
+        }, JWT_SECRET, { expiresIn: "7d" });
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge:15* 60 * 1000,
+            maxAge:7 * 24 * 60 * 60 * 1000,
         });
         return res.json({
         message: "Login successful",
@@ -157,7 +159,7 @@ adminRouter.post("/google-login", async(req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({

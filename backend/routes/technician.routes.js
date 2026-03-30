@@ -97,7 +97,7 @@ technicianRouter.post("/login", async(req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 15 minutes
         });
 
         return res.json({
@@ -159,9 +159,11 @@ technicianRouter.post("/google-login", async(req, res) => {
     const token = jwt.sign(
       {
         id: technician.id,
-        username: technician.username,
-        email: technician.email,
-        role: "technician"
+            email: technician.email,
+            username: technician.username,
+            role: "technician",
+            department: technician.department,
+            area: technician.area,
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -171,7 +173,7 @@ technicianRouter.post("/google-login", async(req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({
