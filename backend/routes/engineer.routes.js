@@ -15,23 +15,16 @@ const engineerRouter = express.Router();
 engineerRouter.post("/register", async(req, res) => {
     const { username, email, password, department, phone, employeeId } = req.body;
 
-    if(!username || !email || !password || !department){
+    if(!username || !email || !password || !department || !phone || !employeeId){
         return res.status(400).json({ message: "All fields are required!" });
     }
 
     try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.engineer.findUnique({
       where: { email }
     });
 
     if (existingUser) {
-      if (existingUser.isGoogle) {
-        return res.status(409).json({
-          message: "This account uses Google login.",
-          useGoogle: true
-        });
-      }
-
       return res.status(409).json({
         message: "Email already exists"
       });

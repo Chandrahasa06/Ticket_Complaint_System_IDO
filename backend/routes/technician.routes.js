@@ -15,23 +15,16 @@ const technicianRouter = express.Router();
 technicianRouter.post("/register", async(req, res) => {
     const { username, email, password, department, area, phone, employeeId } = req.body;
 
-    if(!username || !email || !password || !department || !area){
+    if(!username || !email || !password || !department || !area || !phone || !employeeId){
         return res.status(400).json({ message: "All fields are required!" });
     }
 
     try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.technician.findUnique({
       where: { email }
     });
 
     if (existingUser) {
-      if (existingUser.isGoogle) {
-        return res.status(409).json({
-          message: "This account uses Google login.",
-          useGoogle: true
-        });
-      }
-
       return res.status(409).json({
         message: "Email already exists"
       });

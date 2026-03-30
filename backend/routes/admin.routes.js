@@ -18,18 +18,11 @@ adminRouter.post("/register", async(req, res) => {
         return res.status(400).json({ message: "All fields are required!" });
     }
     try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.admin.findUnique({
       where: { email }
     });
 
     if (existingUser) {
-      if (existingUser.isGoogle) {
-        return res.status(409).json({
-          message: "This account uses Google login.",
-          useGoogle: true
-        });
-      }
-
       return res.status(409).json({
         message: "Email already exists"
       });
