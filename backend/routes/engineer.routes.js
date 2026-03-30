@@ -74,10 +74,11 @@ engineerRouter.post("/login", async(req, res) => {
         const engineer = await prisma.engineer.findUnique({ where: { email } });
 
         if(!engineer) return res.status(404).json({ message: "Engineer not found" });
-            if (engineer.isGoogle && !engineer.password) {
-      return res.status(400).json({
-        message: "This account uses Google login.",
-        useGoogle: true
+
+        if (engineer.isGoogle && !engineer.password) {
+          return res.status(400).json({
+          message: "This account uses Google login.",
+          useGoogle: true
       });
     }
 
@@ -99,7 +100,21 @@ engineerRouter.post("/login", async(req, res) => {
             maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
-        res.json({ message: "Login successful", id: engineer.id, department: engineer.department });
+        return res.json({
+        message: "Login successful",
+        id: engineer.id,
+        username: engineer.username,
+        email: engineer.email,
+        department: engineer.department
+      });
+
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({
+        message: "Internal server error"
+      });
+    }
+  });
         
 engineerRouter.post("/google-login", async(req, res) => {
   try {
@@ -137,13 +152,8 @@ engineerRouter.post("/google-login", async(req, res) => {
 
     // First time Google user
     if (!engineer) {
-      engineer = await prisma.engineer.create({
-        data: {
-          username,
-          email,
-          password: null,
-          isGoogle: true
-        }
+      return res.status(403).json({
+        message: "No engineer account exists for this email. Please contact the admin."
       });
     }
 

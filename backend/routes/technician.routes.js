@@ -100,7 +100,20 @@ technicianRouter.post("/login", async(req, res) => {
             maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
-        res.json({ message: "Login successful", id: technician.id });
+        return res.json({
+        message: "Login successful",
+        id: technician.id,
+        username: technician.username,
+        email: technician.email,
+      });
+
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({
+        message: "Internal server error"
+      });
+    }
+  });
         
 technicianRouter.post("/google-login", async(req, res) => {
   try {
@@ -138,13 +151,8 @@ technicianRouter.post("/google-login", async(req, res) => {
 
     // First time Google user
     if (!technician) {
-      technician = await prisma.technician.create({
-        data: {
-          username,
-          email,
-          password: null,
-          isGoogle: true
-        }
+      return res.status(403).json({
+        message: "No technician account exists for this email. Please contact the admin."
       });
     }
 

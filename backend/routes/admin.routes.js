@@ -56,6 +56,7 @@ adminRouter.post("/register", async(req, res) => {
     return res.status(500).json({
       message: "Internal server error"
     });
+  }
 });
 
 adminRouter.post("/login", async(req, res) => {
@@ -85,7 +86,20 @@ adminRouter.post("/login", async(req, res) => {
             sameSite: "strict",
             maxAge:15* 60 * 1000,
         });
-        res.json({ message: "Login successful", id: admin.id });
+        return res.json({
+        message: "Login successful",
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
+      });
+
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({
+        message: "Internal server error"
+      });
+    }
+  });
         
 adminRouter.post("/google-login", async(req, res) => {
   try {
@@ -123,13 +137,8 @@ adminRouter.post("/google-login", async(req, res) => {
 
     // First time Google user
     if (!admin) {
-      admin = await prisma.admin.create({
-        data: {
-          username,
-          email,
-          password: null,
-          isGoogle: true
-        }
+      return res.status(403).json({
+        message: "No admin account exists for this email. Please contact the devs."
       });
     }
 
