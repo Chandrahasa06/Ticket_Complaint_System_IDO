@@ -4,6 +4,9 @@ import { prisma } from "../prisma/client.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -17,26 +20,47 @@ technicianRouter.post("/register", async(req, res) => {
     }
 
     try {
-        const hashed_password = await bcrypt.hash(password, 10);
+        const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
 
-        const technician = await prisma.technician.create({
-            data: {
-                username,
-                email,
-                password: hashed_password,
-                department,
-                area: Array.isArray(area) ? area.join(",") : area,
-                phone: phone || "",
-                employeeId: employeeId || "",
-            }
+    if (existingUser) {
+      if (existingUser.isGoogle) {
+        return res.status(409).json({
+          message: "This account uses Google login.",
+          useGoogle: true
         });
+      }
 
-        res.status(201).json({ message: "Technician added", id: technician.id });
+      return res.status(409).json({
+        message: "Email already exists"
+      });
     }
-    catch(e) {
-        if(e.code === "P2002") return res.status(409).json({ message: "Email already exists" });
-        console.log(e);
-        res.status(500).json({ message: "Internal server error" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const technician = await prisma.technician.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+        department,
+        area: Array.isArray(area) ? area.join(",") : area,
+        phone: phone || "",
+        employeeId: employeeId || "",
+      }
+    });
+
+    return res.status(201).json({
+      message: "Technician added",
+      id: technician.id
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
     }
 });
 
@@ -51,7 +75,12 @@ technicianRouter.post("/login", async(req, res) => {
         const technician = await prisma.technician.findUnique({ where: { email } });
 
         if(!technician) return res.status(404).json({ message: "Technician not found" });
-
+    if (technician.isGoogle && !technician.password) {
+      return res.status(400).json({
+        message: "This account uses Google login.",
+        useGoogle: true
+      });
+    }
         const isPasswordValid = await bcrypt.compare(password, technician.password);
         if(!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
 
@@ -72,10 +101,83 @@ technicianRouter.post("/login", async(req, res) => {
         });
 
         res.json({ message: "Login successful", id: technician.id });
+        
+technicianRouter.post("/google-login", async(req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        message: "Google credential missing"
+      });
     }
-    catch(e) {
-        console.log(e);
-        return res.status(500).json({ message: "Internal server error" });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    const email = payload.email;
+    const username = payload.name;
+
+    let technician = await prisma.technician.findUnique({
+      where: { email }
+    });
+
+    // Existing normal account → attach Google login too
+    if (technician && !technician.isGoogle) {
+      technician = await prisma.technician.update({
+        where: { email },
+        data: {
+          isGoogle: true
+        }
+      });
+    }
+
+    // First time Google user
+    if (!technician) {
+      technician = await prisma.technician.create({
+        data: {
+          username,
+          email,
+          password: null,
+          isGoogle: true
+        }
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        id: technician.id,
+        username: technician.username,
+        email: technician.email,
+        role: "technician"
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60 * 1000
+    });
+
+    return res.json({
+      message: "Google login successful",
+      id: technician.id,
+      username: technician.username,
+      email: technician.email,
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Google login failed"
+    });
     }
 });
 

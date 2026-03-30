@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
  
 const TechnicianLogin = () => {
@@ -8,6 +9,42 @@ const TechnicianLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email:false, password:false });
  
+    const googleWrapperRef = useRef(null);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/technician/google-login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Google login failed");
+        return;
+      }
+
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
+
+      navigate("/technician/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Google login failed");
+    }
+  };
+
+  const triggerGoogleLogin = () => {
+    const btn = googleWrapperRef.current?.querySelector("div[role='button']");
+    if (btn) btn.click();
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -18,7 +55,12 @@ const TechnicianLogin = () => {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Invalid credentials"); return; }
+      if (!res.ok) {        if (data.useGoogle) {
+          triggerGoogleLogin();
+          return;
+        } alert(data.message || "Invalid credentials"); return; }
+         localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
       navigate("/technician/dashboard");
     } catch (err) { console.error(err); alert("Server error"); }
   };
@@ -81,6 +123,33 @@ const TechnicianLogin = () => {
             Technician Sign In
             <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
           </button>
+          <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  margin: "18px 0",
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+                <span style={{ fontSize: 12, color: "#6b7280" }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+              </div>
+
+              <div ref={googleWrapperRef}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    alert("Google Sign In Failed");
+                  }}
+                  hosted_domain="iiti.ac.in"
+                  width="100%"
+                  text="signin_with"
+                  shape="pill"
+                />
+              </div>
+            </div>
         </form>
       </div>
  

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
  
 const EngineerLogin = () => {
@@ -7,7 +8,42 @@ const EngineerLogin = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState({ email:false, password:false });
- 
+   const googleWrapperRef = useRef(null);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/engineer/google-login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Google login failed");
+        return;
+      }
+
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
+
+      navigate("/engineer/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Google login failed");
+    }
+  };
+
+  const triggerGoogleLogin = () => {
+    const btn = googleWrapperRef.current?.querySelector("div[role='button']");
+    if (btn) btn.click();
+  };
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -18,7 +54,12 @@ const EngineerLogin = () => {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Invalid credentials"); return; }
+      if (!res.ok) {         if (data.useGoogle) {
+          triggerGoogleLogin();
+          return;
+        }alert(data.message || "Invalid credentials"); return; }
+         localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
       navigate("/engineer/dashboard");
     } catch (err) { console.error(err); alert("Server error"); }
   };
@@ -83,6 +124,33 @@ const EngineerLogin = () => {
             <button type="submit" style={{ width:"100%", padding:"14px", borderRadius:30, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:15, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 10px 32px rgba(99,102,241,0.35)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
               Engineer Sign In
             </button>
+            <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  margin: "18px 0",
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+                <span style={{ fontSize: 12, color: "#6b7280" }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+              </div>
+
+              <div ref={googleWrapperRef}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    alert("Google Sign In Failed");
+                  }}
+                  hosted_domain="iiti.ac.in"
+                  width="100%"
+                  text="signin_with"
+                  shape="pill"
+                />
+              </div>
+            </div>
           </form>
         </div>
         
