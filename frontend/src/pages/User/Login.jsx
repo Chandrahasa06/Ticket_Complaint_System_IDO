@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import OTPModal from "../../components/OTPModal";
 import ForgotPasswordModal from "../../components/ForgotPasswordModal";
@@ -18,28 +19,102 @@ const UserLogin = () => {
   const [isFocused, setIsFocused] = useState({ email: false, password: false, regUsername: false, regEmail: false, regPassword: false });
   const [showForgotModal, setShowForgotModal] = useState(false);
 
+  const googleWrapperRef = useRef(null);
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const res = await fetch("http://localhost:3000/api/user/google-login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Google login failed");
+        return;
+      }
+
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
+
+      navigate("/user/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Google login failed");
+    }
+  };
+
+  const triggerGoogleLogin = () => {
+    const btn = googleWrapperRef.current?.querySelector("div[role='button']");
+    if (btn) btn.click();
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
+
     try {
-      if (!email || !password) { alert("All fields are required!"); return; }
-      if (!email.endsWith("@iiti.ac.in")) { alert("Only @iiti.ac.in email addresses are allowed!"); return; }
+      if (!email || !password) {
+        alert("All fields are required!");
+        return;
+      }
+
+      if (!email.endsWith("@iiti.ac.in")) {
+        alert("Only @iiti.ac.in email addresses are allowed!");
+        return;
+      }
+
       const res = await fetch("http://localhost:3000/api/user/login", {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Invalid credentials"); return; }
+
+      if (!res.ok) {
+        if (data.useGoogle) {
+          triggerGoogleLogin();
+          return;
+        }
+
+        alert(data.message || "Invalid credentials");
+        return;
+      }
+
+      localStorage.setItem("username", data.username);
+      localStorage.setItem("email", data.email);
+
       navigate("/user/dashboard");
-    } catch (err) { console.error(err); alert("Server error"); }
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     if (loading) return;
+
     try {
-      if (!regUsername || !regEmail || !regPassword) { alert("All fields are required!"); return; }
-      if (!regEmail.endsWith("@iiti.ac.in")) { alert("Only @iiti.ac.in email addresses are allowed!"); return; }
+      if (!regUsername || !regEmail || !regPassword) {
+        alert("All fields are required!");
+        return;
+      }
+
+      if (!regEmail.endsWith("@iiti.ac.in")) {
+        alert("Only @iiti.ac.in email addresses are allowed!");
+        return;
+      }
 
       setLoading(true);
 
@@ -56,16 +131,20 @@ const UserLogin = () => {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.useGoogle) {
+          triggerGoogleLogin();
+          return;
+        }
+
         alert(data.message || "Failed to send OTP");
         return;
       }
 
-      setShowOtpModal(true)
-    }
-    catch (err) {
-      console.error(err); alert("Server error");
-    }
-    finally {
+      setShowOtpModal(true);
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    } finally {
       setLoading(false);
     }
   };
@@ -153,6 +232,33 @@ const UserLogin = () => {
               Sign In
               <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
             </button>
+            <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  margin: "18px 0",
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+                <span style={{ fontSize: 12, color: "#6b7280" }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+              </div>
+
+              <div ref={googleWrapperRef}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    alert("Google Sign In Failed");
+                  }}
+                  hosted_domain="iiti.ac.in"
+                  width="100%"
+                  text="signin_with"
+                  shape="pill"
+                />
+              </div>
+            </div>
           </form>
         )}
 
@@ -192,6 +298,34 @@ const UserLogin = () => {
                   <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                 </>)}
             </button>
+            <div style={{ marginTop: 18 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  margin: "18px 0",
+                  gap: 12,
+                }}
+              >
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+                <span style={{ fontSize: 12, color: "#6b7280" }}>OR</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.1)" }} />
+              </div>
+
+              <div ref={googleWrapperRef}>
+                {console.log(process.env.REACT_APP_GOOGLE_CLIENT_ID)}
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  hosted_domain="iiti.ac.in"
+                  onError={() => {
+                    alert("Google Sign In Failed");
+                  }}
+                  width="100%"
+                  text="signin_with"
+                  shape="pill"
+                />
+              </div>
+            </div>
           </form>
         )}
 

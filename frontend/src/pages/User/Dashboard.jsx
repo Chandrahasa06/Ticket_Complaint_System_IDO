@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 
@@ -24,6 +24,13 @@ const UserDashboard = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [satisfiedIds, setSatisfiedIds] = useState([]);
+  const [username, setUsername] = useState(null);
+  const [email, setEmail] = useState(null);
+
+  useEffect(()=>{
+    setUsername(localStorage.getItem("username"));
+    setEmail(localStorage.getItem("email"));
+  }, []);
 
   const fetchTickets = async (status) => {
     setLoading(true);
@@ -192,7 +199,13 @@ const handleSubmitFollowup = async () => {
   <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
 </div>
             <div>
-              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>User Dashboard</div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>
+                {username}
+              </div>
+
+              <div style={{ fontSize: 12, fontWeight: 400, color: "#6B7280" }}>
+                {email}
+              </div>
           
             </div>
           </div>
