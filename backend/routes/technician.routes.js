@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendCloseEmail } from "../middlewares/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -337,7 +338,9 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "CLOSED" },
+            include: {user: true}
         });
+        await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
         res.json({ message: "Ticket closed", ticket });
     }
     catch(e) {

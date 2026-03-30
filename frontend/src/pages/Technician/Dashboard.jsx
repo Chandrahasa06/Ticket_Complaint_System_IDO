@@ -40,6 +40,7 @@ const TechnicianDashboard = () => {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -112,7 +113,9 @@ const TechnicianDashboard = () => {
   };
 
   const handleClose = async (id) => {
+    if(closing) return;
     try {
+      setClosing(true);
       const res = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, {
         method: "PATCH", credentials: "include",
       });
@@ -120,7 +123,12 @@ const TechnicianDashboard = () => {
       if(!res.ok) { alert(data.message); return; }
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status:"CLOSED" } : t));
       setConfirmCloseTicket(null);
-    } catch(e) { console.error(e); alert("Server error"); }
+    } catch(e) {
+      console.error(e); alert("Server error"); 
+    }
+    finally {
+      setClosing(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -599,7 +607,32 @@ const TechnicianDashboard = () => {
             <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
             <div style={{ display:"flex", gap:12 }}>
               <button onClick={() => setConfirmCloseTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-              <button onClick={() => handleClose(confirmCloseTicket.id)} style={{ flex:1, padding:"12px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#334155)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.3)" }}>Yes, Close Ticket</button>
+              <button
+                onClick={() => handleClose(confirmCloseTicket.id)}
+                disabled={closing}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: 18,
+                  border: "none",
+                  background: closing
+                    ? "#94a3b8"
+                    : "linear-gradient(135deg,#1e293b,#334155)",
+                  color: "white",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  cursor: closing ? "not-allowed" : "pointer",
+                  opacity: closing ? 0.75 : 1,
+                  boxShadow: closing
+                    ? "none"
+                    : "0 8px 24px rgba(30,41,59,0.3)",
+                  pointerEvents: closing ? "none" : "auto",
+                  // transition: "all 0.2s ease"
+                }}
+              >
+                {closing ? "Closing..." : "Yes, Close Ticket"}
+              </button>
             </div>
           </div>
         </div>

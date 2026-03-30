@@ -9,7 +9,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import otpGenerator from "otp-generator";
-import { sendOTPEmail } from "../middlewares/OTPmailer.js";
+import { sendOTPEmail } from "../middlewares/mailer.js";
 import { OAuth2Client } from "google-auth-library";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
