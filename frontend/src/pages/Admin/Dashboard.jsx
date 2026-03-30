@@ -202,7 +202,6 @@ const AdminDashboard = () => {
     { id:"overview",    label:"Overview",    },
     { id:"pending",     label:"Pending",      },
     { id:"overdue",     label:"Overdue",     },
-    { id:"in-progress", label:"In Progress",  },
     { id:"resolved",    label:"Resolved",     },
     { id:"closed",      label:"Closed",      },
   ];
