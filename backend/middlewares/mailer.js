@@ -1,16 +1,16 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
+const createTransporter = () => nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL,
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
 
 export const sendOTPEmail = async (email, otp) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL,
+  await createTransporter().sendMail({
+    from: process.env.EMAIL_USER,
     to: email,
     subject: "OTP Verification",
     html: `
@@ -24,8 +24,8 @@ export const sendOTPEmail = async (email, otp) => {
 };
 
 export const sendCloseEmail = async (email, username, ticketTitle) => {
-  await transporter.sendMail({
-    from: process.env.EMAIL,
+  await createTransporter().sendMail({
+    from: process.env.EMAIL_USER,
     to: email,
     subject: "Ticket Closed - Issue Not Under Our Department",
     html: `

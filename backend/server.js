@@ -14,7 +14,7 @@ import "./cron/overdue.js";
 
 
 
-dotenv.config();
+dotenv.config({ path: new URL('.env', import.meta.url).pathname });
 const app = express();
 app.use(cors({
   origin: "http://localhost:5173",

@@ -14,10 +14,10 @@ const glassCard = {
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_", "-");
   const map = {
-    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    resolved:      { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
-    closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
-    overdue:       { color:"#1e293b", bg:"rgba(241,245,249,0.92)", border:"rgba(100,116,139,0.25)" },
+    pending:  { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    resolved: { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
+    closed:   { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+    overdue: { color:"#dc2626", bg:"rgba(254,242,242,0.88)", border:"rgba(239,68,68,0.25)" },
   };
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
 };
@@ -124,9 +124,8 @@ const TechnicianDashboard = () => {
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status:"CLOSED" } : t));
       setConfirmCloseTicket(null);
     } catch(e) {
-      console.error(e); alert("Server error"); 
-    }
-    finally {
+      console.error(e); alert("Server error");
+    } finally {
       setClosing(false);
     }
   };
@@ -182,10 +181,15 @@ const TechnicianDashboard = () => {
     }
   };
 
+  const closedCount   = tickets.filter(t => t.status === "CLOSED").length;
+  const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
+  const pendingCount  = tickets.length - resolvedCount - closedCount;
+
   const stats = [
-    { label:"Total Assigned",  value: tickets.length},
-    { label:"Pending",         value: tickets.filter(t => t.status === "PENDING").length },
-    { label:"Resolved",        value: tickets.filter(t => t.status === "RESOLVED").length },
+    { label:"Total Assigned", value: tickets.length },
+    { label:"Pending",        value: pendingCount },
+    { label:"Resolved",       value: resolvedCount },
+    { label:"Closed",         value: closedCount },
   ];
 
   const pwInputStyle = {
@@ -221,7 +225,7 @@ const TechnicianDashboard = () => {
               <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
             </div>
             <div>
-              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>{techInfo.username} </div>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>{techInfo.username}</div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:"#10b981", display:"inline-block" }} />
                 {techInfo.department} · {techInfo.area}
@@ -230,7 +234,11 @@ const TechnicianDashboard = () => {
           </div>
 
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            {/* ── Logout: professional red tint ── */}
+            <button
+              onClick={handleLogout}
+              style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(239,68,68,0.2)", background:"rgba(254,242,242,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#dc2626", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
+            >
               Logout
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
@@ -246,7 +254,14 @@ const TechnicianDashboard = () => {
             <div key={i} style={{ ...glassCard, padding:"24px 22px" }}>
               <div style={{ fontSize:28, marginBottom:12 }}>{s.icon}</div>
               <div style={{ fontSize:12, fontWeight:500, color:"#6b7280", marginBottom:6 }}>{s.label}</div>
-              <div style={{ fontSize:36, fontWeight:700, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{s.value}</div>
+              {/* ── Pending count: warm red gradient; others: indigo-blue ── */}
+              <div style={{
+                fontSize:36, fontWeight:700,
+                background: s.label === "Pending"
+                  ? "linear-gradient(135deg,#ef4444,#f97316)"
+                  : "linear-gradient(135deg,#6366f1,#0ea5e9)",
+                WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text",
+              }}>{s.value}</div>
             </div>
           ))}
         </div>
@@ -279,8 +294,8 @@ const TechnicianDashboard = () => {
           const statusKey = (t.status || "").toLowerCase().replace("_", "-");
           const ss = getStatusStyle(statusKey);
           const isResolved = t.status === "RESOLVED";
-          const isClosed = t.status === "CLOSED";
-          const isDone = isResolved || isClosed;
+          const isClosed   = t.status === "CLOSED";
+          const isDone     = isResolved || isClosed;
 
           return (
             <div key={t.id} style={{ ...glassCard, marginBottom:16 }}>
@@ -328,20 +343,28 @@ const TechnicianDashboard = () => {
               </div>
 
               <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)", flexWrap:"wrap" }}>
-                <button onClick={() => { setPrevTicket(null); setSelectedTicket(t); }} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                <button
+                  onClick={() => { setPrevTicket(null); setSelectedTicket(t); }}
+                  style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}
+                >
                   <Eye size={15} /> View Details
                 </button>
+
                 <button
                   onClick={() => !isDone && handleResolve(t.id)}
                   disabled={isDone}
-                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(16,185,129,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(16,185,129,0.08)", color: isDone ? "#9ca3af" : "#059669", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
+                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(16,185,129,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(16,185,129,0.08)", color: isDone ? "#9ca3af" : "#059669", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}
+                >
                   <CheckCircle size={15} />
                   {isResolved ? "Resolved ✓" : "Mark as Resolved"}
                 </button>
+
+                {/* ── Close Ticket: professional red tint when active ── */}
                 <button
                   onClick={() => !isDone && setConfirmCloseTicket(t)}
                   disabled={isDone}
-                  style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(100,116,139,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(100,116,139,0.08)", color: isDone ? "#9ca3af" : "#334155", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}>
+                  style={{ padding:"10px 18px", borderRadius:18, border: isDone ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(239,68,68,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(254,242,242,0.8)", color: isDone ? "#9ca3af" : "#dc2626", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}
+                >
                   <X size={15} />
                   {isClosed ? "Closed ✓" : "Close Ticket"}
                 </button>
@@ -395,23 +418,21 @@ const TechnicianDashboard = () => {
                     disabled={prevTicketLoading}
                     style={{ padding:"6px 14px", borderRadius:20, border:"none", background:"linear-gradient(135deg,#7c3aed,#6366f1)", color:"white", fontSize:12, fontWeight:600, cursor: prevTicketLoading ? "wait" : "pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, opacity: prevTicketLoading ? 0.7 : 1 }}
                   >
-                    {prevTicketLoading ? "Loading..." : (
-                      <><Eye size={12} /> View Previous Ticket</>
-                    )}
+                    {prevTicketLoading ? "Loading..." : (<><Eye size={12} /> View Previous Ticket</>)}
                   </button>
                 </div>
               )}
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
                 {[
-                  { label:"TICKET ID",  val: displayedTicket.id,                                        span: false },
-                  { label:"STATUS",     val: displayedTicket.status,                                    span: false },
-                  { label:"SUBJECT",    val: displayedTicket.subject,                                   span: true  },
-                  { label:"DEPARTMENT", val: displayedTicket.type,                                      span: false },
-                  { label:"AREA",       val: displayedTicket.area,                                      span: false },
-                  { label:"LOCATION",   val: displayedTicket.location || "—",                           span: false },
-                  { label:"RAISED BY",  val: displayedTicket.user?.username || "—",                     span: false },
-                  { label:"DATE",       val: new Date(displayedTicket.createdAt).toLocaleDateString(),  span: false },
+                  { label:"TICKET ID",  val: displayedTicket.id,                                       span: false },
+                  { label:"STATUS",     val: displayedTicket.status,                                   span: false },
+                  { label:"SUBJECT",    val: displayedTicket.subject,                                  span: true  },
+                  { label:"DEPARTMENT", val: displayedTicket.type,                                     span: false },
+                  { label:"AREA",       val: displayedTicket.area,                                     span: false },
+                  { label:"LOCATION",   val: displayedTicket.location || "—",                          span: false },
+                  { label:"RAISED BY",  val: displayedTicket.user?.username || "—",                    span: false },
+                  { label:"DATE",       val: new Date(displayedTicket.createdAt).toLocaleDateString(), span: false },
                 ].map((f, i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -438,7 +459,7 @@ const TechnicianDashboard = () => {
         </div>
       )}
 
-      {/* ── PROFILE MODAL ──────────────────────────────────────────────────── */}
+      {/* ── PROFILE MODAL ── */}
       {showProfile && profile && (
         <div
           onClick={() => { setShowProfile(false); resetPwForm(); }}
@@ -600,35 +621,27 @@ const TechnicianDashboard = () => {
       {confirmCloseTicket && (
         <div onClick={() => setConfirmCloseTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}>
-            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(100,116,139,0.1)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#334155" }}><AlertTriangle size={28} /></div>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#dc2626" }}>
+              <AlertTriangle size={28} />
+            </div>
             <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Close Ticket?</div>
             <div style={{ fontSize:14, color:"#6b7280", marginBottom:6 }}>Are you sure you want to close</div>
             <div style={{ fontSize:14, fontWeight:600, color:"#6366f1", marginBottom:8 }}>#{confirmCloseTicket.id} — {confirmCloseTicket.subject}</div>
             <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
             <div style={{ display:"flex", gap:12 }}>
               <button onClick={() => setConfirmCloseTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
+              {/* ── Confirm close: red gradient ── */}
               <button
                 onClick={() => handleClose(confirmCloseTicket.id)}
                 disabled={closing}
                 style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: 18,
-                  border: "none",
-                  background: closing
-                    ? "#94a3b8"
-                    : "linear-gradient(135deg,#1e293b,#334155)",
-                  color: "white",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  fontFamily: "inherit",
+                  flex:1, padding:"12px", borderRadius:18, border:"none",
+                  background: closing ? "#94a3b8" : "linear-gradient(135deg,#ef4444,#dc2626)",
+                  color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit",
                   cursor: closing ? "not-allowed" : "pointer",
                   opacity: closing ? 0.75 : 1,
-                  boxShadow: closing
-                    ? "none"
-                    : "0 8px 24px rgba(30,41,59,0.3)",
+                  boxShadow: closing ? "none" : "0 8px 24px rgba(239,68,68,0.3)",
                   pointerEvents: closing ? "none" : "auto",
-                  // transition: "all 0.2s ease"
                 }}
               >
                 {closing ? "Closing..." : "Yes, Close Ticket"}

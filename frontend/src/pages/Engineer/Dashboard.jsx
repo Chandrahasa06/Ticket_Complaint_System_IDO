@@ -14,10 +14,10 @@ const glassCard = {
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    pending:       { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    overdue:       { color:"#1e293b", bg:"rgba(241,245,249,0.92)", border:"rgba(100,116,139,0.25)" },
-    resolved:      { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
-    closed:        { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+    pending:  { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    overdue:  { color:"#dc2626", bg:"rgba(254,226,226,0.85)", border:"rgba(239,68,68,0.25)" },
+    resolved: { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
+    closed:   { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
 };
@@ -42,6 +42,8 @@ const EngineerDashboard = () => {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
 
+  const [tabCounts, setTabCounts] = useState({ pending:0, overdue:0, resolved:0, closed:0 });
+
   useEffect(() => {
     const fetchEngineerInfo = async () => {
       try {
@@ -57,8 +59,26 @@ const EngineerDashboard = () => {
         if(res.ok) setProfile(data.engineer);
       } catch(e) { console.error(e); }
     };
+    const fetchAllCounts = async () => {
+      try {
+        const statuses = ["pending", "overdue", "resolved", "closed"];
+        const results = await Promise.all(
+          statuses.map(s =>
+            fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials:"include" })
+              .then(r => r.json())
+          )
+        );
+        setTabCounts({
+          pending:  results[0].tickets?.length || 0,
+          overdue:  results[1].tickets?.length || 0,
+          resolved: results[2].tickets?.length || 0,
+          closed:   results[3].tickets?.length || 0,
+        });
+      } catch(e) { console.error(e); }
+    };
     fetchEngineerInfo();
     fetchProfile();
+    fetchAllCounts();
   }, []);
 
   const fetchTechnicians = async () => {
@@ -94,6 +114,7 @@ const EngineerDashboard = () => {
       case "in-progress": return <Activity size={16} />;
       case "overdue":     return <AlertTriangle size={16} />;
       case "resolved":    return <CheckCircle size={16} />;
+      case "closed":      return <X size={16} />;
       default: return null;
     }
   };
@@ -150,12 +171,24 @@ const EngineerDashboard = () => {
   const pwStrengthColors = ["#334155","#475569","#eab308","#10b981"];
   const pwStrengthLabels = ["","Weak","Fair","Good","Strong"];
 
+  const tabBadgeStyle = (tabKey, isActive) => {
+    const colorMap = {
+      pending:     { color:"#d97706", bg:"rgba(254,243,199,0.9)" },
+      overdue:     { color:"#dc2626", bg:"rgba(254,226,226,0.9)" },
+      resolved:    { color:"#16a34a", bg:"rgba(220,252,231,0.9)" },
+      closed:      { color:"#6b7280", bg:"rgba(243,244,246,0.9)" },
+      technicians: { color:"#6366f1", bg:"rgba(224,231,255,0.9)" },
+    };
+    if (isActive) return { color:"rgba(255,255,255,0.95)", bg:"rgba(255,255,255,0.25)" };
+    return colorMap[tabKey] || { color:"#6b7280", bg:"rgba(243,244,246,0.9)" };
+  };
+
   const tabs = [
-    { key:"pending",     label:"Pending",    },
-    { key:"overdue",     label:"Overdue",    },
-    { key:"resolved",    label:"Resolved",   },
-    { key:"closed",      label:"Closed",     },
-    { key:"technicians", label:"My Team",    customCount: technicians.length },
+    { key:"pending",     label:"Pending",   count: tabCounts.pending  },
+    { key:"overdue",     label:"Overdue",   count: tabCounts.overdue  },
+    { key:"resolved",    label:"Resolved",  count: tabCounts.resolved },
+    { key:"closed",      label:"Closed",    count: tabCounts.closed   },
+    { key:"technicians", label:"My Team",   count: technicians.length },
   ];
 
   return (
@@ -171,7 +204,7 @@ const EngineerDashboard = () => {
               <div style={{ position:"absolute", top:9, left:"50%", transform:"translateX(-50%)", width:16, height:16, borderRadius:"50%", background:"rgba(255,255,255,0.9)" }} />
             </div>
             <div>
-              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>{engineerInfo.username} </div>
+              <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>{engineerInfo.username}</div>
               <div style={{ fontSize:12, color:"#6b7280", marginTop:1, display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:"#10b981", display:"inline-block" }} />
                 {engineerInfo.department} Department
@@ -180,7 +213,8 @@ const EngineerDashboard = () => {
           </div>
 
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+            {/* red tint logout */}
+            <button onClick={handleLogout} style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(239,68,68,0.2)", background:"rgba(254,242,242,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#dc2626", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
               Logout
               <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </button>
@@ -188,16 +222,23 @@ const EngineerDashboard = () => {
         </div>
       </header>
 
+      {/* TABS */}
       <div style={{ position:"sticky", top:68, zIndex:90, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.45)", borderBottom:"1px solid rgba(255,255,255,0.5)", boxShadow:"0 4px 16px rgba(0,0,0,0.04)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"14px 32px", display:"flex", gap:10, flexWrap:"wrap" }}>
           {tabs.map(tab => {
-            const cnt = tab.customCount !== undefined ? tab.customCount : tickets.length;
-            const active = activeTab === tab.key;
+            const isActive = activeTab === tab.key;
+            const badge = tabBadgeStyle(tab.key, isActive);
             return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ padding:"9px 18px", borderRadius:20, border:"none", background: active ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.7)", color: active ? "white" : "#374151", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow: active ? "0 8px 24px rgba(99,102,241,0.3)" : "0 2px 8px rgba(0,0,0,0.05)", transition:"all 0.2s" }}>
-                <span>{tab.icon}</span><span>{tab.label}</span>
-                {cnt > 0 && activeTab === tab.key && (
-                  <span style={{ padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700, background:"rgba(255,255,255,0.25)", color:"white" }}>{cnt}</span>
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                style={{ padding:"9px 18px", borderRadius:20, border:"none", background: isActive ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.7)", color: isActive ? "white" : "#374151", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow: isActive ? "0 8px 24px rgba(99,102,241,0.3)" : "0 2px 8px rgba(0,0,0,0.05)", transition:"all 0.2s" }}
+              >
+                <span>{tab.label}</span>
+                {tab.count > 0 && (
+                  <span style={{ padding:"2px 8px", borderRadius:20, fontSize:11, fontWeight:700, background: badge.bg, color: badge.color, minWidth:20, textAlign:"center" }}>
+                    {tab.count}
+                  </span>
                 )}
               </button>
             );
