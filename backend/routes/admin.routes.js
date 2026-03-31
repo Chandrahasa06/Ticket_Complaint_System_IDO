@@ -18,7 +18,7 @@ adminRouter.post("/register", async(req, res) => {
         return res.status(400).json({ message: "All fields are required!" });
     }
     try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.admin.findUnique({
       where: { email }
     });
 
@@ -56,6 +56,7 @@ adminRouter.post("/register", async(req, res) => {
     return res.status(500).json({
       message: "Internal server error"
     });
+}
 });
 
 adminRouter.post("/login", async(req, res) => {
@@ -86,6 +87,12 @@ adminRouter.post("/login", async(req, res) => {
             maxAge:15* 60 * 1000,
         });
         res.json({ message: "Login successful", id: admin.id });
+    } catch(e) {    
+        console.log(e);
+console.log(VITE_GOOGLE_CLIENT_ID);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
         
 adminRouter.post("/google-login", async(req, res) => {
   try {

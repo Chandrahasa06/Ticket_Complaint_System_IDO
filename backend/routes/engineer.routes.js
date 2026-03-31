@@ -100,6 +100,11 @@ engineerRouter.post("/login", async(req, res) => {
         });
 
         res.json({ message: "Login successful", id: engineer.id, department: engineer.department });
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
         
 engineerRouter.post("/google-login", async(req, res) => {
   try {
