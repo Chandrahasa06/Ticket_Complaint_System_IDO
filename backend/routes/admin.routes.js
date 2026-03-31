@@ -23,13 +23,6 @@ adminRouter.post("/register", async(req, res) => {
     });
 
     if (existingUser) {
-      if (existingUser.isGoogle) {
-        return res.status(409).json({
-          message: "This account uses Google login.",
-          useGoogle: true
-        });
-      }
-
       return res.status(409).json({
         message: "Email already exists"
       });
@@ -56,7 +49,7 @@ adminRouter.post("/register", async(req, res) => {
     return res.status(500).json({
       message: "Internal server error"
     });
-}
+  }
 });
 
 adminRouter.post("/login", async(req, res) => {
@@ -75,24 +68,33 @@ adminRouter.post("/login", async(req, res) => {
     }
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         if(!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
+
         const token = jwt.sign({
             id: admin.id,
+            username: admin.username,
             email: admin.email,
             role: "admin",
-        }, JWT_SECRET, { expiresIn: "15m" });
+        }, JWT_SECRET, { expiresIn: "7d" });
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge:15* 60 * 1000,
+            maxAge:7 * 24 * 60 * 60 * 1000,
         });
-        res.json({ message: "Login successful", id: admin.id });
-    } catch(e) {    
-        console.log(e);
-console.log(VITE_GOOGLE_CLIENT_ID);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.json({
+        message: "Login successful",
+        id: admin.id,
+        username: admin.username,
+        email: admin.email,
+      });
+
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({
+        message: "Internal server error"
+      });
     }
-});
+  });
         
 adminRouter.post("/google-login", async(req, res) => {
   try {
@@ -130,13 +132,8 @@ adminRouter.post("/google-login", async(req, res) => {
 
     // First time Google user
     if (!admin) {
-      admin = await prisma.admin.create({
-        data: {
-          username,
-          email,
-          password: null,
-          isGoogle: true
-        }
+      return res.status(403).json({
+        message: "No admin account exists for this email. Please contact the devs."
       });
     }
 
@@ -155,7 +152,7 @@ adminRouter.post("/google-login", async(req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({

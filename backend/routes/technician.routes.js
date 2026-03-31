@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendCloseEmail } from "../middlewares/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -15,23 +16,16 @@ const technicianRouter = express.Router();
 technicianRouter.post("/register", async(req, res) => {
     const { username, email, password, department, area, phone, employeeId } = req.body;
 
-    if(!username || !email || !password || !department || !area){
+    if(!username || !email || !password || !department || !area || !phone || !employeeId){
         return res.status(400).json({ message: "All fields are required!" });
     }
 
     try {
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma.technician.findUnique({
       where: { email }
     });
 
     if (existingUser) {
-      if (existingUser.isGoogle) {
-        return res.status(409).json({
-          message: "This account uses Google login.",
-          useGoogle: true
-        });
-      }
-
       return res.status(409).json({
         message: "Email already exists"
       });
@@ -97,15 +91,23 @@ technicianRouter.post("/login", async(req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 15 * 60 * 1000, // 15 minutes
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 15 minutes
         });
 
-        res.json({ message: "Login successful", id: technician.id });
-    } catch(e) {
-        console.log(e);
-        return res.status(500).json({ message: "Internal server error" });
-    }   
-});
+        return res.json({
+        message: "Login successful",
+        id: technician.id,
+        username: technician.username,
+        email: technician.email,
+      });
+
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({
+        message: "Internal server error"
+      });
+    }
+  });
         
 technicianRouter.post("/google-login", async(req, res) => {
   try {
@@ -143,22 +145,19 @@ technicianRouter.post("/google-login", async(req, res) => {
 
     // First time Google user
     if (!technician) {
-      technician = await prisma.technician.create({
-        data: {
-          username,
-          email,
-          password: null,
-          isGoogle: true
-        }
+      return res.status(403).json({
+        message: "No technician account exists for this email. Please contact the admin."
       });
     }
 
     const token = jwt.sign(
       {
         id: technician.id,
-        username: technician.username,
-        email: technician.email,
-        role: "technician"
+            email: technician.email,
+            username: technician.username,
+            role: "technician",
+            department: technician.department,
+            area: technician.area,
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -168,7 +167,7 @@ technicianRouter.post("/google-login", async(req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 15 * 60 * 1000
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     return res.json({
@@ -339,7 +338,9 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "CLOSED" },
+            include: {user: true}
         });
+        await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
         res.json({ message: "Ticket closed", ticket });
     }
     catch(e) {
