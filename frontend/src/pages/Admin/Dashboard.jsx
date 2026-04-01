@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    overdue:       { color:"#1e293b", background:"rgba(241,245,249,0.92)", border:"rgba(100,116,139,0.25)" },
+    overdue:       { color:"#b91c1c", background:"rgba(254,242,242,0.92)", border:"rgba(252,165,165,0.35)" },
     pending:       { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
     "in-progress": { color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
     resolved:      { color:"#059669", background:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
@@ -42,14 +42,166 @@ const AREAS = [
   "Admin Block", "Cafeteria"
 ];
 
+// ─── Load SheetJS from CDN (once) ───────────────────────────────────────────
+let _xlsxPromise = null;
+const loadXLSX = () => {
+  if (_xlsxPromise) return _xlsxPromise;
+  _xlsxPromise = new Promise((resolve, reject) => {
+    if (window.XLSX) { resolve(window.XLSX); return; }
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = () => resolve(window.XLSX);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return _xlsxPromise;
+};
+
+// ─── Export / Download Helper ───────────────────────────────────────────────
+const exportTickets = async (tickets, format, tabLabel) => {
+  if (!tickets || tickets.length === 0) { alert("No tickets to export."); return; }
+
+  if (format === "excel") {
+    try {
+      const XLSX = await loadXLSX();
+      const rows = tickets.map(t => ({
+        "Ticket ID":   t.id,
+        "Subject":     t.subject || "",
+        "Department":  t.type || "",
+        "Location":    t.location || "—",
+        "Status":      t.status || "",
+        "Created At":  new Date(t.createdAt).toLocaleDateString(),
+        "Description": t.body || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      // Column widths
+      ws["!cols"] = [
+        { wch: 12 }, { wch: 32 }, { wch: 16 }, { wch: 20 },
+        { wch: 14 }, { wch: 14 }, { wch: 50 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, tabLabel.slice(0, 31));
+      XLSX.writeFile(wb, `tickets_${tabLabel}_${Date.now()}.xlsx`);
+    } catch (e) { console.error(e); alert("Excel export failed. Please try again."); }
+    return;
+  }
+
+  if (format === "pdf") {
+    // Build a simple HTML page and print it as PDF
+    const rows = tickets.map(t => `
+      <tr>
+        <td>#${t.id}</td>
+        <td>${t.subject || ""}</td>
+        <td>${t.type || ""}</td>
+        <td>${t.location || "—"}</td>
+        <td>${t.status || ""}</td>
+        <td>${new Date(t.createdAt).toLocaleDateString()}</td>
+      </tr>
+    `).join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Tickets – ${tabLabel}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+          h1 { font-size: 22px; margin-bottom: 6px; }
+          p  { font-size: 13px; color: #555; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; }
+          th { background: #6366f1; color: white; padding: 10px 12px; text-align: left; }
+          td { padding: 9px 12px; border-bottom: 1px solid #e5e7eb; }
+          tr:nth-child(even) td { background: #f9fafb; }
+        </style>
+      </head>
+      <body>
+        <h1>Tickets — ${tabLabel}</h1>
+        <p>Exported on ${new Date().toLocaleString()} · ${tickets.length} ticket(s)</p>
+        <table>
+          <thead><tr><th>ID</th><th>Subject</th><th>Dept</th><th>Location</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const win = window.open("", "_blank");
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+    return;
+  }
+};
+
+// ─── Export Dropdown Button ──────────────────────────────────────────────────
+const ExportDropdown = ({ tickets, tabLabel }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          padding: "10px 18px", borderRadius: 18, border: "1px solid rgba(99,102,241,0.25)",
+          background: "rgba(99,102,241,0.08)", color: "#6366f1", fontSize: 13, fontWeight: 600,
+          fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
+          transition: "all 0.15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.15)"}
+        onMouseLeave={e => e.currentTarget.style.background = "rgba(99,102,241,0.08)"}
+      >
+        <Download size={15} /> Export
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <>
+          {/* backdrop to close */}
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 400 }} />
+          <div style={{
+            position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 500,
+            borderRadius: 18, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(30px)",
+            WebkitBackdropFilter: "blur(30px)", boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+            border: "1px solid rgba(99,102,241,0.12)", overflow: "hidden", minWidth: 170,
+          }}>
+            {[
+              { label: "Export as PDF",   fmt: "pdf",   icon: "📄" },
+              { label: "Export as Excel", fmt: "excel", icon: "📊" },
+            ].map(({ label, fmt, icon }) => (
+              <button
+                key={fmt}
+                onClick={() => { exportTickets(tickets, fmt, tabLabel); setOpen(false); }}
+                style={{
+                  width: "100%", padding: "12px 18px", border: "none", background: "transparent",
+                  fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151",
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+                  textAlign: "left", transition: "background 0.15s",
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(99,102,241,0.07)"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+              >
+                <span>{icon}</span> {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [tickets, setTickets] = useState([]);
+  const [overdueTickets, setOverdueTickets] = useState([]); // for pending tab
   const [totalTickets, setTotalTickets] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0 });
+  const [stats, setStats] = useState({ total:0, pending:0, inProgress:0, overdue:0, resolved:0, closed:0 });
   const navigate = useNavigate();
 
   const [showAddPeople, setShowAddPeople] = useState(false);
@@ -64,8 +216,7 @@ const AdminDashboard = () => {
   const [peopleLoading, setPeopleLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // Edit area state
-  const [editTech, setEditTech] = useState(null); // { id, name, area: [...] }
+  const [editTech, setEditTech] = useState(null);
   const [editAreaLoading, setEditAreaLoading] = useState(false);
   const [editAreaError, setEditAreaError] = useState("");
 
@@ -148,32 +299,51 @@ const AdminDashboard = () => {
   const fetchTickets = async (status, page = 1) => {
     setLoading(true);
     try {
-      let url = `http://localhost:3000/api/admin/tickets?pg=${page}`;
-      if (status && status !== "overview") url += `&status=${status.toUpperCase().replace("-","_")}`;
-      const res = await fetch(url, { credentials:"include" });
-      const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
-      setTickets(data.tickets);
-      setTotalTickets(data.pagination.totalTickets);
+      if (status === "pending") {
+        // Fetch pending tickets + overdue tickets, show overdue at end
+        const [pendingRes, overdueRes] = await Promise.all([
+          fetch(`http://localhost:3000/api/admin/tickets?pg=${page}&status=PENDING`, { credentials:"include" }),
+          fetch(`http://localhost:3000/api/admin/tickets?pg=1&status=OVERDUE`, { credentials:"include" }),
+        ]);
+        const pendingData = await pendingRes.json();
+        const overdueData = await overdueRes.json();
+        if (!pendingRes.ok) { alert(pendingData.message); return; }
+        setTickets(pendingData.tickets || []);
+        setTotalTickets(pendingData.pagination?.totalTickets || 0);
+        setOverdueTickets(overdueData.tickets || []);
+      } else {
+        let url = `http://localhost:3000/api/admin/tickets?pg=${page}`;
+        if (status && status !== "overview") url += `&status=${status.toUpperCase().replace("-","_")}`;
+        const res = await fetch(url, { credentials:"include" });
+        const data = await res.json();
+        if (!res.ok) { alert(data.message); return; }
+        setTickets(data.tickets);
+        setOverdueTickets([]);
+        setTotalTickets(data.pagination.totalTickets);
+      }
     } catch (e) { console.error(e); alert("Server error"); }
     finally { setLoading(false); }
   };
 
   const fetchStats = async () => {
     try {
-      const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED"];
+      const statuses = ["PENDING", "IN_PROGRESS", "OVERDUE", "RESOLVED", "CLOSED"];
       const [allRes, ...statusRes] = await Promise.all([
         fetch("http://localhost:3000/api/admin/tickets?pg=1", { credentials:"include" }),
         ...statuses.map(s => fetch(`http://localhost:3000/api/admin/tickets?pg=1&status=${s}`, { credentials:"include" }))
       ]);
       const allData = await allRes.json();
       const statusData = await Promise.all(statusRes.map(r => r.json()));
+      const pending    = statusData[0].pagination?.totalTickets || 0;
+      const overdue    = statusData[2].pagination?.totalTickets || 0;
       setStats({
         total:      allData.pagination?.totalTickets || 0,
-        pending:    statusData[0].pagination?.totalTickets || 0,
+        pending,
         inProgress: statusData[1].pagination?.totalTickets || 0,
-        overdue:    statusData[2].pagination?.totalTickets || 0,
+        overdue,
         resolved:   statusData[3].pagination?.totalTickets || 0,
+        closed:     statusData[4].pagination?.totalTickets || 0,
+        totalPending: pending + overdue,
       });
     } catch (e) { console.error(e); }
   };
@@ -202,27 +372,36 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const tabs = [
-    { id:"overview",    label:"Overview",    },
-    { id:"pending",     label:"Pending",      },
-    { id:"overdue",     label:"Overdue",     },
-    { id:"resolved",    label:"Resolved",     },
-    { id:"closed",      label:"Closed",      },
+    { id:"overview",    label:"Overview"  },
+    { id:"pending",     label:"Pending"   },
+    { id:"overdue",     label:"Overdue"   },
+    { id:"resolved",    label:"Resolved"  },
+    { id:"closed",      label:"Closed"    },
   ];
 
+  // ── Stat cards: removed "In Progress", replaced "Total Tickets" with "Total Pending Tickets", added "Closed"
   const statCards = [
-    { label:"Total Tickets", value: stats.total,       },
-    { label:"Pending",       value: stats.pending,    },
-    { label:"In Progress",   value: stats.inProgress,  },
-    { label:"Overdue",       value: stats.overdue,    },
-    { label:"Resolved",      value: stats.resolved,   },
+    { label:"Total Pending Tickets", value: stats.totalPending ?? (stats.pending + stats.overdue) },
+    { label:"Pending",               value: stats.pending    },
+    { label:"Overdue",               value: stats.overdue    },
+    { label:"Resolved",              value: stats.resolved   },
+    { label:"Closed",                value: stats.closed     },
   ];
+
+  // Combined tickets list for pending tab: regular pending first, then overdue at the end
+  const pendingCombinedTickets = activeTab === "pending" ? [...tickets, ...overdueTickets] : tickets;
+
+  // Label used for export filename
+  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label || activeTab;
+
+  // Tickets to export = combined for pending, otherwise just tickets
+  const exportableTickets = activeTab === "pending" ? pendingCombinedTickets : tickets;
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
 
-      {/* SIDEBAR BACKDROP */}
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.2)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", zIndex:150 }} />
       )}
@@ -237,7 +416,6 @@ const AdminDashboard = () => {
         transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)",
         zIndex:160, display:"flex", flexDirection:"column",
       }}>
-        {/* Sidebar Header */}
         <div style={{ padding:"24px 24px 20px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:42, height:42, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative", overflow:"hidden" }}>
@@ -257,12 +435,9 @@ const AdminDashboard = () => {
           </button>
         </div>
 
-        {/* Sidebar Menu */}
         <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", gap:6, overflowY:"auto" }}>
-
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>People</div>
 
-          {/* Add People */}
           <button onClick={() => { setSidebarOpen(false); setShowAddPeople(true); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.2),rgba(14,165,233,0.14))"}
             onMouseLeave={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))"}>
@@ -272,7 +447,6 @@ const AdminDashboard = () => {
             Add People
           </button>
 
-          {/* Manage Engineers */}
           <button onClick={() => { setSidebarOpen(false); setShowManageEngineers(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"}
             onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
@@ -282,7 +456,6 @@ const AdminDashboard = () => {
             Manage Engineers
           </button>
 
-          {/* Manage Technicians */}
           <button onClick={() => { setSidebarOpen(false); setShowManageTechnicians(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"}
             onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
@@ -295,7 +468,6 @@ const AdminDashboard = () => {
           <div style={{ height:1, background:"rgba(0,0,0,0.06)", margin:"10px 8px" }} />
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>Account</div>
 
-          {/* Logout */}
           <button onClick={handleLogout} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(100,116,139,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background="rgba(100,116,139,0.12)"}
             onMouseLeave={e => e.currentTarget.style.background="rgba(100,116,139,0.06)"}>
@@ -307,11 +479,10 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ─── HEADER ─── Only change: justifyContent flex-start so content hugs the left */}
+      {/* HEADER */}
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"flex-start", alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            {/* Hamburger */}
             <button onClick={() => setSidebarOpen(true)} style={{ width:42, height:42, borderRadius:14, border:"none", background:"rgba(99,102,241,0.08)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, flexShrink:0, transition:"background 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.16)"}
               onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.08)"}>
@@ -336,6 +507,7 @@ const AdminDashboard = () => {
       </header>
 
       <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
+        {/* STAT CARDS — "Total Pending Tickets", Pending, Overdue, Resolved, Closed (no In Progress, no Total Tickets) */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
           {statCards.map((c, i) => (
             <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
@@ -346,6 +518,7 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* TAB BAR */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{ padding:"10px 18px", borderRadius:15, border:"none", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:6, background: activeTab === tab.id ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: activeTab === tab.id ? "white" : "#6b7280", boxShadow: activeTab === tab.id ? "0 8px 24px rgba(99,102,241,0.3)" : "none" }}>
@@ -354,26 +527,28 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div>
             <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(241,245,249,0.75)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
               <div style={{ width:44, height:44, borderRadius:14, background:"rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}><AlertTriangle size={20} /></div>
               <div>
                 <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:8 }}>⚠️ Critical Alerts</div>
-                <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#334155" }}>
-                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#334155", display:"inline-block", flexShrink:0 }} />
+                <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
+                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#b91c1c", display:"inline-block", flexShrink:0 }} />
                   {stats.overdue} ticket(s) overdue — Immediate action required
                 </div>
               </div>
             </div>
             <div style={{ ...glassCard, padding:26 }}>
               <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12 }}>
                 {[
-                  { label:"Pending",     val: stats.pending,    color:"#d97706" },
-                  { label:"In Progress", val: stats.inProgress, color:"#2563eb" },
-                  { label:"Overdue",     val: stats.overdue,    color:"#1e293b" },
-                  { label:"Resolved",    val: stats.resolved,   color:"#059669" },
+                  { label:"Total Pending", val: stats.totalPending ?? (stats.pending + stats.overdue), color:"#6366f1" },
+                  { label:"Pending",       val: stats.pending,    color:"#d97706" },
+                  { label:"Overdue",       val: stats.overdue,    color:"#b91c1c" },
+                  { label:"Resolved",      val: stats.resolved,   color:"#059669" },
+                  { label:"Closed",        val: stats.closed,     color:"#6b7280" },
                 ].map((s, i) => (
                   <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
                     <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
@@ -385,11 +560,12 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* ALL OTHER TABS */}
         {activeTab !== "overview" && (
           <div>
             {loading ? (
               <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}><div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div></div>
-            ) : tickets.length === 0 ? (
+            ) : (activeTab === "pending" ? pendingCombinedTickets : tickets).length === 0 ? (
               <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
                 <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px", color:"#6366f1" }}>
                   <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -399,11 +575,24 @@ const AdminDashboard = () => {
               </div>
             ) : (
               <>
-                {tickets.map((t) => {
+                {/* Export button row */}
+                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
+                  <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
+                </div>
+
+                {/* Ticket cards */}
+                {(activeTab === "pending" ? pendingCombinedTickets : tickets).map((t, idx) => {
+                  const isOverdueSuffix = activeTab === "pending" && idx >= tickets.length;
                   const statusKey = (t.status || "").toLowerCase().replace("_","-");
                   const ss = getStatusStyle(statusKey);
                   return (
-                    <div key={t.id} style={{ ...glassCard, marginBottom:16 }}>
+                    <div key={t.id} style={{ ...glassCard, marginBottom:16, outline: isOverdueSuffix ? "1.5px solid rgba(100,116,139,0.3)" : "none" }}>
+                      {isOverdueSuffix && (
+                        <div style={{ padding:"7px 26px", borderBottom:"1px solid rgba(185,28,28,0.1)", background:"rgba(254,242,242,0.6)", borderRadius:"28px 28px 0 0", display:"flex", alignItems:"center", gap:6 }}>
+                          <AlertTriangle size={13} color="#b91c1c" />
+                          <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c", letterSpacing:"0.04em" }}>OVERDUE — Past Due Ticket</span>
+                        </div>
+                      )}
                       <div style={{ padding:"24px 26px" }}>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
                           <div style={{ flex:1 }}>
@@ -439,6 +628,7 @@ const AdminDashboard = () => {
                     </div>
                   );
                 })}
+
                 {totalPages > 1 && (
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
                     <div style={{ fontSize:13, color:"#6b7280" }}>Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets</div>

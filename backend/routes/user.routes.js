@@ -506,44 +506,48 @@ userRouter.delete("/tickets/:id/cancel", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-userRouter.post("/followup", async (req, res) => {
+userRouter.patch("/followup/:id", async (req, res) => {
     if (req.user.role !== "user") {
         return res.status(403).json({ message: "Access denied" });
     }
 
-    const { type, subject, body, prevId } = req.body;
+    const { subject, body } = req.body;
 
-    if (!type || !subject || !body || !prevId) {
+    if (!subject || !body) {
         return res.status(400).json({ message: "All fields are required!" });
     }
 
     try {
         const originalTicket = await prisma.ticket.findUnique({
-            where: { id: Number(prevId) }
+            where: { id: Number(req.params.id) }
         });
 
         if (!originalTicket) {
-            return res.status(404).json({ message: "Original ticket not found" });
+            return res.status(404).json({ message: "Ticket not found" });
         }
 
-        const ticket = await prisma.ticket.create({
+        if (originalTicket.userId !== req.user.id) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        if (originalTicket.status !== "RESOLVED") {
+            return res.status(400).json({ message: "Only resolved tickets can have follow-ups" });
+        }
+
+        const oldDate = new Date(originalTicket.createdAt).toLocaleString("en-GB");
+        const updatedBody = `[Follow-up] ${body}\n\n--- Original complaint (raised on ${oldDate}) ---\n${originalTicket.body}`;
+
+        const ticket = await prisma.ticket.update({
+            where: { id: Number(req.params.id) },
             data: {
-                type,
                 subject,
-                body,
-                location: originalTicket.location,
-                area: originalTicket.area,
-                prevId: Number(prevId),
+                body: updatedBody,
                 status: "PENDING",
-                userId: req.user.id,
-                imageUrl: originalTicket.imageUrl
+                createdAt: new Date(),
             }
         });
 
-        res.json({
-            message: "Follow-up ticket raised successfully",
-            ticketId: ticket.id
-        });
+        res.json({ message: "Follow-up submitted, ticket reopened", ticket });
 
     } catch (e) {
         console.error("Followup error:", e);

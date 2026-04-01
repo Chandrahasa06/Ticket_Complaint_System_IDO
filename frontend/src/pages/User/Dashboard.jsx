@@ -127,28 +127,26 @@ const handleSubmitFollowup = async () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:3000/api/user/followup", {
-        method: "POST",
+      const response = await fetch(`http://localhost:3000/api/user/followup/${followupTicket.id}`, {
+        method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: followupTicket.type,          // ✅ Department
-          subject: followupForm.title,        // ✅ Title
-          body: followupForm.description,     // ✅ Description
-          prevId: followupTicket.id,          // ✅ Original ticket ID
+          subject: followupForm.title,
+          body: followupForm.description,
         }),
       });
       const data = await response.json();
       if (!response.ok) { alert(data.message); return; }
-      alert("Follow-up ticket raised successfully!");
+      alert("Follow-up submitted! Ticket has been reopened.");
       setFollowupTicket(null);
-      setFollowupForm({ title:"", description:"" });
+      setFollowupForm({ title: "", description: "" });
       fetchTickets("RESOLVED");
     } catch (error) {
       console.error(error);
       alert("Server error");
     }
-  };
+};
 
   const handleLogout = async () => {
     try {
@@ -537,60 +535,71 @@ const handleSubmitFollowup = async () => {
         </div>
       )}
 
-      {/* ─── FOLLOW-UP MODAL ─── */}
-      {followupTicket && (
-        <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-            <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#1e293b,#475569)", position:"relative" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                </div>
-                <div>
-                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Raise Follow-up Ticket</div>
-                  <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Issue not resolved? Let us know.</div>
-                </div>
-              </div>
-              <button onClick={() => setFollowupTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div style={{ padding:"24px 28px" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
-                <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
-                </div>
-                <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>LOCATION</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.location || "—"}</div>
-                </div>
-              </div>
-              <div style={{ marginBottom:16 }}>
-                <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>
-                <input value={followupForm.title} onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })} placeholder="e.g., Issue still not fixed after repair" style={inputStyle}
-                  onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-              </div>
-              <div style={{ marginBottom:24 }}>
-                <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
-                <textarea value={followupForm.description} onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })} placeholder="Describe what is still wrong or not fixed properly..." rows={4} style={{ ...inputStyle, resize:"none", height:"auto" }}
-                  onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-                  onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-              </div>
-              <div style={{ display:"flex", gap:10 }}>
-                <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-                <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#475569)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.2)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                  <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-                  Submit Follow-up Ticket
-                </button>
-              </div>
-            </div>
+     {/* ─── FOLLOW-UP MODAL ─── */}
+{followupTicket && (
+  <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+    <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+      <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#1e293b,#475569)", position:"relative" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+          </div>
+          <div>
+            <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Raise Follow-up</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Issue not resolved? Let us know.</div>
           </div>
         </div>
-      )}
+        <button onClick={() => setFollowupTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div style={{ padding:"24px 28px" }}>
+
+        {/* ── Warning banner ── */}
+        <div style={{ marginBottom:18, padding:"12px 14px", borderRadius:16, background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.3)", display:"flex", alignItems:"center", gap:10 }}>
+          <svg width="16" height="16" fill="none" stroke="#b45309" viewBox="0 0 24 24" style={{ flexShrink:0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div style={{ fontSize:12, color:"#92400e", lineHeight:1.5 }}>
+            This will <strong>reopen ticket #{followupTicket.id}</strong> and set it back to <strong>Pending</strong>. Your original complaint will be preserved in the description.
+          </div>
+        </div>
+
+        {/* ── Ticket info ── */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+          <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+            <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
+            <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
+          </div>
+          <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+            <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>LOCATION</div>
+            <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.location || "—"}</div>
+          </div>
+        </div>
+
+        <div style={{ marginBottom:16 }}>
+          <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>
+          <input value={followupForm.title} onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })} placeholder="e.g., Issue still not fixed after repair" style={inputStyle}
+            onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+            onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+        </div>
+        <div style={{ marginBottom:24 }}>
+          <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
+          <textarea value={followupForm.description} onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })} placeholder="Describe what is still wrong or not fixed properly..." rows={4} style={{ ...inputStyle, resize:"none", height:"auto" }}
+            onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
+            onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
+        </div>
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
+          <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#475569)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.2)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+            <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+            Reopen & Submit
+          </button>
+        </div>
+      </div>
     </div>
-  );
+  </div>
+)}
+</div>
+);
 };
 
 export default UserDashboard;

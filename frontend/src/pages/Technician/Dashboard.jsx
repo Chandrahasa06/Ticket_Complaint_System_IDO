@@ -17,15 +17,25 @@ const getStatusStyle = (status) => {
     pending:  { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
     resolved: { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
     closed:   { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
-    overdue: { color:"#dc2626", bg:"rgba(254,242,242,0.88)", border:"rgba(239,68,68,0.25)" },
+    overdue:  { color:"#b91c1c", bg:"rgba(254,242,242,0.88)", border:"rgba(185,28,28,0.25)" },
   };
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
+};
+
+// map each tab to which statuses it shows
+const TAB_STATUSES = {
+  all:      null,                           // no filter
+  pending:  ["PENDING"],
+  overdue:  ["OVERDUE"],
+  resolved: ["RESOLVED"],
+  closed:   ["CLOSED"],
 };
 
 const TechnicianDashboard = () => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("all");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [prevTicket, setPrevTicket] = useState(null);
   const [prevTicketLoading, setPrevTicketLoading] = useState(false);
@@ -181,16 +191,35 @@ const TechnicianDashboard = () => {
     }
   };
 
+  // ── Counts for badges ──────────────────────────────────────────────────────
   const closedCount   = tickets.filter(t => t.status === "CLOSED").length;
   const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
-  const pendingCount  = tickets.length - resolvedCount - closedCount;
+  const overdueCount  = tickets.filter(t => t.status === "OVERDUE").length;
+  const pendingCount  = tickets.filter(t => t.status === "PENDING").length;
 
   const stats = [
     { label:"Total Assigned", value: tickets.length },
-    { label:"Pending",        value: pendingCount },
-    { label:"Resolved",       value: resolvedCount },
-    { label:"Closed",         value: closedCount },
+    { label:"Pending",        value: pendingCount   },
+    { label:"Resolved",       value: resolvedCount  },
+    { label:"Closed",         value: closedCount    },
   ];
+
+  // ── Tab definitions ────────────────────────────────────────────────────────
+  const tabs = [
+    { id:"all",      label:"All",      count: tickets.length },
+    { id:"pending",  label:"Pending",  count: pendingCount   },
+    { id:"overdue",  label:"Overdue",  count: overdueCount   },
+    { id:"resolved", label:"Resolved", count: resolvedCount  },
+    { id:"closed",   label:"Closed",   count: closedCount    },
+  ];
+
+  // ── Filtered tickets for current tab ──────────────────────────────────────
+  const filteredTickets = activeTab === "all"
+    ? tickets
+    : tickets.filter(t => {
+        const allowed = TAB_STATUSES[activeTab];
+        return allowed && allowed.includes(t.status);
+      });
 
   const pwInputStyle = {
     width:"100%", padding:"11px 11px 11px 40px", borderRadius:13,
@@ -234,7 +263,6 @@ const TechnicianDashboard = () => {
           </div>
 
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            {/* ── Logout: professional red tint ── */}
             <button
               onClick={handleLogout}
               style={{ padding:"10px 20px", borderRadius:18, border:"1.5px solid rgba(239,68,68,0.2)", background:"rgba(254,242,242,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#dc2626", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}
@@ -252,9 +280,7 @@ const TechnicianDashboard = () => {
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:18, marginBottom:30 }}>
           {stats.map((s, i) => (
             <div key={i} style={{ ...glassCard, padding:"24px 22px" }}>
-              <div style={{ fontSize:28, marginBottom:12 }}>{s.icon}</div>
               <div style={{ fontSize:12, fontWeight:500, color:"#6b7280", marginBottom:6 }}>{s.label}</div>
-              {/* ── Pending count: warm red gradient; others: indigo-blue ── */}
               <div style={{
                 fontSize:36, fontWeight:700,
                 background: s.label === "Pending"
@@ -266,31 +292,100 @@ const TechnicianDashboard = () => {
           ))}
         </div>
 
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
-          <div>
-            <div style={{ fontSize:20, fontWeight:600, color:"#111827" }}>My Tickets</div>
-            <div style={{ fontSize:13, color:"#6b7280", marginTop:3 }}>Tickets assigned to your area and department</div>
-          </div>
-          <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#6366f1", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)" }}>{tickets.length} Total</span>
+        {/* ── TAB NAV BAR ─────────────────────────────────────────────────────── */}
+        <div style={{
+          display:"flex", flexWrap:"wrap", gap:6, marginBottom:24,
+          padding:6, borderRadius:22,
+          backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)",
+          background:"rgba(255,255,255,0.55)",
+          boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+          width:"fit-content",
+        }}>
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            // overdue tab gets a red active state
+            const isOverdueTab = tab.id === "overdue";
+            const activeBg = isOverdueTab
+              ? "linear-gradient(135deg,#b91c1c,#ef4444)"
+              : "linear-gradient(135deg,#6366f1,#0ea5e9)";
+            const activeShadow = isOverdueTab
+              ? "0 8px 24px rgba(185,28,28,0.28)"
+              : "0 8px 24px rgba(99,102,241,0.3)";
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding:"9px 16px", borderRadius:15, border:"none",
+                  fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer",
+                  display:"flex", alignItems:"center", gap:7,
+                  background: isActive ? activeBg : "transparent",
+                  color: isActive ? "white" : "#6b7280",
+                  boxShadow: isActive ? activeShadow : "none",
+                  transition:"all 0.15s",
+                }}
+              >
+                {tab.label}
+                {/* count badge */}
+                <span style={{
+                  minWidth:18, height:18, borderRadius:9, fontSize:11, fontWeight:700,
+                  display:"flex", alignItems:"center", justifyContent:"center", padding:"0 5px",
+                  background: isActive
+                    ? "rgba(255,255,255,0.25)"
+                    : (isOverdueTab && tab.count > 0 ? "rgba(185,28,28,0.1)" : "rgba(99,102,241,0.1)"),
+                  color: isActive
+                    ? "white"
+                    : (isOverdueTab && tab.count > 0 ? "#b91c1c" : "#6366f1"),
+                }}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
+        {/* ── SECTION HEADER ─────────────────────────────────────────────────── */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <div>
+            <div style={{ fontSize:18, fontWeight:600, color:"#111827" }}>
+              {tabs.find(t => t.id === activeTab)?.label} Tickets
+            </div>
+            <div style={{ fontSize:13, color:"#6b7280", marginTop:2 }}>
+              {activeTab === "all"
+                ? "All tickets assigned to your area and department"
+                : `Showing ${activeTab} tickets`}
+            </div>
+          </div>
+          <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#6366f1", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)" }}>
+            {filteredTickets.length} {filteredTickets.length === 1 ? "Ticket" : "Tickets"}
+          </span>
+        </div>
+
+        {/* ── TICKET LIST ────────────────────────────────────────────────────── */}
         {loading && (
           <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
             <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
           </div>
         )}
 
-        {!loading && tickets.length === 0 && (
+        {!loading && filteredTickets.length === 0 && (
           <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
             <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(99,102,241,0.08)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
               <Wrench size={28} color="#9ca3af" />
             </div>
-            <div style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:6 }}>No Tickets Assigned</div>
-            <div style={{ fontSize:13, color:"#9ca3af" }}>No tickets match your area and department yet.</div>
+            <div style={{ fontSize:18, fontWeight:600, color:"#374151", marginBottom:6 }}>
+              No {activeTab === "all" ? "" : tabs.find(t => t.id === activeTab)?.label + " "}Tickets
+            </div>
+            <div style={{ fontSize:13, color:"#9ca3af" }}>
+              {activeTab === "all"
+                ? "No tickets match your area and department yet."
+                : `You have no ${activeTab} tickets at the moment.`}
+            </div>
           </div>
         )}
 
-        {!loading && tickets.map((t) => {
+        {!loading && filteredTickets.map((t) => {
           const statusKey = (t.status || "").toLowerCase().replace("_", "-");
           const ss = getStatusStyle(statusKey);
           const isResolved = t.status === "RESOLVED";
@@ -359,7 +454,6 @@ const TechnicianDashboard = () => {
                   {isResolved ? "Resolved ✓" : "Mark as Resolved"}
                 </button>
 
-                {/* ── Close Ticket: professional red tint when active ── */}
                 <button
                   onClick={() => !isDone && setConfirmCloseTicket(t)}
                   disabled={isDone}
@@ -630,7 +724,6 @@ const TechnicianDashboard = () => {
             <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
             <div style={{ display:"flex", gap:12 }}>
               <button onClick={() => setConfirmCloseTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-              {/* ── Confirm close: red gradient ── */}
               <button
                 onClick={() => handleClose(confirmCloseTicket.id)}
                 disabled={closing}
