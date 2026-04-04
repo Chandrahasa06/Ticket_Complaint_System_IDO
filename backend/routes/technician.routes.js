@@ -5,7 +5,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
-import { sendCloseEmail } from "../middlewares/mailer.js";
+
+import { sendCloseEmail, sendResolveEmail } from "../middlewares/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -318,14 +319,25 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
         return res.status(403).json({ message: "Access denied" });
     }
     try {
+        const { remark } = req.body;
+
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "RESOLVED" },
+            include: { user: true }          // ← need user for email
         });
+
+        await sendResolveEmail(
+            ticket.user.email,
+            ticket.user.username,
+            ticket.subject,
+            remark
+        );
+
         res.json({ message: "Ticket resolved", ticket });
     }
     catch(e) {
-        console.log(e);
+        console.error("Resolve ticket error:", e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
@@ -335,16 +347,28 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
         return res.status(403).json({ message: "Access denied" });
     }
     try {
+        const { remark } = req.body;
+        console.log("Remark received:", remark); // ← add this
+
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "CLOSED" },
-            include: {user: true}
+            include: { user: true }
         });
-        await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
+
+        console.log("Ticket updated, sending email..."); // ← and this
+
+        await sendCloseEmail(
+            ticket.user.email,
+            ticket.user.username,
+            ticket.subject,
+            remark
+        );
+
         res.json({ message: "Ticket closed", ticket });
     }
     catch(e) {
-        console.log(e);
+        console.error("Close ticket error:", e); // ← full error object
         return res.status(500).json({ message: "Internal server error" });
     }
 });

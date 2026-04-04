@@ -22,9 +22,8 @@ const getStatusStyle = (status) => {
   return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
 };
 
-// map each tab to which statuses it shows
 const TAB_STATUSES = {
-  all:      null,                           // no filter
+  all:      null,
   pending:  ["PENDING"],
   overdue:  ["OVERDUE"],
   resolved: ["RESOLVED"],
@@ -51,6 +50,12 @@ const TechnicianDashboard = () => {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
   const [closing, setClosing] = useState(false);
+
+  // ── remark states ────────────────────────────────────────────────────────
+  const [closeRemark, setCloseRemark] = useState("");
+  const [confirmResolveTicket, setConfirmResolveTicket] = useState(null);
+  const [resolveRemark, setResolveRemark] = useState("");
+  const [resolving, setResolving] = useState(false);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -111,28 +116,45 @@ const TechnicianDashboard = () => {
     fetchTickets();
   }, []);
 
+  // ── sends resolveRemark in body ──────────────────────────────────────────
   const handleResolve = async (id) => {
+    if(resolving) return;
     try {
+      setResolving(true);
       const res = await fetch(`http://localhost:3000/api/technician/tickets/${id}/resolve`, {
-        method: "PATCH", credentials: "include",
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remark: resolveRemark }),
       });
       const data = await res.json();
       if(!res.ok) { alert(data.message); return; }
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status:"RESOLVED" } : t));
-    } catch(e) { console.error(e); alert("Server error"); }
+      setConfirmResolveTicket(null);
+      setResolveRemark("");
+    } catch(e) {
+      console.error(e); alert("Server error");
+    } finally {
+      setResolving(false);
+    }
   };
 
+  // ── sends closeRemark in body ────────────────────────────────────────────
   const handleClose = async (id) => {
     if(closing) return;
     try {
       setClosing(true);
       const res = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, {
-        method: "PATCH", credentials: "include",
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remark: closeRemark }),
       });
       const data = await res.json();
       if(!res.ok) { alert(data.message); return; }
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status:"CLOSED" } : t));
       setConfirmCloseTicket(null);
+      setCloseRemark("");
     } catch(e) {
       console.error(e); alert("Server error");
     } finally {
@@ -191,7 +213,6 @@ const TechnicianDashboard = () => {
     }
   };
 
-  // ── Counts for badges ──────────────────────────────────────────────────────
   const closedCount   = tickets.filter(t => t.status === "CLOSED").length;
   const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
   const overdueCount  = tickets.filter(t => t.status === "OVERDUE").length;
@@ -204,7 +225,6 @@ const TechnicianDashboard = () => {
     { label:"Closed",         value: closedCount    },
   ];
 
-  // ── Tab definitions ────────────────────────────────────────────────────────
   const tabs = [
     { id:"all",      label:"All",      count: tickets.length },
     { id:"pending",  label:"Pending",  count: pendingCount   },
@@ -213,7 +233,6 @@ const TechnicianDashboard = () => {
     { id:"closed",   label:"Closed",   count: closedCount    },
   ];
 
-  // ── Filtered tickets for current tab ──────────────────────────────────────
   const filteredTickets = activeTab === "all"
     ? tickets
     : tickets.filter(t => {
@@ -261,7 +280,6 @@ const TechnicianDashboard = () => {
               </div>
             </div>
           </div>
-
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <button
               onClick={handleLogout}
@@ -292,7 +310,7 @@ const TechnicianDashboard = () => {
           ))}
         </div>
 
-        {/* ── TAB NAV BAR ─────────────────────────────────────────────────────── */}
+        {/* TAB NAV BAR */}
         <div style={{
           display:"flex", flexWrap:"wrap", gap:6, marginBottom:24,
           padding:6, borderRadius:22,
@@ -303,15 +321,9 @@ const TechnicianDashboard = () => {
         }}>
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
-            // overdue tab gets a red active state
             const isOverdueTab = tab.id === "overdue";
-            const activeBg = isOverdueTab
-              ? "linear-gradient(135deg,#b91c1c,#ef4444)"
-              : "linear-gradient(135deg,#6366f1,#0ea5e9)";
-            const activeShadow = isOverdueTab
-              ? "0 8px 24px rgba(185,28,28,0.28)"
-              : "0 8px 24px rgba(99,102,241,0.3)";
-
+            const activeBg = isOverdueTab ? "linear-gradient(135deg,#b91c1c,#ef4444)" : "linear-gradient(135deg,#6366f1,#0ea5e9)";
+            const activeShadow = isOverdueTab ? "0 8px 24px rgba(185,28,28,0.28)" : "0 8px 24px rgba(99,102,241,0.3)";
             return (
               <button
                 key={tab.id}
@@ -327,16 +339,11 @@ const TechnicianDashboard = () => {
                 }}
               >
                 {tab.label}
-                {/* count badge */}
                 <span style={{
                   minWidth:18, height:18, borderRadius:9, fontSize:11, fontWeight:700,
                   display:"flex", alignItems:"center", justifyContent:"center", padding:"0 5px",
-                  background: isActive
-                    ? "rgba(255,255,255,0.25)"
-                    : (isOverdueTab && tab.count > 0 ? "rgba(185,28,28,0.1)" : "rgba(99,102,241,0.1)"),
-                  color: isActive
-                    ? "white"
-                    : (isOverdueTab && tab.count > 0 ? "#b91c1c" : "#6366f1"),
+                  background: isActive ? "rgba(255,255,255,0.25)" : (isOverdueTab && tab.count > 0 ? "rgba(185,28,28,0.1)" : "rgba(99,102,241,0.1)"),
+                  color: isActive ? "white" : (isOverdueTab && tab.count > 0 ? "#b91c1c" : "#6366f1"),
                 }}>
                   {tab.count}
                 </span>
@@ -345,16 +352,12 @@ const TechnicianDashboard = () => {
           })}
         </div>
 
-        {/* ── SECTION HEADER ─────────────────────────────────────────────────── */}
+        {/* SECTION HEADER */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <div>
-            <div style={{ fontSize:18, fontWeight:600, color:"#111827" }}>
-              {tabs.find(t => t.id === activeTab)?.label} Tickets
-            </div>
+            <div style={{ fontSize:18, fontWeight:600, color:"#111827" }}>{tabs.find(t => t.id === activeTab)?.label} Tickets</div>
             <div style={{ fontSize:13, color:"#6b7280", marginTop:2 }}>
-              {activeTab === "all"
-                ? "All tickets assigned to your area and department"
-                : `Showing ${activeTab} tickets`}
+              {activeTab === "all" ? "All tickets assigned to your area and department" : `Showing ${activeTab} tickets`}
             </div>
           </div>
           <span style={{ padding:"6px 16px", borderRadius:20, fontSize:12, fontWeight:600, color:"#6366f1", background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.2)" }}>
@@ -362,7 +365,7 @@ const TechnicianDashboard = () => {
           </span>
         </div>
 
-        {/* ── TICKET LIST ────────────────────────────────────────────────────── */}
+        {/* TICKET LIST */}
         {loading && (
           <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
             <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
@@ -378,9 +381,7 @@ const TechnicianDashboard = () => {
               No {activeTab === "all" ? "" : tabs.find(t => t.id === activeTab)?.label + " "}Tickets
             </div>
             <div style={{ fontSize:13, color:"#9ca3af" }}>
-              {activeTab === "all"
-                ? "No tickets match your area and department yet."
-                : `You have no ${activeTab} tickets at the moment.`}
+              {activeTab === "all" ? "No tickets match your area and department yet." : `You have no ${activeTab} tickets at the moment.`}
             </div>
           </div>
         )}
@@ -445,8 +446,9 @@ const TechnicianDashboard = () => {
                   <Eye size={15} /> View Details
                 </button>
 
+                {/* Opens confirm resolve modal */}
                 <button
-                  onClick={() => !isDone && handleResolve(t.id)}
+                  onClick={() => !isDone && setConfirmResolveTicket(t)}
                   disabled={isDone}
                   style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(16,185,129,0.2)", background: isDone ? "rgba(0,0,0,0.04)" : "rgba(16,185,129,0.08)", color: isDone ? "#9ca3af" : "#059669", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: isDone ? "not-allowed" : "pointer", display:"flex", alignItems:"center", gap:7 }}
                 >
@@ -468,7 +470,7 @@ const TechnicianDashboard = () => {
         })}
       </div>
 
-      {/* ─── VIEW DETAILS MODAL ─── */}
+      {/* VIEW DETAILS MODAL */}
       {selectedTicket && (
         <div onClick={closeModal} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
@@ -478,9 +480,7 @@ const TechnicianDashboard = () => {
                   <Wrench size={22} color="white" />
                 </div>
                 <div>
-                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>
-                    {prevTicket ? "Previous Ticket Details" : "Ticket Details"}
-                  </div>
+                  <div style={{ fontSize:20, fontWeight:600, color:"white" }}>{prevTicket ? "Previous Ticket Details" : "Ticket Details"}</div>
                   <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>
                     {prevTicket ? `Referenced by Ticket #${selectedTicket.id}` : "Complete ticket information"}
                   </div>
@@ -553,23 +553,17 @@ const TechnicianDashboard = () => {
         </div>
       )}
 
-      {/* ── PROFILE MODAL ── */}
+      {/* PROFILE MODAL */}
       {showProfile && profile && (
         <div
           onClick={() => { setShowProfile(false); resetPwForm(); }}
           style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}
         >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}
-          >
+          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:460, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>My Profile</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Your account details</div>
-              <button
-                onClick={() => { setShowProfile(false); resetPwForm(); }}
-                style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}
-              >
+              <button onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
                 <X size={15} />
               </button>
             </div>
@@ -596,7 +590,6 @@ const TechnicianDashboard = () => {
                 </div>
               ))}
 
-              {/* Change Password accordion */}
               <div style={{ marginTop:16, borderRadius:18, border:"1.5px solid rgba(99,102,241,0.18)", overflow:"hidden" }}>
                 <button
                   onClick={() => { setShowChangePw(v => !v); setPwError(""); setPwSuccess(false); }}
@@ -631,7 +624,6 @@ const TechnicianDashboard = () => {
                             <span style={{ fontSize:12, color:"#334155" }}>{pwError}</span>
                           </div>
                         )}
-
                         {[
                           { key:"current", label:"Current Password",    placeholder:"Enter current password" },
                           { key:"newPw",   label:"New Password",         placeholder:"At least 6 characters" },
@@ -652,11 +644,7 @@ const TechnicianDashboard = () => {
                                 disabled={pwLoading}
                                 onKeyDown={e => e.key === "Enter" && handleChangePassword()}
                               />
-                              <button
-                                type="button"
-                                onClick={() => setPwShow(prev => ({ ...prev, [key]: !prev[key] }))}
-                                style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#6366f1", display:"flex", padding:4 }}
-                              >
+                              <button type="button" onClick={() => setPwShow(prev => ({ ...prev, [key]: !prev[key] }))} style={{ position:"absolute", right:11, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#6366f1", display:"flex", padding:4 }}>
                                 {pwShow[key] ? <EyeOff size={13} /> : <Eye size={13} />}
                               </button>
                             </div>
@@ -670,25 +658,11 @@ const TechnicianDashboard = () => {
                             )}
                           </div>
                         ))}
-
                         <div style={{ display:"flex", gap:10, marginTop:6 }}>
-                          <button
-                            onClick={resetPwForm}
-                            disabled={pwLoading}
-                            style={{ flex:1, padding:"10px", borderRadius:14, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleChangePassword}
-                            disabled={pwLoading}
-                            style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: pwLoading ? "not-allowed" : "pointer", boxShadow: pwLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}
-                          >
+                          <button onClick={resetPwForm} disabled={pwLoading} style={{ flex:1, padding:"10px", borderRadius:14, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}>Cancel</button>
+                          <button onClick={handleChangePassword} disabled={pwLoading} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor: pwLoading ? "not-allowed" : "pointer", boxShadow: pwLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display:"flex", alignItems:"center", justifyContent:"center", gap:7 }}>
                             {pwLoading ? (
-                              <>
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation:"spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                                Updating...
-                              </>
+                              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation:"spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Updating...</>
                             ) : (
                               <><KeyRound size={13} /> Update Password</>
                             )}
@@ -700,10 +674,7 @@ const TechnicianDashboard = () => {
                 )}
               </div>
 
-              <button
-                onClick={() => { setShowProfile(false); resetPwForm(); }}
-                style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}
-              >
+              <button onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>
                 Close
               </button>
             </div>
@@ -711,19 +682,122 @@ const TechnicianDashboard = () => {
         </div>
       )}
 
-      {/* CONFIRM CLOSE MODAL */}
+      {/* ── CONFIRM RESOLVE MODAL ── */}
+      {confirmResolveTicket && (
+        <div
+          onClick={() => { setConfirmResolveTicket(null); setResolveRemark(""); }}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width:"100%", maxWidth:420, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}
+          >
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#059669" }}>
+              <CheckCircle size={28} />
+            </div>
+            <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Mark as Resolved?</div>
+            <div style={{ fontSize:14, color:"#6b7280", marginBottom:4 }}>Are you sure you want to resolve</div>
+            <div style={{ fontSize:14, fontWeight:600, color:"#059669", marginBottom:20 }}>
+              #{confirmResolveTicket.id} — {confirmResolveTicket.subject}
+            </div>
+
+            <div style={{ textAlign:"left", marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#374151", marginBottom:7, letterSpacing:"0.03em" }}>
+                REMARK <span style={{ fontWeight:400, color:"#9ca3af" }}>(sent to user via email)</span>
+              </label>
+              <textarea
+                value={resolveRemark}
+                onChange={e => setResolveRemark(e.target.value)}
+                placeholder="e.g. The issue has been fixed. Please check and confirm."
+                rows={3}
+                style={{
+                  width:"100%", padding:"11px 13px", borderRadius:14, resize:"vertical",
+                  border:"1.5px solid rgba(16,185,129,0.2)", background:"rgba(255,255,255,0.9)",
+                  fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none",
+                  boxSizing:"border-box", lineHeight:1.6,
+                }}
+                onFocus={e => e.target.style.borderColor = "rgba(16,185,129,0.5)"}
+                onBlur={e => e.target.style.borderColor = "rgba(16,185,129,0.2)"}
+              />
+            </div>
+
+            <div style={{ fontSize:13, color:"#9ca3af", marginBottom:24 }}>The user will be notified via email.</div>
+
+            <div style={{ display:"flex", gap:12 }}>
+              <button
+                onClick={() => { setConfirmResolveTicket(null); setResolveRemark(""); }}
+                style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleResolve(confirmResolveTicket.id)}
+                disabled={resolving}
+                style={{
+                  flex:1, padding:"12px", borderRadius:18, border:"none",
+                  background: resolving ? "#94a3b8" : "linear-gradient(135deg,#10b981,#059669)",
+                  color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit",
+                  cursor: resolving ? "not-allowed" : "pointer",
+                  opacity: resolving ? 0.75 : 1,
+                  boxShadow: resolving ? "none" : "0 8px 24px rgba(16,185,129,0.3)",
+                  pointerEvents: resolving ? "none" : "auto",
+                }}
+              >
+                {resolving ? "Resolving..." : "Yes, Mark Resolved"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONFIRM CLOSE MODAL ── */}
       {confirmCloseTicket && (
-        <div onClick={() => setConfirmCloseTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}>
+        <div
+          onClick={() => { setConfirmCloseTicket(null); setCloseRemark(""); }}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ width:"100%", maxWidth:420, borderRadius:28, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", padding:"36px 32px", textAlign:"center" }}
+          >
             <div style={{ width:64, height:64, borderRadius:"50%", background:"rgba(239,68,68,0.08)", border:"1px solid rgba(239,68,68,0.2)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 20px", color:"#dc2626" }}>
               <AlertTriangle size={28} />
             </div>
             <div style={{ fontSize:20, fontWeight:600, color:"#111827", marginBottom:8 }}>Close Ticket?</div>
-            <div style={{ fontSize:14, color:"#6b7280", marginBottom:6 }}>Are you sure you want to close</div>
-            <div style={{ fontSize:14, fontWeight:600, color:"#6366f1", marginBottom:8 }}>#{confirmCloseTicket.id} — {confirmCloseTicket.subject}</div>
-            <div style={{ fontSize:13, color:"#9ca3af", marginBottom:28 }}>This action cannot be undone.</div>
+            <div style={{ fontSize:14, color:"#6b7280", marginBottom:4 }}>Are you sure you want to close</div>
+            <div style={{ fontSize:14, fontWeight:600, color:"#6366f1", marginBottom:20 }}>
+              #{confirmCloseTicket.id} — {confirmCloseTicket.subject}
+            </div>
+
+            <div style={{ textAlign:"left", marginBottom:20 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#374151", marginBottom:7, letterSpacing:"0.03em" }}>
+                REMARK <span style={{ fontWeight:400, color:"#9ca3af" }}>(sent to user via email)</span>
+              </label>
+              <textarea
+                value={closeRemark}
+                onChange={e => setCloseRemark(e.target.value)}
+                placeholder="e.g. Issue does not fall under our department. Please contact the electrical team."
+                rows={3}
+                style={{
+                  width:"100%", padding:"11px 13px", borderRadius:14, resize:"vertical",
+                  border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)",
+                  fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none",
+                  boxSizing:"border-box", lineHeight:1.6,
+                }}
+                onFocus={e => e.target.style.borderColor = "rgba(99,102,241,0.5)"}
+                onBlur={e => e.target.style.borderColor = "rgba(99,102,241,0.2)"}
+              />
+            </div>
+
+            <div style={{ fontSize:13, color:"#9ca3af", marginBottom:24 }}>This action cannot be undone.</div>
+
             <div style={{ display:"flex", gap:12 }}>
-              <button onClick={() => setConfirmCloseTicket(null)} style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
+              <button
+                onClick={() => { setConfirmCloseTicket(null); setCloseRemark(""); }}
+                style={{ flex:1, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}
+              >
+                Cancel
+              </button>
               <button
                 onClick={() => handleClose(confirmCloseTicket.id)}
                 disabled={closing}
