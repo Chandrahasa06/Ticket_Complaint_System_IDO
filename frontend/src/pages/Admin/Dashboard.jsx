@@ -7,7 +7,6 @@ const getStatusStyle = (status) => {
   const map = {
     overdue:       { color:"#b91c1c", background:"rgba(254,242,242,0.92)", border:"rgba(252,165,165,0.35)" },
     pending:       { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    "in-progress": { color:"#2563eb", background:"rgba(219,234,254,0.85)", border:"rgba(59,130,246,0.25)" },
     resolved:      { color:"#059669", background:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
     closed:        { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
@@ -189,6 +188,290 @@ const ExportDropdown = ({ tickets, tabLabel }) => {
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+// ─── Charts (no library needed, pure SVG + Canvas) ───────────────────────────
+
+const COLORS = {
+  total:    "#6366f1",
+  PENDING:  "#ec4899",
+  OVERDUE:  "#ef4444",
+  RESOLVED: "#10b981",
+  CLOSED:   "#f59e0b",
+};
+
+const OverviewTab = ({ stats }) => {
+  const [range, setRange] = useState("month");
+  const [timeData, setTimeData] = useState([]);
+  const [timeLoading, setTimeLoading] = useState(false);
+  const [tooltip, setTooltip] = useState(null);
+  const [pieTooltip, setPieTooltip] = useState(null);
+  const svgRef = React.useRef(null);
+
+  useEffect(() => {
+    const fetch_ = async () => {
+      setTimeLoading(true);
+      try {
+        const res = await fetch(`http://localhost:3000/api/admin/tickets-over-time?range=${range}`, { credentials: "include" });
+        const data = await res.json();
+        setTimeData(data.data || []);
+      } catch (e) { console.error(e); }
+      finally { setTimeLoading(false); }
+    };
+    fetch_();
+  }, [range]);
+
+  // ── Pie chart data ──────────────────────────────────────────────────────────
+  const pieData = [
+    { label: "Pending",  value: stats.pending,  color: COLORS.PENDING  },
+    { label: "Overdue",  value: stats.overdue,  color: COLORS.OVERDUE  },
+    { label: "Resolved", value: stats.resolved, color: COLORS.RESOLVED },
+    { label: "Closed",   value: stats.closed,   color: COLORS.CLOSED   },
+  ].filter(d => d.value > 0);
+
+  const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
+
+  // Build pie slices
+  const buildPie = () => {
+    if (pieTotal === 0) return [];
+    let angle = -Math.PI / 2;
+    return pieData.map(d => {
+      const slice = (d.value / pieTotal) * 2 * Math.PI;
+      const start = angle;
+      angle += slice;
+      const cx = 110, cy = 110, r = 88, ir = 52;
+      const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
+      const x2 = cx + r * Math.cos(start + slice), y2 = cy + r * Math.sin(start + slice);
+      const ix1 = cx + ir * Math.cos(start + slice), iy1 = cy + ir * Math.sin(start + slice);
+      const ix2 = cx + ir * Math.cos(start), iy2 = cy + ir * Math.sin(start);
+      const large = slice > Math.PI ? 1 : 0;
+      const midAngle = start + slice / 2;
+      return {
+        ...d,
+        path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${ir} ${ir} 0 ${large} 0 ${ix2} ${iy2} Z`,
+        midAngle,
+        pct: Math.round((d.value / pieTotal) * 100),
+      };
+    });
+  };
+
+  const slices = buildPie();
+
+  // ── Line chart ──────────────────────────────────────────────────────────────
+  const W = 700, H = 220, PL = 44, PR = 16, PT = 16, PB = 36;
+  const chartW = W - PL - PR, chartH = H - PT - PB;
+
+  const keys = ["total", "PENDING", "OVERDUE", "RESOLVED", "CLOSED"];
+  const keyLabels = { total: "All Tickets", PENDING: "Pending", OVERDUE: "Overdue", RESOLVED: "Resolved", CLOSED: "Closed" };
+
+  const allVals = timeData.flatMap(d => keys.map(k => d[k] || 0));
+  const maxVal = Math.max(...allVals, 1);
+  const ySteps = 4;
+
+  const xOf = i => PL + (i / Math.max(timeData.length - 1, 1)) * chartW;
+  const yOf = v => PT + chartH - (v / maxVal) * chartH;
+
+  const polyline = (key) =>
+    timeData.map((d, i) => `${xOf(i)},${yOf(d[key] || 0)}`).join(" ");
+
+  return (
+    <div>
+      {/* Critical alert */}
+      <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(241,245,249,0.75)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
+        <div style={{ width:44, height:44, borderRadius:14, background:"rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}>
+          <AlertTriangle size={20} />
+        </div>
+        <div>
+          <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:8 }}>⚠️ Critical Alerts</div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:"#b91c1c", display:"inline-block", flexShrink:0 }} />
+            {stats.overdue} ticket(s) overdue — Immediate action required
+          </div>
+        </div>
+      </div>
+
+      {/* Two charts side by side */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1.8fr", gap:20, marginBottom:22 }}>
+
+        {/* PIE CHART */}
+        <div style={{ ...glassCard, padding:"24px 22px" }}>
+          <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Status Distribution</div>
+          {pieTotal === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px 0", color:"#9ca3af", fontSize:13 }}>No ticket data yet</div>
+          ) : (
+            <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <svg width="220" height="220" viewBox="0 0 220 220">
+                  {slices.map((s, i) => (
+                    <path
+                      key={i}
+                      d={s.path}
+                      fill={s.color}
+                      opacity={pieTooltip && pieTooltip.label !== s.label ? 0.5 : 1}
+                      style={{ cursor:"pointer", transition:"opacity 0.2s" }}
+                      onMouseEnter={e => {
+                        const rect = e.target.closest("svg").getBoundingClientRect();
+                        setPieTooltip({ label: s.label, value: s.value, pct: s.pct, color: s.color, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                      }}
+                      onMouseLeave={() => setPieTooltip(null)}
+                    />
+                  ))}
+                  {/* Center text */}
+                  <text x="110" y="104" textAnchor="middle" style={{ fontSize:26, fontWeight:700, fill:"#111827", fontFamily:"inherit" }}>{pieTotal}</text>
+                  <text x="110" y="124" textAnchor="middle" style={{ fontSize:11, fill:"#6b7280", fontFamily:"inherit" }}>Total</text>
+                  {/* Tooltip */}
+                  {pieTooltip && (
+                    <g>
+                      <rect x={pieTooltip.x - 50} y={pieTooltip.y - 38} width="100" height="34" rx="8" fill="rgba(17,24,39,0.85)" />
+                      <text x={pieTooltip.x} y={pieTooltip.y - 20} textAnchor="middle" style={{ fontSize:12, fill:"white", fontWeight:600, fontFamily:"inherit" }}>{pieTooltip.label}</text>
+                      <text x={pieTooltip.x} y={pieTooltip.y - 8} textAnchor="middle" style={{ fontSize:11, fill:"rgba(255,255,255,0.8)", fontFamily:"inherit" }}>{pieTooltip.value} ({pieTooltip.pct}%)</text>
+                    </g>
+                  )}
+                </svg>
+              </div>
+              {/* Legend */}
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {slices.map((s, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <div style={{ width:12, height:12, borderRadius:3, background:s.color, flexShrink:0 }} />
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{s.label}</div>
+                      <div style={{ fontSize:12, color:"#9ca3af" }}>{s.value} · {s.pct}%</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* LINE CHART */}
+        <div style={{ ...glassCard, padding:"24px 22px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+            <div style={{ fontSize:15, fontWeight:600, color:"#111827" }}>Tickets Over Time</div>
+            {/* Range toggle */}
+            <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background:"rgba(99,102,241,0.08)" }}>
+              {["day","month","year"].map(r => (
+                <button key={r} onClick={() => setRange(r)} style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background: range === r ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "transparent", color: range === r ? "white" : "#6b7280", boxShadow: range === r ? "0 4px 12px rgba(99,102,241,0.3)" : "none", transition:"all 0.15s", textTransform:"capitalize" }}>
+                  {r === "day" ? "Daily" : r === "month" ? "Monthly" : "Yearly"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {timeLoading ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#9ca3af", fontSize:13 }}>Loading...</div>
+          ) : timeData.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"60px 0", color:"#9ca3af", fontSize:13 }}>No data for this range</div>
+          ) : (
+            <div style={{ position:"relative" }}>
+              <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow:"visible" }}
+                onMouseMove={e => {
+                  if (!svgRef.current || timeData.length === 0) return;
+                  const rect = svgRef.current.getBoundingClientRect();
+                  const scaleX = W / rect.width;
+                  const mx = (e.clientX - rect.left) * scaleX;
+                  const idx = Math.round((mx - PL) / chartW * (timeData.length - 1));
+                  if (idx >= 0 && idx < timeData.length) setTooltip({ idx, x: xOf(idx), y: PT });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                {/* Y grid lines */}
+                {Array.from({ length: ySteps + 1 }, (_, i) => {
+                  const v = Math.round((maxVal / ySteps) * (ySteps - i));
+                  const y = yOf(v === 0 ? 0 : v);
+                  return (
+                    <g key={i}>
+                      <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="rgba(0,0,0,0.06)" strokeWidth="1" />
+                      <text x={PL - 6} y={y + 4} textAnchor="end" style={{ fontSize:10, fill:"#9ca3af", fontFamily:"inherit" }}>{v}</text>
+                    </g>
+                  );
+                })}
+
+                {/* X labels */}
+                {timeData.map((d, i) => {
+                  if (timeData.length > 12 && i % Math.ceil(timeData.length / 12) !== 0) return null;
+                  return (
+                    <text key={i} x={xOf(i)} y={H - 4} textAnchor="middle" style={{ fontSize:9, fill:"#9ca3af", fontFamily:"inherit" }}>
+                      {range === "day" ? d.date.slice(5) : range === "month" ? d.date.slice(0, 7) : d.date}
+                    </text>
+                  );
+                })}
+
+                {/* Lines */}
+                {keys.map(key => (
+                  timeData.length > 1 && (
+                    <polyline
+                      key={key}
+                      points={polyline(key)}
+                      fill="none"
+                      stroke={COLORS[key]}
+                      strokeWidth={key === "total" ? 2.5 : 1.8}
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      opacity={key === "total" ? 1 : 0.85}
+                    />
+                  )
+                ))}
+
+                {/* Dots at hover index */}
+                {tooltip && keys.map(key => (
+                  <circle key={key} cx={tooltip.x} cy={yOf(timeData[tooltip.idx][key] || 0)} r="4" fill={COLORS[key]} stroke="white" strokeWidth="2" />
+                ))}
+
+                {/* Tooltip box */}
+                {tooltip && (() => {
+                  const d = timeData[tooltip.idx];
+                  const bx = Math.min(tooltip.x - 60, W - 140);
+                  return (
+                    <g>
+                      <rect x={bx} y={PT} width="130" height={16 + keys.length * 16} rx="8" fill="rgba(17,24,39,0.88)" />
+                      <text x={bx + 10} y={PT + 14} style={{ fontSize:10, fill:"rgba(255,255,255,0.7)", fontFamily:"inherit" }}>{d.date}</text>
+                      {keys.map((key, ki) => (
+                        <g key={key}>
+                          <rect x={bx + 10} y={PT + 22 + ki * 16} width="8" height="8" rx="2" fill={COLORS[key]} />
+                          <text x={bx + 22} y={PT + 30 + ki * 16} style={{ fontSize:10, fill:"white", fontFamily:"inherit" }}>{keyLabels[key]}: {d[key] || 0}</text>
+                        </g>
+                      ))}
+                    </g>
+                  );
+                })()}
+              </svg>
+
+              {/* Legend below chart */}
+              <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginTop:8 }}>
+                {keys.map(key => (
+                  <div key={key} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <div style={{ width:24, height:3, borderRadius:2, background:COLORS[key] }} />
+                    <span style={{ fontSize:11, color:"#6b7280" }}>{keyLabels[key]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Summary row
+      <div style={{ ...glassCard, padding:26 }}>
+        <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12 }}>
+          {[
+            { label:"Total Pending", val: stats.totalPending ?? (stats.pending + stats.overdue), color:"#6366f1" },
+            { label:"Pending",       val: stats.pending,   color:"#ec4899" },
+            { label:"Overdue",       val: stats.overdue,   color:"#ef4444" },
+            { label:"Resolved",      val: stats.resolved,  color:"#10b981" },
+            { label:"Closed",        val: stats.closed,    color:"#f59e0b" },
+          ].map((s, i) => (
+            <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
+              <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
+              <div style={{ fontSize:13, color:"#6b7280" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div> */}
     </div>
   );
 };
@@ -529,37 +812,8 @@ const AdminDashboard = () => {
 
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
-          <div>
-            <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(241,245,249,0.75)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
-              <div style={{ width:44, height:44, borderRadius:14, background:"rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}><AlertTriangle size={20} /></div>
-              <div>
-                <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:8 }}>⚠️ Critical Alerts</div>
-                <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
-                  <span style={{ width:6, height:6, borderRadius:"50%", background:"#b91c1c", display:"inline-block", flexShrink:0 }} />
-                  {stats.overdue} ticket(s) overdue — Immediate action required
-                </div>
-              </div>
-            </div>
-            <div style={{ ...glassCard, padding:26 }}>
-              <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Ticket Summary</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:12 }}>
-                {[
-                  { label:"Total Pending", val: stats.totalPending ?? (stats.pending + stats.overdue), color:"#6366f1" },
-                  { label:"Pending",       val: stats.pending,    color:"#d97706" },
-                  { label:"Overdue",       val: stats.overdue,    color:"#b91c1c" },
-                  { label:"Resolved",      val: stats.resolved,   color:"#059669" },
-                  { label:"Closed",        val: stats.closed,     color:"#6b7280" },
-                ].map((s, i) => (
-                  <div key={i} style={{ padding:"18px", borderRadius:18, background:"rgba(255,255,255,0.5)", textAlign:"center" }}>
-                    <div style={{ fontSize:32, fontWeight:700, color:s.color, marginBottom:4 }}>{s.val}</div>
-                    <div style={{ fontSize:13, color:"#6b7280" }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
+  <OverviewTab stats={stats} />
+)}
         {/* ALL OTHER TABS */}
         {activeTab !== "overview" && (
           <div>
