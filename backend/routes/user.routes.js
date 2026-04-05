@@ -11,6 +11,7 @@ import fs from "fs";
 import otpGenerator from "otp-generator";
 import { sendOTPEmail } from "../middlewares/mailer.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendPushToTechnician } from '../utils/notify.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -441,27 +442,36 @@ userRouter.get("/tickets/:id", async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 userRouter.post("/raise", upload.single("image"), async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
     const { type, subject, body, area, location } = req.body;
-
-    if(!type || !subject || !body || !area || !location) {
+    if(!type || !subject || !body || !area || !location)
         return res.status(400).json({ message: "All fields are required!" });
-    }
 
     try {
         const imageUrl = req.file ? `/uploads/tickets/${req.file.filename}` : "";
 
         const ticket = await prisma.ticket.create({
-            data: {
-                type, subject, body,
-                area, location, imageUrl,
-                status: "PENDING",
-                userId: req.user.id,
-            }
+            data: { type, subject, body, area, location, imageUrl, status: "PENDING", userId: req.user.id }
         });
+
+        // Notify all technicians whose department + area matches
+        const technicians = await prisma.technician.findMany({
+            where: { department: type }
+        });
+
+        const matchingTechs = technicians.filter(tech =>
+            tech.area.split(",").map(a => a.trim()).includes(area)
+        );
+
+        for (const tech of matchingTechs) {
+            await sendPushToTechnician(tech.id, {
+                title: "New Ticket Assigned",
+                body: `Ticket #${ticket.id}: ${subject}`,
+                url: `/technician/dashboard`
+            });
+        }
 
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     } catch(e) {
@@ -469,7 +479,6 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 userRouter.put("/tickets/:id/satisfied", async (req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 

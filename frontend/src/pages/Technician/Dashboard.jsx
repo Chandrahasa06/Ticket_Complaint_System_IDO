@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Eye, CheckCircle, X, MapPin, Calendar, Wrench, AlertTriangle, KeyRound, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { unsubscribeFromPush } from '../../utils/pushNotifications';
+
+
 
 const glassCard = {
   borderRadius: 28,
@@ -162,14 +165,13 @@ const TechnicianDashboard = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
-      localStorage.removeItem("token");
-      localStorage.removeItem("role");
-      navigate("/LoginRoleSelect");
-    } catch(error) { console.error("Logout error:", error); }
-  };
+const handleLogout = async () => {
+  await unsubscribeFromPush(); // ← add this
+  await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  navigate("/LoginRoleSelect");
+};
 
   const resetPwForm = () => {
     setPwForm({ current:"", newPw:"", confirm:"" });

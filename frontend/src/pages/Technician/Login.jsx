@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import { subscribeToPush } from '../../utils/pushNotifications';
  
 const TechnicianLogin = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const TechnicianLogin = () => {
       localStorage.setItem("email", data.email);
 
       navigate("/technician/dashboard");
+      subscribeToPush();
     } catch (err) {
       console.error(err);
       alert("Google login failed");
@@ -62,6 +64,7 @@ const TechnicianLogin = () => {
          localStorage.setItem("username", data.username);
       localStorage.setItem("email", data.email);
       navigate("/technician/dashboard");
+      subscribeToPush();
     } catch (err) { console.error(err); alert("Server error"); }
   };
  

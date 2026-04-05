@@ -7,6 +7,14 @@ const ProtectedRoute = ({ children, roles }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Add at the top of ProtectedRoute.js useEffect
+useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.error('SW registration failed:', err));
+  }
+}, []);
   useEffect(() => {
     const checkAuth = () => {
       fetch("http://localhost:3000/protectedRoute", {

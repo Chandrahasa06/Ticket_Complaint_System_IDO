@@ -3,6 +3,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import OTPModal from "../../components/OTPModal";
 import ForgotPasswordModal from "../../components/ForgotPasswordModal";
+import { subscribeToPush } from '../../utils/pushNotifications';
 
 const UserLogin = () => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const UserLogin = () => {
       localStorage.setItem("email", data.email);
 
       navigate("/user/dashboard");
+      subscribeToPush();
     } catch (err) {
       console.error(err);
       alert("Google login failed");
@@ -95,6 +97,7 @@ const UserLogin = () => {
       localStorage.setItem("email", data.email);
 
       navigate("/user/dashboard");
+      subscribeToPush();
     } catch (err) {
       console.error(err);
       alert("Server error");
