@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { unsubscribeFromPush } from '../../utils/pushNotifications';
 
 const glassCard = {
   borderRadius: 28,
@@ -149,6 +150,7 @@ const handleSubmitFollowup = async () => {
 };
 
   const handleLogout = async () => {
+     await unsubscribeFromPush();
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
       localStorage.removeItem("token");

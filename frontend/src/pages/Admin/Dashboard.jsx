@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { unsubscribeFromPush } from '../../utils/pushNotifications';
 
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
@@ -644,6 +645,7 @@ const AdminDashboard = () => {
   const handleTabChange = (tab) => { setActiveTab(tab); setCurrentPage(1); };
 
   const handleLogout = async () => {
+     await unsubscribeFromPush();
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
       localStorage.removeItem("token");
