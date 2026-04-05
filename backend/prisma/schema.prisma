@@ -19,6 +19,7 @@ model User {
   username  String
   email     String   @unique
   password  String?
+   phone String?
   isGoogle  Boolean  @default(false)
 
   tickets   Ticket[]
@@ -93,4 +94,15 @@ model Otp {
   expiresAt DateTime
   
   @@map("otp")
+}
+
+model PushSubscription {
+  id             Int    @id @default(autoincrement())
+  endpoint       String @unique
+  p256dh         String
+  auth           String
+  subscriberType String
+  subscriberId   Int
+
+  @@map("push_subscription")
 }

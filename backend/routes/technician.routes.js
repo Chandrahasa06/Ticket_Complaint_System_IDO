@@ -5,7 +5,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
-import { sendCloseEmail } from "../middlewares/mailer.js";
+import { sendPushToUser } from '../utils/notify.js';
+
+import { sendCloseEmail, sendResolveEmail } from "../middlewares/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -312,41 +314,52 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
-    if(req.user.role !== "technician"){
+    if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
-    }
     try {
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "RESOLVED" },
         });
+
+        // Notify the user who raised this ticket
+        await sendPushToUser(ticket.userId, {
+            title: "Ticket Resolved ✅",
+            body: `Your ticket #${ticket.id} "${ticket.subject}" has been resolved.`,
+            url: `/user/dashboard`
+        });
+
         res.json({ message: "Ticket resolved", ticket });
-    }
-    catch(e) {
+    } catch(e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
 
 technicianRouter.patch("/tickets/:id/close", async(req, res) => {
-    if(req.user.role !== "technician"){
+    if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
-    }
     try {
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "CLOSED" },
-            include: {user: true}
+            include: { user: true }
         });
+
         await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
+
+        // Notify the user who raised this ticket
+        await sendPushToUser(ticket.userId, {
+            title: "Ticket Closed 🔒",
+            body: `Your ticket #${ticket.id} "${ticket.subject}" has been closed.`,
+            url: `/user/dashboard`
+        });
+
         res.json({ message: "Ticket closed", ticket });
-    }
-    catch(e) {
+    } catch(e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 export default technicianRouter;

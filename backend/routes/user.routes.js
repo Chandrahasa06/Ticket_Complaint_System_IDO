@@ -11,6 +11,7 @@ import fs from "fs";
 import otpGenerator from "otp-generator";
 import { sendOTPEmail } from "../middlewares/mailer.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendPushToTechnician } from '../utils/notify.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -394,6 +395,37 @@ userRouter.post("/forgot-password/reset", async (req, res) => {
 
 userRouter.use(checkAuth);
 
+userRouter.get("/profile", async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { username: true, email: true, phone: true }
+    });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ user });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+userRouter.patch("/profile/phone", async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ message: "Invalid phone number" });
+    }
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { phone }
+    });
+    res.json({ message: "Phone updated successfully", user });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 userRouter.get("/tickets", async (req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
@@ -441,27 +473,36 @@ userRouter.get("/tickets/:id", async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 userRouter.post("/raise", upload.single("image"), async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
     const { type, subject, body, area, location } = req.body;
-
-    if(!type || !subject || !body || !area || !location) {
+    if(!type || !subject || !body || !area || !location)
         return res.status(400).json({ message: "All fields are required!" });
-    }
 
     try {
         const imageUrl = req.file ? `/uploads/tickets/${req.file.filename}` : "";
 
         const ticket = await prisma.ticket.create({
-            data: {
-                type, subject, body,
-                area, location, imageUrl,
-                status: "PENDING",
-                userId: req.user.id,
-            }
+            data: { type, subject, body, area, location, imageUrl, status: "PENDING", userId: req.user.id }
         });
+
+        // Notify all technicians whose department + area matches
+        const technicians = await prisma.technician.findMany({
+            where: { department: type }
+        });
+
+        const matchingTechs = technicians.filter(tech =>
+            tech.area.split(",").map(a => a.trim()).includes(area)
+        );
+
+        for (const tech of matchingTechs) {
+            await sendPushToTechnician(tech.id, {
+                title: "New Ticket Assigned",
+                body: `Ticket #${ticket.id}: ${subject}`,
+                url: `/technician/dashboard`
+            });
+        }
 
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     } catch(e) {
@@ -469,7 +510,6 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 userRouter.put("/tickets/:id/satisfied", async (req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
@@ -506,44 +546,48 @@ userRouter.delete("/tickets/:id/cancel", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-userRouter.post("/followup", async (req, res) => {
+userRouter.patch("/followup/:id", async (req, res) => {
     if (req.user.role !== "user") {
         return res.status(403).json({ message: "Access denied" });
     }
 
-    const { type, subject, body, prevId } = req.body;
+    const { subject, body } = req.body;
 
-    if (!type || !subject || !body || !prevId) {
+    if (!subject || !body) {
         return res.status(400).json({ message: "All fields are required!" });
     }
 
     try {
         const originalTicket = await prisma.ticket.findUnique({
-            where: { id: Number(prevId) }
+            where: { id: Number(req.params.id) }
         });
 
         if (!originalTicket) {
-            return res.status(404).json({ message: "Original ticket not found" });
+            return res.status(404).json({ message: "Ticket not found" });
         }
 
-        const ticket = await prisma.ticket.create({
+        if (originalTicket.userId !== req.user.id) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        if (originalTicket.status !== "RESOLVED") {
+            return res.status(400).json({ message: "Only resolved tickets can have follow-ups" });
+        }
+
+        const oldDate = new Date(originalTicket.createdAt).toLocaleString("en-GB");
+        const updatedBody = `[Follow-up] ${body}\n\n--- Original complaint (raised on ${oldDate}) ---\n${originalTicket.body}`;
+
+        const ticket = await prisma.ticket.update({
+            where: { id: Number(req.params.id) },
             data: {
-                type,
                 subject,
-                body,
-                location: originalTicket.location,
-                area: originalTicket.area,
-                prevId: Number(prevId),
+                body: updatedBody,
                 status: "PENDING",
-                userId: req.user.id,
-                imageUrl: originalTicket.imageUrl
+                createdAt: new Date(),
             }
         });
 
-        res.json({
-            message: "Follow-up ticket raised successfully",
-            ticketId: ticket.id
-        });
+        res.json({ message: "Follow-up submitted, ticket reopened", ticket });
 
     } catch (e) {
         console.error("Followup error:", e);

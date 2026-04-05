@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import { subscribeToPush } from '../../utils/pushNotifications';
  
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const AdminLogin = () => {
 
       localStorage.setItem("username", data.username);
       localStorage.setItem("email", data.email);
-
+      subscribeToPush();
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
@@ -68,6 +69,7 @@ const AdminLogin = () => {
         } alert(data.message || "Invalid credentials"); return; }
          localStorage.setItem("username", data.username);
       localStorage.setItem("email", data.email);
+      subscribeToPush();
       navigate("/admin/dashboard");
     } catch (err) { console.error(err); alert("Server error"); }
   };

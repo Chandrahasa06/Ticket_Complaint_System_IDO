@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Star, Phone, Mail, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, UserCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { unsubscribeFromPush } from '../../utils/pushNotifications';
 
 const glassCard = {
   borderRadius: 28,
@@ -120,6 +121,7 @@ const EngineerDashboard = () => {
   };
 
   const handleLogout = async () => {
+     await unsubscribeFromPush();
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
       localStorage.removeItem("token");

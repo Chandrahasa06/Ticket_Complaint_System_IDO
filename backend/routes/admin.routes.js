@@ -238,6 +238,45 @@ adminRouter.get("/technicians", async(req, res) => {
     }
 });
 
+// GET /api/admin/tickets-over-time?range=month
+adminRouter.get("/tickets-over-time", async (req, res) => {
+  if (req.user.role !== "admin") return res.status(403).json({ message: "Access denied" });
+
+  const range = req.query.range || "month"; // day | month | year
+
+  try {
+    const tickets = await prisma.ticket.findMany({
+      select: { createdAt: true, status: true }
+    });
+
+    const grouped = {};
+
+    tickets.forEach(ticket => {
+      const date = new Date(ticket.createdAt);
+      let key;
+      if (range === "day") {
+        key = date.toISOString().slice(0, 10); // YYYY-MM-DD
+      } else if (range === "month") {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      } else {
+        key = `${date.getFullYear()}`;
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = { date: key, total: 0, PENDING: 0, OVERDUE: 0, RESOLVED: 0, CLOSED: 0 };
+      }
+      grouped[key].total++;
+      if (grouped[key][ticket.status] !== undefined) grouped[key][ticket.status]++;
+    });
+
+    const data = Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));
+    res.json({ data });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // DELETE engineer by ID
 adminRouter.delete("/engineer/:id", async(req, res) => {
     if(req.user.role !== "admin"){
