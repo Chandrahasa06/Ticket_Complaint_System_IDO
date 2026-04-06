@@ -210,7 +210,7 @@ adminRouter.get("/engineers", async(req, res) => {
     try {
         const engineers = await prisma.engineer.findMany({
             orderBy: { username: "asc" },
-            select: { id: true, username: true, email: true, department: true, phone: true, employeeId: true },
+            select: { id: true, username: true, email: true, department: true},
         });
         res.json({ engineers });
     }
@@ -228,7 +228,7 @@ adminRouter.get("/technicians", async(req, res) => {
     try {
         const technicians = await prisma.technician.findMany({
             orderBy: { username: "asc" },
-            select: { id: true, username: true, email: true, department: true, area: true, phone: true, employeeId: true },
+            select: { id: true, username: true, email: true, department: true, area: true },
         });
         res.json({ technicians });
     }

@@ -360,8 +360,6 @@ const EngineerDashboard = () => {
               </div>
               {[
                 { label:"EMAIL",       val: profile.email },
-                { label:"PHONE",       val: profile.phone || "Not added" },
-                { label:"EMPLOYEE ID", val: profile.employeeId || "Not added" },
                 { label:"DEPARTMENT",  val: profile.department },
               ].map((f, i) => (
                 <div key={i} style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>

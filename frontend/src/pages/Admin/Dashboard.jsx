@@ -490,7 +490,7 @@ const AdminDashboard = () => {
 
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [addRole, setAddRole] = useState("engineer");
-  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
+  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[] });
   const [addLoading, setAddLoading] = useState(false);
 
   const [showManageEngineers, setShowManageEngineers] = useState(false);
@@ -512,7 +512,7 @@ const AdminDashboard = () => {
     if (addRole === "technician" && addForm.area.length === 0) { alert("Please select at least one area!"); return; }
     setAddLoading(true);
     try {
-      const body = { username: addForm.username, email: addForm.email, password: addForm.password, phone: addForm.phone, employeeId: addForm.employeeId };
+      const body = { username: addForm.username, email: addForm.email, password: addForm.password};
       if (addRole === "engineer") body.department = addForm.department;
       if (addRole === "technician") { body.department = addForm.department; body.area = addForm.area; }
       const res = await fetch(`http://localhost:3000/api/${addRole}/register`, {
@@ -523,7 +523,7 @@ const AdminDashboard = () => {
       const data = await res.json();
       if (!res.ok) { alert(data.message || "Registration failed"); return; }
       alert(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`);
-      setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" });
+      setAddForm({ username:"", email:"", password:"", department:"", area:[] });
       setShowAddPeople(false);
     } catch (err) { console.error(err); alert("Server error"); }
     finally { setAddLoading(false); }
@@ -971,8 +971,6 @@ const AdminDashboard = () => {
                   { label:"Username",     key:"username",   type:"text",     placeholder:"Enter username" },
                   { label:"Email",        key:"email",      type:"email",    placeholder:"Enter email address" },
                   { label:"Password",     key:"password",   type:"password", placeholder:"Set a password" },
-                  { label:"Phone Number", key:"phone",      type:"tel",      placeholder:"Enter phone number" },
-                  { label:"Employee ID",  key:"employeeId", type:"text",     placeholder:"Enter employee ID" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>{f.label}</label>

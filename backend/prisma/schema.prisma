@@ -43,8 +43,6 @@ model Engineer {
   email      String @unique
   password   String
   department String @default("General")
-  phone      String @default("")
-  employeeId String @default("")
   isGoogle  Boolean  @default(false)
 
   @@map("engineer")
@@ -57,8 +55,6 @@ model Technician {
   password   String
   department String @default("General")
   area       String @default("General")
-  phone      String @default("")
-  employeeId String @default("")
   isGoogle  Boolean  @default(false)
 
   @@map("technician")

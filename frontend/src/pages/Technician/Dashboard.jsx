@@ -581,8 +581,6 @@ const handleLogout = async () => {
 
               {[
                 { label:"EMAIL",       val: profile.email },
-                { label:"PHONE",       val: profile.phone || "Not added" },
-                { label:"EMPLOYEE ID", val: profile.employeeId || "Not added" },
                 { label:"DEPARTMENT",  val: profile.department },
                 { label:"AREA",        val: profile.area },
               ].map((f, i) => (

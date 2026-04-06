@@ -16,9 +16,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const technicianRouter = express.Router();
 
 technicianRouter.post("/register", async(req, res) => {
-    const { username, email, password, department, area, phone, employeeId } = req.body;
+    const { username, email, password, department, area} = req.body;
 
-    if(!username || !email || !password || !department || !area || !phone || !employeeId){
+    if(!username || !email || !password || !department || !area){
         return res.status(400).json({ message: "All fields are required!" });
     }
 
@@ -41,9 +41,7 @@ technicianRouter.post("/register", async(req, res) => {
         email,
         password: hashedPassword,
         department,
-        area: Array.isArray(area) ? area.join(",") : area,
-        phone: phone || "",
-        employeeId: employeeId || "",
+        area: Array.isArray(area) ? area.join(",") : area
       }
     });
 
@@ -203,7 +201,7 @@ technicianRouter.get("/profile", async(req, res) => {
     try {
         const technician = await prisma.technician.findUnique({
             where: { id: req.user.id },
-            select: { id: true, username: true, email: true, department: true, area: true, phone: true, employeeId: true }
+            select: { id: true, username: true, email: true, department: true, area: true }
         });
         res.json({ technician });
     } catch(e) {
