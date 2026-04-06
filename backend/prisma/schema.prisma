@@ -1,17 +1,10 @@
 generator client {
-
   provider = "prisma-client-js"
-
   output   = "../generated/prisma"
-
 }
 
-
-
 datasource db {
-
   provider = "postgresql"
-
 }
 
 model User {
@@ -19,7 +12,7 @@ model User {
   username  String
   email     String   @unique
   password  String?
-   phone String?
+  phone     String?
   isGoogle  Boolean  @default(false)
 
   tickets   Ticket[]
@@ -32,7 +25,9 @@ model Admin {
   username String
   email    String @unique
   password String
-  isGoogle  Boolean  @default(false)
+  isGoogle Boolean @default(false)
+
+  comments TicketComment[]
 
   @@map("admin")
 }
@@ -78,9 +73,36 @@ model Ticket {
   userId Int
   user   User @relation(fields: [userId], references: [id])
 
+  comments  TicketComment[]
+
   createdAt DateTime @default(now())
 
   @@map("ticket")
+}
+
+model TicketComment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  
+  // Who wrote this comment
+  authorRole String  // "admin" | "engineer"
+
+  // Relation to ticket
+  ticketId  Int
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+
+  // Optional FK to Admin (set if authorRole == "admin")
+  adminId   Int?
+  admin     Admin?   @relation(fields: [adminId], references: [id])
+
+  // Optional FK to Engineer (set if authorRole == "engineer")
+  engineerId Int?
+  engineer   Engineer? @relation(fields: [engineerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ticket_comment")
 }
 
 model Otp {
@@ -88,7 +110,7 @@ model Otp {
   email     String   @unique
   otp       String
   expiresAt DateTime
-  
+
   @@map("otp")
 }
 

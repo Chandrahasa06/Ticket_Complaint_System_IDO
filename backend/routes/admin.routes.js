@@ -120,7 +120,6 @@ adminRouter.post("/google-login", async(req, res) => {
       where: { email }
     });
 
-    // Existing normal account → attach Google login too
     if (admin && !admin.isGoogle) {
       admin = await prisma.admin.update({
         where: { email },
@@ -130,7 +129,6 @@ adminRouter.post("/google-login", async(req, res) => {
       });
     }
 
-    // First time Google user
     if (!admin) {
       return res.status(403).json({
         message: "No admin account exists for this email. Please contact the devs."
@@ -202,6 +200,158 @@ adminRouter.get("/tickets", async(req, res) => {
     }
 });
 
+// GET ticket details with comments
+adminRouter.get("/tickets/:id", async(req, res) => {
+    if(req.user.role !== "admin"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: Number(req.params.id) },
+            include: {
+                prev: true,
+                comments: {
+                    orderBy: { createdAt: "asc" },
+                    include: {
+                        admin: { select: { id: true, username: true } },
+                        engineer: { select: { id: true, username: true, department: true } },
+                    },
+                },
+            },
+        });
+        if(!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+        // Format comments so frontend knows exactly what to display
+        const formattedComments = ticket.comments.map(c => ({
+            id: c.id,
+            body: c.body,
+            authorRole: c.authorRole,                          // "admin" | "engineer"
+            authorName: c.admin?.username ?? c.engineer?.username,
+            authorDepartment: c.engineer?.department ?? null,  // only for engineer
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+        }));
+
+        res.json({ ticket: { ...ticket, comments: formattedComments } });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// POST add comment to a ticket (admin)
+adminRouter.post("/tickets/:id/comments", async(req, res) => {
+    if(req.user.role !== "admin"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    const { body } = req.body;
+    if(!body || !body.trim()){
+        return res.status(400).json({ message: "Comment body is required." });
+    }
+    try {
+        const ticket = await prisma.ticket.findUnique({ where: { id: Number(req.params.id) } });
+        if(!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+        const comment = await prisma.ticketComment.create({
+            data: {
+                body: body.trim(),
+                authorRole: "admin",
+                ticketId: Number(req.params.id),
+                adminId: req.user.id,
+            },
+            include: {
+                admin: { select: { id: true, username: true } },
+            },
+        });
+
+        res.status(201).json({
+            message: "Comment added",
+            comment: {
+                id: comment.id,
+                body: comment.body,
+                authorRole: comment.authorRole,
+                authorName: comment.admin.username,
+                authorDepartment: null,
+                createdAt: comment.createdAt,
+                updatedAt: comment.updatedAt,
+            },
+        });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// PATCH edit a comment (admin can only edit their own comments)
+adminRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res) => {
+    if(req.user.role !== "admin"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    const { body } = req.body;
+    if(!body || !body.trim()){
+        return res.status(400).json({ message: "Comment body is required." });
+    }
+    try {
+        const comment = await prisma.ticketComment.findUnique({
+            where: { id: Number(req.params.commentId) },
+        });
+        if(!comment) return res.status(404).json({ message: "Comment not found" });
+        if(comment.authorRole !== "admin" || comment.adminId !== req.user.id){
+            return res.status(403).json({ message: "You can only edit your own comments." });
+        }
+
+        const updated = await prisma.ticketComment.update({
+            where: { id: Number(req.params.commentId) },
+            data: { body: body.trim() },
+            include: {
+                admin: { select: { id: true, username: true } },
+            },
+        });
+
+        res.json({
+            message: "Comment updated",
+            comment: {
+                id: updated.id,
+                body: updated.body,
+                authorRole: updated.authorRole,
+                authorName: updated.admin.username,
+                authorDepartment: null,
+                createdAt: updated.createdAt,
+                updatedAt: updated.updatedAt,
+            },
+        });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// DELETE a comment (admin can only delete their own comments)
+adminRouter.delete("/tickets/:ticketId/comments/:commentId", async(req, res) => {
+    if(req.user.role !== "admin"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+    try {
+        const comment = await prisma.ticketComment.findUnique({
+            where: { id: Number(req.params.commentId) },
+        });
+        if(!comment) return res.status(404).json({ message: "Comment not found" });
+        if(comment.authorRole !== "admin" || comment.adminId !== req.user.id){
+            return res.status(403).json({ message: "You can only delete your own comments." });
+        }
+
+        await prisma.ticketComment.delete({ where: { id: Number(req.params.commentId) } });
+        res.json({ message: "Comment deleted" });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 // GET all engineers
 adminRouter.get("/engineers", async(req, res) => {
     if(req.user.role !== "admin"){
@@ -242,7 +392,7 @@ adminRouter.get("/technicians", async(req, res) => {
 adminRouter.get("/tickets-over-time", async (req, res) => {
   if (req.user.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
-  const range = req.query.range || "month"; // day | month | year
+  const range = req.query.range || "month";
 
   try {
     const tickets = await prisma.ticket.findMany({
@@ -255,7 +405,7 @@ adminRouter.get("/tickets-over-time", async (req, res) => {
       const date = new Date(ticket.createdAt);
       let key;
       if (range === "day") {
-        key = date.toISOString().slice(0, 10); // YYYY-MM-DD
+        key = date.toISOString().slice(0, 10);
       } else if (range === "month") {
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       } else {
