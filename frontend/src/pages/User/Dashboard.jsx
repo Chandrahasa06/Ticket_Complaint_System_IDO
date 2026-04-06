@@ -32,12 +32,11 @@ const UserDashboard = () => {
   // ── Tickets list ──
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [satisfiedIds, setSatisfiedIds] = useState([]);
 
   // ── User profile ──
   const [username, setUsername] = useState(null);
   const [email, setEmail] = useState(null);
-  const [phone, setPhone] = useState(""); // saved phone from profile
+  const [phone, setPhone] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
 
   // ── Profile modal ──
@@ -45,7 +44,7 @@ const UserDashboard = () => {
   const [editingPhone, setEditingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState("");
   const [phoneUpdateLoading, setPhoneUpdateLoading] = useState(false);
-  const [phoneUpdateMsg, setPhoneUpdateMsg] = useState(null); // { type: "success"|"error", text }
+  const [phoneUpdateMsg, setPhoneUpdateMsg] = useState(null);
 
   // ── Raise ticket: phone editable copy (auto-filled from profile) ──
   const [ticketPhone, setTicketPhone] = useState("");
@@ -60,7 +59,9 @@ const UserDashboard = () => {
     setProfileLoading(true);
     try {
       const res = await fetch("http://localhost:3000/api/user/profile", { credentials: "include" });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { console.error("Profile parse error:", text); return; }
       if (!res.ok) { console.error(data.message); return; }
       setUsername(data.user.username);
       setEmail(data.user.email);
@@ -95,7 +96,9 @@ const UserDashboard = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: newPhone }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { setPhoneUpdateMsg({ type: "error", text: "Invalid server response." }); return; }
       if (!res.ok) { setPhoneUpdateMsg({ type: "error", text: data.message }); return; }
       setPhone(newPhone);
       setTicketPhone(newPhone);
@@ -117,7 +120,9 @@ const UserDashboard = () => {
       let url = "http://localhost:3000/api/user/tickets";
       if (status) url += "?status=" + status;
       const res = await fetch(url, { credentials: "include" });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { alert("Invalid server response while fetching tickets."); return; }
       if (!res.ok) { alert(data.message); return; }
       setTickets(data.tickets);
     } catch (err) {
@@ -132,7 +137,9 @@ const UserDashboard = () => {
     setPrevTicketLoading(true);
     try {
       const res = await fetch(`http://localhost:3000/api/user/tickets/${id}`, { credentials: "include" });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
       if (!res.ok) { alert(data.message); return; }
       setPrevTicket(data.ticket);
     } catch (err) {
@@ -166,7 +173,9 @@ const UserDashboard = () => {
       if (selectedImage) fd.append("image", selectedImage);
 
       const res = await fetch("http://localhost:3000/api/user/raise", { method: "POST", credentials: "include", body: fd });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
       if (!res.ok) { alert(data.message); return; }
       alert("Ticket raised successfully!");
       setFormData({ title: "", department: "", description: "", area: "", location: "" });
@@ -182,11 +191,44 @@ const UserDashboard = () => {
     if (!window.confirm("Are you sure you want to cancel this ticket?")) return;
     try {
       const res = await fetch(`http://localhost:3000/api/user/tickets/${id}/cancel`, { method: "DELETE", credentials: "include" });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
       if (!res.ok) { alert(data.message); return; }
       alert("Ticket cancelled successfully!");
       closeModal();
       fetchTickets("PENDING");
+    } catch (err) {
+      console.error(err);
+      alert("Server error");
+    }
+  };
+
+  // ── Mark ticket as satisfied (persisted to backend) ──
+  const handleSatisfied = async (ticketId) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/user/tickets/${ticketId}/satisfied`, {
+        method: "PUT",
+        credentials: "include",
+      });
+
+      const text = await res.text(); // ← safe: read raw text first
+      console.log("Satisfied response:", text); // helpful for debugging
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        // Server returned non-JSON (HTML error page, empty body, etc.)
+        console.error("Non-JSON response from /satisfied endpoint:", text);
+        alert("Server error: unexpected response. Check that the /satisfied route exists on your backend.");
+        return;
+      }
+
+      if (!res.ok) { alert(data.message); return; }
+
+      // Update local tickets state so UI updates instantly without refetch
+      setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, satisfied: true } : t));
     } catch (err) {
       console.error(err);
       alert("Server error");
@@ -205,7 +247,9 @@ const UserDashboard = () => {
           body: followupForm.description,
         }),
       });
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
       if (!response.ok) { alert(data.message); return; }
       alert("Follow-up submitted! Ticket has been reopened.");
       setFollowupTicket(null);
@@ -215,10 +259,10 @@ const UserDashboard = () => {
       console.error(err);
       alert("Server error");
     }
-};
+  };
 
   const handleLogout = async () => {
-     await unsubscribeFromPush();
+    await unsubscribeFromPush();
     try {
       await fetch("http://localhost:3000/logout", { method: "POST", credentials: "include" });
       localStorage.removeItem("token");
@@ -275,7 +319,6 @@ const UserDashboard = () => {
             onMouseLeave={e => e.currentTarget.style.background = "none"}
             title="View Profile"
           >
-            {/* Avatar circle with initials */}
             <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(99,102,241,0.35)", flexShrink: 0, position: "relative" }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: "white", letterSpacing: "0.03em" }}>{initials}</span>
               <div style={{ position: "absolute", bottom: 2, right: 2, width: 11, height: 11, borderRadius: "50%", background: "#10b981", border: "2px solid white" }} />
@@ -345,7 +388,6 @@ const UserDashboard = () => {
 
             {/* Name + Phone Row */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-              {/* Name — auto-filled */}
               <div>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>
                   Your Name
@@ -359,7 +401,6 @@ const UserDashboard = () => {
                 </div>
               </div>
 
-              {/* Phone — auto-filled from profile, editable inline */}
               <div>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>
                   Mobile Number
@@ -548,50 +589,66 @@ const UserDashboard = () => {
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>You have no resolved service requests yet.</div>
               </div>
             )}
-            {!loading && tickets.map((ticket) => {
-              const isSatisfied = satisfiedIds.includes(ticket.id);
-              return (
-                <div key={ticket.id} style={{ ...glassCard, marginBottom: 14, background: isSatisfied ? "rgba(236,253,245,0.75)" : "rgba(255,255,255,0.6)", border: isSatisfied ? "1.5px solid rgba(16,185,129,0.28)" : "none" }}>
-                  <div style={{ padding: "22px 26px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 17, fontWeight: 600, color: "#111827", marginBottom: 8 }}>{ticket.subject}</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: "#6b7280" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V 5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                            {ticket.type}
-                          </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            {new Date(ticket.createdAt).toLocaleDateString()}
-                          </div>
+            {!loading && tickets.map((ticket) => (
+              <div key={ticket.id} style={{
+                ...glassCard,
+                marginBottom: 14,
+                background: ticket.satisfied ? "rgba(236,253,245,0.75)" : "rgba(255,255,255,0.6)",
+                border: ticket.satisfied ? "1.5px solid rgba(16,185,129,0.28)" : "none",
+              }}>
+                <div style={{ padding: "22px 26px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 17, fontWeight: 600, color: "#111827", marginBottom: 8 }}>{ticket.subject}</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: "#6b7280" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                          {ticket.type}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          {new Date(ticket.createdAt).toLocaleDateString()}
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <svg width="16" height="16" fill="#10b981" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#059669" }}>{isSatisfied ? "Resolved ✓" : "Resolved"}</span>
-                      </div>
                     </div>
-                    {!isSatisfied && (
-                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-                        <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          Details
-                        </button>
-                        <button onClick={() => setSatisfiedIds(prev => [...prev, ticket.id])} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "1px solid rgba(16,185,129,0.18)", background: "rgba(16,185,129,0.10)", color: "#059669", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                          Satisfied
-                        </button>
-                        <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title: "", description: "" }); }} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "1px solid rgba(100,116,139,0.2)", background: "rgba(100,116,139,0.08)", color: "#1e293b", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                          Follow-up
-                        </button>
-                      </div>
-                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <svg width="16" height="16" fill="#10b981" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#059669" }}>
+                        {ticket.satisfied ? "Satisfied ✓" : "Resolved"}
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Only show action buttons if NOT satisfied */}
+                  {!ticket.satisfied && (
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+                      <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        Details
+                      </button>
+                      <button onClick={() => handleSatisfied(ticket.id)} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "1px solid rgba(16,185,129,0.18)", background: "rgba(16,185,129,0.10)", color: "#059669", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        Satisfied
+                      </button>
+                      <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title: "", description: "" }); }} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "1px solid rgba(100,116,139,0.2)", background: "rgba(100,116,139,0.08)", color: "#1e293b", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                        Follow-up
+                      </button>
+                    </div>
+                  )}
+
+                  {/* If satisfied: show a subtle "View Details" only */}
+                  {ticket.satisfied && (
+                    <div style={{ marginTop: 4 }}>
+                      <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ padding: "10px 20px", borderRadius: 18, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.07)", color: "#059669", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7 }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        View Details
+                      </button>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </main>
@@ -605,7 +662,6 @@ const UserDashboard = () => {
           <div onClick={e => e.stopPropagation()}
             style={{ width: "100%", maxWidth: 480, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.97)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
 
-            {/* Modal header */}
             <div style={{ padding: "26px 28px 22px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", border: "2.5px solid rgba(255,255,255,0.5)", flexShrink: 0 }}>
@@ -716,7 +772,6 @@ const UserDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Success / error message */}
                   {phoneUpdateMsg && (
                     <div style={{ padding: "12px 16px", borderRadius: 14, background: phoneUpdateMsg.type === "success" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", border: `1px solid ${phoneUpdateMsg.type === "success" ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, color: phoneUpdateMsg.type === "success" ? "#059669" : "#dc2626", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                       {phoneUpdateMsg.type === "success"
@@ -795,7 +850,6 @@ const UserDashboard = () => {
                 </div>
               )}
 
-              {/* Ticket details grid — includes Raised By and Contact Number */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 {[
                   { label: "ISSUE TITLE", val: displayedTicket.subject, span: true, icon: null },
@@ -835,71 +889,68 @@ const UserDashboard = () => {
         </div>
       )}
 
-     {/* ─── FOLLOW-UP MODAL ─── */}
-{followupTicket && (
-  <div onClick={() => setFollowupTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-    <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:580, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
-      <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#1e293b,#475569)", position:"relative" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ width:44, height:44, borderRadius:14, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-          </div>
-          <div>
-            <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Raise Follow-up</div>
-            <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:2 }}>Issue not resolved? Let us know.</div>
-          </div>
-        </div>
-        <button onClick={() => setFollowupTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-      </div>
-      <div style={{ padding:"24px 28px" }}>
+      {/* ─── FOLLOW-UP MODAL ─── */}
+      {followupTicket && (
+        <div onClick={() => setFollowupTicket(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 580, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
+            <div style={{ padding: "24px 28px", background: "linear-gradient(135deg,#1e293b,#475569)", position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 14, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="22" height="22" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: "white" }}>Raise Follow-up</div>
+                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>Issue not resolved? Let us know.</div>
+                </div>
+              </div>
+              <button onClick={() => setFollowupTicket(null)} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div style={{ padding: "24px 28px" }}>
+              <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 16, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", display: "flex", alignItems: "center", gap: 10 }}>
+                <svg width="16" height="16" fill="none" stroke="#b45309" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>
+                  This will <strong>reopen ticket #{followupTicket.id}</strong> and set it back to <strong>Pending</strong>. Your original complaint will be preserved in the description.
+                </div>
+              </div>
 
-        {/* ── Warning banner ── */}
-        <div style={{ marginBottom:18, padding:"12px 14px", borderRadius:16, background:"rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.3)", display:"flex", alignItems:"center", gap:10 }}>
-          <svg width="16" height="16" fill="none" stroke="#b45309" viewBox="0 0 24 24" style={{ flexShrink:0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <div style={{ fontSize:12, color:"#92400e", lineHeight:1.5 }}>
-            This will <strong>reopen ticket #{followupTicket.id}</strong> and set it back to <strong>Pending</strong>. Your original complaint will be preserved in the description.
-          </div>
-        </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                <div style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>DEPARTMENT</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{followupTicket.type}</div>
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>LOCATION</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{followupTicket.location || "—"}</div>
+                </div>
+              </div>
 
-        {/* ── Ticket info ── */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
-          <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-            <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>DEPARTMENT</div>
-            <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.type}</div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>Follow-up Title</label>
+                <input value={followupForm.title} onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })} placeholder="e.g., Issue still not fixed after repair" style={inputStyle}
+                  onFocus={e => { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 5px rgba(99,102,241,0.15)"; }}
+                  onBlur={e => { e.target.style.borderColor = "rgba(0,0,0,0.09)"; e.target.style.boxShadow = "none"; }} />
+              </div>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>Description</label>
+                <textarea value={followupForm.description} onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })} placeholder="Describe what is still wrong or not fixed properly..." rows={4} style={{ ...inputStyle, resize: "none", height: "auto" }}
+                  onFocus={e => { e.target.style.borderColor = "#6366f1"; e.target.style.boxShadow = "0 0 0 5px rgba(99,102,241,0.15)"; }}
+                  onBlur={e => { e.target.style.borderColor = "rgba(0,0,0,0.09)"; e.target.style.boxShadow = "none"; }} />
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setFollowupTicket(null)} style={{ flex: 1, padding: "13px", borderRadius: 18, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handleSubmitFollowup} style={{ flex: 2, padding: "13px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#1e293b,#475569)", color: "white", fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", boxShadow: "0 8px 24px rgba(30,41,59,0.2)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                  Reopen & Submit
+                </button>
+              </div>
+            </div>
           </div>
-          <div style={{ padding:"12px 14px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-            <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:4 }}>LOCATION</div>
-            <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{followupTicket.location || "—"}</div>
-          </div>
         </div>
-
-        <div style={{ marginBottom:16 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Follow-up Title</label>
-          <input value={followupForm.title} onChange={e => setFollowupForm({ ...followupForm, title: e.target.value })} placeholder="e.g., Issue still not fixed after repair" style={inputStyle}
-            onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-            onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-        </div>
-        <div style={{ marginBottom:24 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>Description</label>
-          <textarea value={followupForm.description} onChange={e => setFollowupForm({ ...followupForm, description: e.target.value })} placeholder="Describe what is still wrong or not fixed properly..." rows={4} style={{ ...inputStyle, resize:"none", height:"auto" }}
-            onFocus={e => { e.target.style.borderColor="#6366f1"; e.target.style.boxShadow="0 0 0 5px rgba(99,102,241,0.15)"; }}
-            onBlur={e => { e.target.style.borderColor="rgba(0,0,0,0.09)"; e.target.style.boxShadow="none"; }} />
-        </div>
-        <div style={{ display:"flex", gap:10 }}>
-          <button onClick={() => setFollowupTicket(null)} style={{ flex:1, padding:"13px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-          <button onClick={handleSubmitFollowup} style={{ flex:2, padding:"13px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#1e293b,#475569)", color:"white", fontSize:14, fontWeight:600, fontFamily:"inherit", cursor:"pointer", boxShadow:"0 8px 24px rgba(30,41,59,0.2)", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            <svg width="16" height="16" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
-            Reopen & Submit
-          </button>
-        </div>
-      </div>
+      )}
     </div>
-  </div>
-)}
-</div>
-);
+  );
 };
 
 export default UserDashboard;
