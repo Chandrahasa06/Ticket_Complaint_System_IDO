@@ -91,7 +91,7 @@ technicianRouter.post("/login", async(req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 15 minutes
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return res.json({
@@ -133,7 +133,6 @@ technicianRouter.post("/google-login", async(req, res) => {
       where: { email }
     });
 
-    // Existing normal account → attach Google login too
     if (technician && !technician.isGoogle) {
       technician = await prisma.technician.update({
         where: { email },
@@ -143,7 +142,6 @@ technicianRouter.post("/google-login", async(req, res) => {
       });
     }
 
-    // First time Google user
     if (!technician) {
       return res.status(403).json({
         message: "No technician account exists for this email. Please contact the admin."
@@ -153,11 +151,11 @@ technicianRouter.post("/google-login", async(req, res) => {
     const token = jwt.sign(
       {
         id: technician.id,
-            email: technician.email,
-            username: technician.username,
-            role: "technician",
-            department: technician.department,
-            area: technician.area,
+        email: technician.email,
+        username: technician.username,
+        role: "technician",
+        department: technician.department,
+        area: technician.area,
       },
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -188,7 +186,6 @@ technicianRouter.post("/google-login", async(req, res) => {
 // ── All routes below require authentication ──────────────────────────────────
 technicianRouter.use(checkAuth);
 
-// ✅ Moved here so req.user is available from checkAuth
 technicianRouter.get("/dashboard", (req, res) => {
     res.json({ message: "Technician dashboard", user: req.user });
 });
@@ -294,7 +291,7 @@ technicianRouter.get("/tickets", async(req, res) => {
     }
 });
 
-// GET single ticket by ID
+// GET single ticket by ID with comments
 technicianRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "technician"){
         return res.status(403).json({ message: "Access denied" });
@@ -302,16 +299,184 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
     try {
         const ticket = await prisma.ticket.findUnique({
             where: { id: Number(req.params.id) },
-            include: { user: { select: { username: true, email: true } } },
+            include: {
+                user: { select: { username: true, email: true } },
+                prev: true,
+                comments: {
+                    orderBy: { createdAt: "asc" },
+                    include: {
+                        admin: { select: { id: true, username: true } },
+                        engineer: { select: { id: true, username: true, department: true } },
+                    },
+                },
+            },
         });
+
         if(!ticket) return res.status(404).json({ message: "Ticket not found" });
-        res.json({ ticket });
+
+        // Technician can only view tickets from their own department and area
+        if(ticket.type !== req.user.department){
+            return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
+        }
+
+        const technicianAreas = req.user.area
+            ? req.user.area.split(",").map(a => a.trim())
+            : [];
+
+        if(!technicianAreas.includes(ticket.area)){
+            return res.status(403).json({ message: "Access denied. This ticket is outside your area." });
+        }
+
+        const formattedComments = ticket.comments.map(c => ({
+            id: c.id,
+            body: c.body,
+            authorRole: c.authorRole,
+            authorName: c.admin?.username ?? c.engineer?.username,
+            authorDepartment: c.engineer?.department ?? null,
+            createdAt: c.createdAt,
+            updatedAt: c.updatedAt,
+        }));
+
+        res.json({ ticket: { ...ticket, comments: formattedComments } });
     }
     catch(e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
+// POST add comment to a ticket (technician)
+technicianRouter.post("/tickets/:id/comments", async(req, res) => {
+    if(req.user.role !== "technician"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { body } = req.body;
+    if(!body || !body.trim()){
+        return res.status(400).json({ message: "Comment body is required." });
+    }
+
+    try {
+        const ticket = await prisma.ticket.findUnique({ where: { id: Number(req.params.id) } });
+        if(!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+        if(ticket.type !== req.user.department){
+            return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
+        }
+
+        const technicianAreas = req.user.area
+            ? req.user.area.split(",").map(a => a.trim())
+            : [];
+
+        if(!technicianAreas.includes(ticket.area)){
+            return res.status(403).json({ message: "Access denied. This ticket is outside your area." });
+        }
+
+        const comment = await prisma.ticketComment.create({
+            data: {
+                body: body.trim(),
+                authorRole: "engineer",   // technicians share the "engineer" role slot in TicketComment
+                ticketId: Number(req.params.id),
+                engineerId: req.user.id,
+            },
+            include: {
+                engineer: { select: { id: true, username: true, department: true } },
+            },
+        });
+
+        res.status(201).json({
+            message: "Comment added",
+            comment: {
+                id: comment.id,
+                body: comment.body,
+                authorRole: comment.authorRole,
+                authorName: comment.engineer.username,
+                authorDepartment: comment.engineer.department,
+                createdAt: comment.createdAt,
+                updatedAt: comment.updatedAt,
+            },
+        });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// PATCH edit a comment (technician can only edit their own comments)
+technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res) => {
+    if(req.user.role !== "technician"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { body } = req.body;
+    if(!body || !body.trim()){
+        return res.status(400).json({ message: "Comment body is required." });
+    }
+
+    try {
+        const comment = await prisma.ticketComment.findUnique({
+            where: { id: Number(req.params.commentId) },
+        });
+        if(!comment) return res.status(404).json({ message: "Comment not found" });
+
+        if(comment.authorRole !== "engineer" || comment.engineerId !== req.user.id){
+            return res.status(403).json({ message: "You can only edit your own comments." });
+        }
+
+        const updated = await prisma.ticketComment.update({
+            where: { id: Number(req.params.commentId) },
+            data: { body: body.trim() },
+            include: {
+                engineer: { select: { id: true, username: true, department: true } },
+            },
+        });
+
+        res.json({
+            message: "Comment updated",
+            comment: {
+                id: updated.id,
+                body: updated.body,
+                authorRole: updated.authorRole,
+                authorName: updated.engineer.username,
+                authorDepartment: updated.engineer.department,
+                createdAt: updated.createdAt,
+                updatedAt: updated.updatedAt,
+            },
+        });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// DELETE a comment (technician can only delete their own comments)
+technicianRouter.delete("/tickets/:ticketId/comments/:commentId", async(req, res) => {
+    if(req.user.role !== "technician"){
+        return res.status(403).json({ message: "Access denied" });
+    }
+
+    try {
+        const comment = await prisma.ticketComment.findUnique({
+            where: { id: Number(req.params.commentId) },
+        });
+        if(!comment) return res.status(404).json({ message: "Comment not found" });
+
+        if(comment.authorRole !== "engineer" || comment.engineerId !== req.user.id){
+            return res.status(403).json({ message: "You can only delete your own comments." });
+        }
+
+        await prisma.ticketComment.delete({ where: { id: Number(req.params.commentId) } });
+        res.json({ message: "Comment deleted" });
+    }
+    catch(e) {
+        console.log(e);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+// PATCH resolve a ticket
 technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
     if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
@@ -321,7 +486,6 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
             data: { status: "RESOLVED" },
         });
 
-        // Notify the user who raised this ticket
         await sendPushToUser(ticket.userId, {
             title: "Ticket Resolved ✅",
             body: `Your ticket #${ticket.id} "${ticket.subject}" has been resolved.`,
@@ -335,6 +499,7 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
     }
 });
 
+// PATCH close a ticket
 technicianRouter.patch("/tickets/:id/close", async(req, res) => {
     if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
@@ -347,7 +512,6 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
 
         await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
 
-        // Notify the user who raised this ticket
         await sendPushToUser(ticket.userId, {
             title: "Ticket Closed 🔒",
             body: `Your ticket #${ticket.id} "${ticket.subject}" has been closed.`,
@@ -360,4 +524,5 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 export default technicianRouter;

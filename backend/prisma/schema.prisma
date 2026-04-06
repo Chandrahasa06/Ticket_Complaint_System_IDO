@@ -38,7 +38,11 @@ model Engineer {
   email      String @unique
   password   String
   department String @default("General")
-  isGoogle  Boolean  @default(false)
+  phone      String @default("")
+  employeeId String @default("")
+  isGoogle   Boolean @default(false)
+
+  comments TicketComment[]
 
   @@map("engineer")
 }
@@ -50,7 +54,9 @@ model Technician {
   password   String
   department String @default("General")
   area       String @default("General")
-  isGoogle  Boolean  @default(false)
+  phone      String @default("")
+  employeeId String @default("")
+  isGoogle   Boolean @default(false)
 
   @@map("technician")
 }
@@ -63,19 +69,21 @@ model Ticket {
   area     String  @default("")
   location String  @default("")
   imageUrl String  @default("")
+
   prevId   Int?
   prev     Ticket?  @relation("TicketChain", fields: [prevId], references: [id])
   next     Ticket[] @relation("TicketChain")
-  status   String
 
+  status   String
   satisfied Boolean @default(false)
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
 
-  comments  TicketComment[]
+  comments TicketComment[]
 
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  notifiedAt DateTime?
 
   @@map("ticket")
 }
@@ -83,19 +91,15 @@ model Ticket {
 model TicketComment {
   id        Int      @id @default(autoincrement())
   body      String
-  
-  // Who wrote this comment
-  authorRole String  // "admin" | "engineer"
 
-  // Relation to ticket
+  authorRole String   // "admin" | "engineer"
+
   ticketId  Int
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
 
-  // Optional FK to Admin (set if authorRole == "admin")
   adminId   Int?
   admin     Admin?   @relation(fields: [adminId], references: [id])
 
-  // Optional FK to Engineer (set if authorRole == "engineer")
   engineerId Int?
   engineer   Engineer? @relation(fields: [engineerId], references: [id])
 
@@ -123,4 +127,15 @@ model PushSubscription {
   subscriberId   Int
 
   @@map("push_subscription")
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  technicianId Int
+  ticketId     Int
+  message      String
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@map("notification")
 }
