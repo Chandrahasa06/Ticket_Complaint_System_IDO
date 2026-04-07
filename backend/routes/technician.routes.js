@@ -525,4 +525,35 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
     }
 });
 
+// GET notifications for this technician
+technicianRouter.get("/notifications", async (req, res) => {
+  if (req.user.role !== "technician") return res.status(403).json({ message: "Access denied" });
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { technicianId: req.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+    res.json({ notifications });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// PATCH mark all notifications as read
+technicianRouter.patch("/notifications/read", async (req, res) => {
+  if (req.user.role !== "technician") return res.status(403).json({ message: "Access denied" });
+  try {
+    await prisma.notification.updateMany({
+      where: { technicianId: req.user.id, isRead: false },
+      data: { isRead: true },
+    });
+    res.json({ message: "All marked as read" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default technicianRouter;

@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
+import { sendOverdueNotifyEmail } from "../middlewares/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -465,6 +466,75 @@ engineerRouter.get("/technicians", async(req, res) => {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
     }
+});
+
+// POST notify technician about overdue ticket
+engineerRouter.post("/tickets/:id/notify-technician", async (req, res) => {
+  if (req.user.role !== "engineer") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
+  try {
+    const ticketId = Number(req.params.id);
+
+    // get the ticket
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (ticket.status !== "OVERDUE") {
+      return res.status(400).json({ message: "Only overdue tickets can be notified" });
+    }
+
+    // find technicians matching ticket's department AND area
+    const technicians = await prisma.technician.findMany({
+      where: { department: ticket.type },
+    });
+
+    const matchingTechs = technicians.filter(tech =>
+      tech.area
+        ? tech.area.split(",").map(a => a.trim()).includes(ticket.area)
+        : false
+    );
+
+    if (matchingTechs.length === 0) {
+      return res.status(404).json({ message: "No technicians found for this ticket's area" });
+    }
+
+    // send email + create notification for each matching technician
+    await Promise.all(
+      matchingTechs.map(async (tech) => {
+        await sendOverdueNotifyEmail(
+          tech.email,
+          tech.username,
+          ticket.id,
+          ticket.subject,
+          ticket.area
+        );
+
+        await prisma.notification.create({
+          data: {
+            technicianId: tech.id,
+            ticketId: ticket.id,
+            message: `Overdue alert: Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} needs immediate attention.`,
+          },
+        });
+      })
+    );
+
+    return res.json({
+      message: `Notified ${matchingTechs.length} technician(s) successfully`,
+      notified: matchingTechs.map(t => t.username),
+    });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 export default engineerRouter;

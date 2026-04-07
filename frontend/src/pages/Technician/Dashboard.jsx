@@ -14,20 +14,20 @@ const glassCard = {
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_", "-");
   const map = {
-    pending:  { color:"#d97706", bg:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    resolved: { color:"#059669", bg:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
-    closed:   { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
-    overdue:  { color:"#b91c1c", bg:"rgba(254,242,242,0.88)", border:"rgba(185,28,28,0.25)" },
+    pending: { color: "#d97706", bg: "rgba(254,243,199,0.85)", border: "rgba(245,158,11,0.25)" },
+    resolved: { color: "#059669", bg: "rgba(236,253,245,0.88)", border: "rgba(16,185,129,0.22)" },
+    closed: { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" },
+    overdue: { color: "#b91c1c", bg: "rgba(254,242,242,0.88)", border: "rgba(185,28,28,0.25)" },
   };
-  return map[s] || { color:"#6b7280", bg:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" };
+  return map[s] || { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" };
 };
 
 const TAB_STATUSES = {
-  all:      null,
-  pending:  ["PENDING"],
-  overdue:  ["OVERDUE"],
+  all: null,
+  pending: ["PENDING"],
+  overdue: ["OVERDUE"],
   resolved: ["RESOLVED"],
-  closed:   ["CLOSED"],
+  closed: ["CLOSED"],
 };
 
 // ─── Shared Comment Section ───────────────────────────────────────────────────
@@ -40,6 +40,7 @@ const CommentSection = ({ ticketId, role }) => {
   const [editBody, setEditBody] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+
   const BASE = `http://localhost:3000/api/${role}`;
 
   const fetchComments = async () => {
@@ -48,7 +49,7 @@ const CommentSection = ({ ticketId, role }) => {
       const res = await fetch(`${BASE}/tickets/${ticketId}`, { credentials: "include" });
       const data = await res.json();
       if (res.ok) setComments(data.ticket?.comments || []);
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
 
@@ -65,7 +66,7 @@ const CommentSection = ({ ticketId, role }) => {
       });
       const data = await res.json();
       if (res.ok) { setComments(prev => [...prev, data.comment]); setBody(""); }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
     finally { setSubmitting(false); }
   };
 
@@ -83,7 +84,7 @@ const CommentSection = ({ ticketId, role }) => {
         setComments(prev => prev.map(c => c.id === commentId ? data.comment : c));
         setEditingId(null); setEditBody("");
       }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
     finally { setEditSubmitting(false); }
   };
 
@@ -93,7 +94,7 @@ const CommentSection = ({ ticketId, role }) => {
         method: "DELETE", credentials: "include",
       });
       if (res.ok) setComments(prev => prev.filter(c => c.id !== commentId));
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   };
 
   const formatDate = (iso) => {
@@ -118,7 +119,7 @@ const CommentSection = ({ ticketId, role }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
             const isAdmin = c.authorRole === "admin";
-            const isOwn   = c.authorRole === role || (role === "technician" && c.authorRole === "engineer");
+            const isOwn = c.authorRole === role || (role === "technician" && c.authorRole === "engineer");
             return (
               <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
@@ -210,6 +211,11 @@ const TechnicianDashboard = () => {
   const [resolveRemark, setResolveRemark] = useState("");
   const [resolving, setResolving] = useState(false);
 
+
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const fetchTickets = async () => {
     setLoading(true);
     try {
@@ -217,7 +223,7 @@ const TechnicianDashboard = () => {
       const data = await res.json();
       if (!res.ok) { alert(data.message); return; }
       setTickets(data.tickets);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       alert("Server error");
     } finally {
@@ -232,7 +238,7 @@ const TechnicianDashboard = () => {
       const data = await res.json();
       if (!res.ok) { alert(data.message); return; }
       setPrevTicket(data.ticket);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       alert("Server error");
     } finally {
@@ -255,19 +261,43 @@ const TechnicianDashboard = () => {
           department: data.user?.department || "",
           area: data.user?.area || "",
         });
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
     };
     const fetchProfile = async () => {
       try {
         const res = await fetch("http://localhost:3000/api/technician/profile", { credentials: "include" });
         const data = await res.json();
         if (res.ok) setProfile(data.technician);
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
     };
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/technician/notifications", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          setNotifications(data.notifications);
+          setUnreadCount(data.notifications.filter(n => !n.isRead).length);
+        }
+      } catch (e) { console.error(e); }
+    };
+
     fetchInfo();
     fetchProfile();
+    fetchNotifications();
     fetchTickets();
   }, []);
+
+  const handleOpenNotifications = async () => {
+    setShowNotifications(true);
+    // mark all as read
+    try {
+      await fetch("http://localhost:3000/api/technician/notifications/read", {
+        method: "PATCH", credentials: "include",
+      });
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (e) { console.error(e); }
+  };
 
   const handleResolve = async (id) => {
     if (resolving) return;
@@ -284,7 +314,7 @@ const TechnicianDashboard = () => {
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status: "RESOLVED" } : t));
       setConfirmResolveTicket(null);
       setResolveRemark("");
-    } catch(e) {
+    } catch (e) {
       console.error(e); alert("Server error");
     } finally {
       setResolving(false);
@@ -306,7 +336,7 @@ const TechnicianDashboard = () => {
       setTickets(prev => prev.map(t => t.id === id ? { ...t, status: "CLOSED" } : t));
       setConfirmCloseTicket(null);
       setCloseRemark("");
-    } catch(e) {
+    } catch (e) {
       console.error(e); alert("Server error");
     } finally {
       setClosing(false);
@@ -347,7 +377,7 @@ const TechnicianDashboard = () => {
       if (!res.ok) { setPwError(data.message || "Failed to change password."); return; }
       setPwSuccess(true);
       setTimeout(() => resetPwForm(), 2200);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       setPwError("Server error. Please try again.");
     } finally {
@@ -355,32 +385,32 @@ const TechnicianDashboard = () => {
     }
   };
 
-  const closedCount   = tickets.filter(t => t.status === "CLOSED").length;
+  const closedCount = tickets.filter(t => t.status === "CLOSED").length;
   const resolvedCount = tickets.filter(t => t.status === "RESOLVED").length;
-  const overdueCount  = tickets.filter(t => t.status === "OVERDUE").length;
-  const pendingCount  = tickets.filter(t => t.status === "PENDING").length;
+  const overdueCount = tickets.filter(t => t.status === "OVERDUE").length;
+  const pendingCount = tickets.filter(t => t.status === "PENDING").length;
 
   const stats = [
     { label: "Total Assigned", value: tickets.length },
-    { label: "Pending",        value: pendingCount   },
-    { label: "Resolved",       value: resolvedCount  },
-    { label: "Closed",         value: closedCount    },
+    { label: "Pending", value: pendingCount },
+    { label: "Resolved", value: resolvedCount },
+    { label: "Closed", value: closedCount },
   ];
 
   const tabs = [
-    { id: "all",      label: "All",      count: tickets.length },
-    { id: "pending",  label: "Pending",  count: pendingCount   },
-    { id: "overdue",  label: "Overdue",  count: overdueCount   },
-    { id: "resolved", label: "Resolved", count: resolvedCount  },
-    { id: "closed",   label: "Closed",   count: closedCount    },
+    { id: "all", label: "All", count: tickets.length },
+    { id: "pending", label: "Pending", count: pendingCount },
+    { id: "overdue", label: "Overdue", count: overdueCount },
+    { id: "resolved", label: "Resolved", count: resolvedCount },
+    { id: "closed", label: "Closed", count: closedCount },
   ];
 
   const filteredTickets = activeTab === "all"
     ? tickets
     : tickets.filter(t => {
-        const allowed = TAB_STATUSES[activeTab];
-        return allowed && allowed.includes(t.status);
-      });
+      const allowed = TAB_STATUSES[activeTab];
+      return allowed && allowed.includes(t.status);
+    });
 
   const pwInputStyle = {
     width: "100%", padding: "11px 11px 11px 40px", borderRadius: 13,
@@ -422,15 +452,110 @@ const TechnicianDashboard = () => {
               </div>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{ padding: "10px 20px", borderRadius: 18, border: "1.5px solid rgba(239,68,68,0.2)", background: "rgba(254,242,242,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-          >
-            Logout
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+
+            {/* Notification Bell (UNCHANGED) */}
+            <button
+              onClick={handleOpenNotifications}
+              style={{
+                position: "relative",
+                width: 42,
+                height: 42,
+                borderRadius: "50%",
+                border: "1.5px solid rgba(99,102,241,0.2)",
+                background: "rgba(255,255,255,0.8)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#6366f1"
+              }}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+
+              {unreadCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: 4,
+                  right: 4,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#ef4444",
+                  color: "white",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Logout (UNCHANGED) */}
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 18,
+                border: "1.5px solid rgba(239,68,68,0.2)",
+                background: "rgba(254,242,242,0.8)",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#dc2626",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}
+            >
+              Logout
+            </button>
+
+          </div>
         </div>
       </header>
+
+      {/* NOTIFICATIONS MODAL */}
+      {showNotifications && (
+        <div onClick={() => setShowNotifications(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.97)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
+            <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#ef4444,#dc2626)", position: "relative" }}>
+              <div style={{ fontSize: 20, fontWeight: 600, color: "white" }}>Notifications</div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 3 }}>Overdue ticket alerts from your engineer</div>
+              <button onClick={() => setShowNotifications(false)} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                <X size={15} />
+              </button>
+            </div>
+            <div style={{ padding: "20px 24px", maxHeight: "60vh", overflowY: "auto" }}>
+              {notifications.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af", fontSize: 14 }}>
+                  No notifications yet
+                </div>
+              ) : notifications.map((n) => (
+                <div key={n.id} style={{ padding: "14px 16px", borderRadius: 16, background: n.isRead ? "rgba(0,0,0,0.02)" : "rgba(239,68,68,0.06)", border: n.isRead ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(239,68,68,0.18)", marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: n.isRead ? "rgba(0,0,0,0.05)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: n.isRead ? "#9ca3af" : "#dc2626" }}>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: n.isRead ? 400 : 600, color: "#111827", lineHeight: 1.5 }}>{n.message}</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>{new Date(n.createdAt).toLocaleString("en-IN")}</div>
+                  </div>
+                  {!n.isRead && (
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", flexShrink: 0, marginTop: 4 }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "30px 32px", position: "relative", zIndex: 1 }}>
 
@@ -506,8 +631,8 @@ const TechnicianDashboard = () => {
           const statusKey = (t.status || "").toLowerCase().replace("_", "-");
           const ss = getStatusStyle(statusKey);
           const isResolved = t.status === "RESOLVED";
-          const isClosed   = t.status === "CLOSED";
-          const isDone     = isResolved || isClosed;
+          const isClosed = t.status === "CLOSED";
+          const isDone = isResolved || isClosed;
 
           return (
             <div key={t.id} style={{ ...glassCard, marginBottom: 16 }}>
@@ -634,14 +759,14 @@ const TechnicianDashboard = () => {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
                 {[
-                  { label: "TICKET ID",  val: displayedTicket.id,                                       span: false },
-                  { label: "STATUS",     val: displayedTicket.status,                                   span: false },
-                  { label: "SUBJECT",    val: displayedTicket.subject,                                  span: true  },
-                  { label: "DEPARTMENT", val: displayedTicket.type,                                     span: false },
-                  { label: "AREA",       val: displayedTicket.area,                                     span: false },
-                  { label: "LOCATION",   val: displayedTicket.location || "—",                          span: false },
-                  { label: "RAISED BY",  val: displayedTicket.user?.username || "—",                    span: false },
-                  { label: "DATE",       val: new Date(displayedTicket.createdAt).toLocaleDateString(), span: false },
+                  { label: "TICKET ID", val: displayedTicket.id, span: false },
+                  { label: "STATUS", val: displayedTicket.status, span: false },
+                  { label: "SUBJECT", val: displayedTicket.subject, span: true },
+                  { label: "DEPARTMENT", val: displayedTicket.type, span: false },
+                  { label: "AREA", val: displayedTicket.area, span: false },
+                  { label: "LOCATION", val: displayedTicket.location || "—", span: false },
+                  { label: "RAISED BY", val: displayedTicket.user?.username || "—", span: false },
+                  { label: "DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString(), span: false },
                 ].map((f, i) => (
                   <div key={i} style={{ padding: "13px 15px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 5 }}>{f.label}</div>
@@ -695,9 +820,9 @@ const TechnicianDashboard = () => {
               </div>
 
               {[
-                { label:"EMAIL",       val: profile.email },
-                { label:"DEPARTMENT",  val: profile.department },
-                { label:"AREA",        val: profile.area },
+                { label: "EMAIL", val: profile.email },
+                { label: "DEPARTMENT", val: profile.department },
+                { label: "AREA", val: profile.area },
               ].map((f, i) => (
                 <div key={i} style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>{f.label}</div>
@@ -737,9 +862,9 @@ const TechnicianDashboard = () => {
                           </div>
                         )}
                         {[
-                          { key: "current", label: "Current Password",    placeholder: "Enter current password" },
-                          { key: "newPw",   label: "New Password",         placeholder: "At least 6 characters"  },
-                          { key: "confirm", label: "Confirm New Password", placeholder: "Re-enter new password"   },
+                          { key: "current", label: "Current Password", placeholder: "Enter current password" },
+                          { key: "newPw", label: "New Password", placeholder: "At least 6 characters" },
+                          { key: "confirm", label: "Confirm New Password", placeholder: "Re-enter new password" },
                         ].map(({ key, label, placeholder }) => (
                           <div key={key} style={{ marginBottom: 14 }}>
                             <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#374151", marginBottom: 6 }}>{label}</label>
@@ -762,8 +887,8 @@ const TechnicianDashboard = () => {
                             </div>
                             {key === "newPw" && pwForm.newPw && (
                               <div style={{ marginTop: 7, display: "flex", alignItems: "center", gap: 5 }}>
-                                {[1,2,3,4].map(i => (
-                                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 4, background: i <= pwScore ? pwStrengthColors[pwScore-1] : "rgba(0,0,0,0.08)", transition: "background 0.3s" }} />
+                                {[1, 2, 3, 4].map(i => (
+                                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 4, background: i <= pwScore ? pwStrengthColors[pwScore - 1] : "rgba(0,0,0,0.08)", transition: "background 0.3s" }} />
                                 ))}
                                 <span style={{ fontSize: 11, color: "#9ca3af", marginLeft: 4, minWidth: 30 }}>{pwStrengthLabels[pwScore]}</span>
                               </div>
@@ -774,7 +899,7 @@ const TechnicianDashboard = () => {
                           <button onClick={resetPwForm} disabled={pwLoading} style={{ flex: 1, padding: "10px", borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}>Cancel</button>
                           <button onClick={handleChangePassword} disabled={pwLoading} style={{ flex: 1, padding: "10px", borderRadius: 14, border: "none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: pwLoading ? "not-allowed" : "pointer", boxShadow: pwLoading ? "none" : "0 6px 18px rgba(99,102,241,0.3)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
                             {pwLoading ? (
-                              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>Updating...</>
+                              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>Updating...</>
                             ) : (
                               <><KeyRound size={13} /> Update Password</>
                             )}
