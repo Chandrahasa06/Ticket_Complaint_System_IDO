@@ -58,6 +58,8 @@ model Technician {
   employeeId String @default("")
   isGoogle   Boolean @default(false)
 
+  comments   TicketComment[]
+
   @@map("technician")
 }
 
@@ -92,7 +94,7 @@ model TicketComment {
   id        Int      @id @default(autoincrement())
   body      String
 
-  authorRole String   // "admin" | "engineer"
+  authorRole String   // "admin" | "engineer" | "technician"
 
   ticketId  Int
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
@@ -102,6 +104,9 @@ model TicketComment {
 
   engineerId Int?
   engineer   Engineer? @relation(fields: [engineerId], references: [id])
+
+  technicianId Int?
+  technician   Technician? @relation(fields: [technicianId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

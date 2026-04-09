@@ -307,6 +307,8 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
                     include: {
                         admin: { select: { id: true, username: true } },
                         engineer: { select: { id: true, username: true, department: true } },
+                        // ── include the technician relation so we can read their name ──
+                        technician: { select: { id: true, username: true, department: true } },
                     },
                 },
             },
@@ -331,8 +333,17 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
             id: c.id,
             body: c.body,
             authorRole: c.authorRole,
-            authorName: c.admin?.username ?? c.engineer?.username,
-            authorDepartment: c.engineer?.department ?? null,
+            // Pick the correct author based on role
+            authorName:
+                c.authorRole === "admin"
+                    ? c.admin?.username
+                    : c.authorRole === "technician"
+                        ? c.technician?.username
+                        : c.engineer?.username,
+            authorDepartment:
+                c.authorRole === "technician"
+                    ? c.technician?.department
+                    : c.engineer?.department ?? null,
             createdAt: c.createdAt,
             updatedAt: c.updatedAt,
         }));
@@ -375,12 +386,12 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
         const comment = await prisma.ticketComment.create({
             data: {
                 body: body.trim(),
-                authorRole: "engineer",   // technicians share the "engineer" role slot in TicketComment
+                authorRole: "technician",      // ✅ correct role
                 ticketId: Number(req.params.id),
-                engineerId: req.user.id,
+                technicianId: req.user.id,     // ✅ link to technician, not engineer
             },
             include: {
-                engineer: { select: { id: true, username: true, department: true } },
+                technician: { select: { id: true, username: true, department: true } },
             },
         });
 
@@ -390,8 +401,8 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
                 id: comment.id,
                 body: comment.body,
                 authorRole: comment.authorRole,
-                authorName: comment.engineer.username,
-                authorDepartment: comment.engineer.department,
+                authorName: comment.technician.username,       // ✅ technician's real name
+                authorDepartment: comment.technician.department,
                 createdAt: comment.createdAt,
                 updatedAt: comment.updatedAt,
             },
@@ -420,7 +431,8 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
         });
         if(!comment) return res.status(404).json({ message: "Comment not found" });
 
-        if(comment.authorRole !== "engineer" || comment.engineerId !== req.user.id){
+        // ✅ check against "technician" role and technicianId
+        if(comment.authorRole !== "technician" || comment.technicianId !== req.user.id){
             return res.status(403).json({ message: "You can only edit your own comments." });
         }
 
@@ -428,7 +440,7 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
             where: { id: Number(req.params.commentId) },
             data: { body: body.trim() },
             include: {
-                engineer: { select: { id: true, username: true, department: true } },
+                technician: { select: { id: true, username: true, department: true } },
             },
         });
 
@@ -438,8 +450,8 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
                 id: updated.id,
                 body: updated.body,
                 authorRole: updated.authorRole,
-                authorName: updated.engineer.username,
-                authorDepartment: updated.engineer.department,
+                authorName: updated.technician.username,       // ✅ technician's real name
+                authorDepartment: updated.technician.department,
                 createdAt: updated.createdAt,
                 updatedAt: updated.updatedAt,
             },
@@ -463,7 +475,8 @@ technicianRouter.delete("/tickets/:ticketId/comments/:commentId", async(req, res
         });
         if(!comment) return res.status(404).json({ message: "Comment not found" });
 
-        if(comment.authorRole !== "engineer" || comment.engineerId !== req.user.id){
+        // ✅ check against "technician" role and technicianId
+        if(comment.authorRole !== "technician" || comment.technicianId !== req.user.id){
             return res.status(403).json({ message: "You can only delete your own comments." });
         }
 

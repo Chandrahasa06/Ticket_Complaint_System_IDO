@@ -30,6 +30,30 @@ const TAB_STATUSES = {
   closed: ["CLOSED"],
 };
 
+const ROLE_STYLE = {
+  admin: {
+    label: "ADMIN",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,0.07)",
+    border: "rgba(99,102,241,0.15)",
+    tagBg: "rgba(99,102,241,0.12)",
+  },
+  technician: {
+    label: "TECHNICIAN",
+    color: "#0d9488",
+    bg: "rgba(13,148,136,0.07)",
+    border: "rgba(13,148,136,0.18)",
+    tagBg: "rgba(13,148,136,0.12)",
+  },
+  engineer: {
+    label: "ENGINEER",
+    color: "#0ea5e9",
+    bg: "rgba(14,165,233,0.06)",
+    border: "rgba(14,165,233,0.15)",
+    tagBg: "rgba(14,165,233,0.1)",
+  },
+};
+
 // ─── Shared Comment Section ───────────────────────────────────────────────────
 const CommentSection = ({ ticketId, role }) => {
   const [comments, setComments] = useState([]);
@@ -39,7 +63,6 @@ const CommentSection = ({ ticketId, role }) => {
   const [editingId, setEditingId] = useState(null);
   const [editBody, setEditBody] = useState("");
   const [editSubmitting, setEditSubmitting] = useState(false);
-
 
   const BASE = `http://localhost:3000/api/${role}`;
 
@@ -53,6 +76,7 @@ const CommentSection = ({ ticketId, role }) => {
     finally { setLoading(false); }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchComments(); }, [ticketId]);
 
   const handleSubmit = async () => {
@@ -118,26 +142,56 @@ const CommentSection = ({ ticketId, role }) => {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
-            const isAdmin = c.authorRole === "admin";
-            const isOwn = c.authorRole === role || (role === "technician" && c.authorRole === "engineer");
+            const rs = ROLE_STYLE[c.authorRole] ?? ROLE_STYLE.engineer;
+            const isOwn =
+              c.authorRole === role ||
+              (role === "technician" && c.authorRole === "engineer");
+
             return (
-              <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
+              <div
+                key={c.id}
+                style={{
+                  padding: "13px 15px",
+                  borderRadius: 18,
+                  background: rs.bg,
+                  border: `1px solid ${rs.border}`,
+                }}
+              >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                    {isAdmin ? (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#6366f1", background: "rgba(99,102,241,0.12)", padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>ADMIN</span>
-                    ) : (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#0ea5e9", background: "rgba(14,165,233,0.1)", padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>ENGINEER</span>
-                    )}
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: rs.color,
+                      background: rs.tagBg,
+                      padding: "2px 9px",
+                      borderRadius: 20,
+                      letterSpacing: "0.04em",
+                    }}>
+                      {rs.label}
+                    </span>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.authorName}</span>
-                    {c.authorDepartment && <span style={{ fontSize: 11, color: "#9ca3af" }}>· {c.authorDepartment}</span>}
+                    {c.authorDepartment && (
+                      <span style={{ fontSize: 11, color: "#9ca3af" }}>· {c.authorDepartment}</span>
+                    )}
                   </div>
+
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 11, color: "#9ca3af" }}>{formatDate(c.createdAt)}</span>
                     {isOwn && (
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} style={{ width: 26, height: 26, borderRadius: 8, border: "none", background: "rgba(99,102,241,0.1)", color: "#6366f1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Pencil size={12} /></button>
-                        <button onClick={() => handleDelete(c.id)} style={{ width: 26, height: 26, borderRadius: 8, border: "none", background: "rgba(239,68,68,0.08)", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Trash2 size={12} /></button>
+                        <button
+                          onClick={() => { setEditingId(c.id); setEditBody(c.body); }}
+                          style={{ width: 26, height: 26, borderRadius: 8, border: "none", background: `rgba(13,148,136,0.1)`, color: "#0d9488", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          style={{ width: 26, height: 26, borderRadius: 8, border: "none", background: "rgba(239,68,68,0.08)", color: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -145,10 +199,26 @@ const CommentSection = ({ ticketId, role }) => {
 
                 {editingId === c.id ? (
                   <div>
-                    <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(99,102,241,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                    <textarea
+                      value={editBody}
+                      onChange={e => setEditBody(e.target.value)}
+                      rows={2}
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(13,148,136,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }}
+                    />
                     <div style={{ display: "flex", gap: 8, marginTop: 7 }}>
-                      <button onClick={() => { setEditingId(null); setEditBody(""); }} style={{ padding: "7px 14px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Cancel</button>
-                      <button onClick={() => handleEdit(c.id)} disabled={editSubmitting || !editBody.trim()} style={{ padding: "7px 16px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", opacity: editSubmitting || !editBody.trim() ? 0.6 : 1 }}>{editSubmitting ? "Saving..." : "Save"}</button>
+                      <button
+                        onClick={() => { setEditingId(null); setEditBody(""); }}
+                        style={{ padding: "7px 14px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleEdit(c.id)}
+                        disabled={editSubmitting || !editBody.trim()}
+                        style={{ padding: "7px 16px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#0d9488,#0ea5e9)", color: "white", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", opacity: editSubmitting || !editBody.trim() ? 0.6 : 1 }}
+                      >
+                        {editSubmitting ? "Saving..." : "Save"}
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -171,12 +241,12 @@ const CommentSection = ({ ticketId, role }) => {
           placeholder="Write a comment..."
           rows={2}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-          style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }}
+          style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(13,148,136,0.22)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }}
         />
         <button
           onClick={handleSubmit}
           disabled={submitting || !body.trim()}
-          style={{ padding: "11px 18px", borderRadius: 16, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 6px 18px rgba(99,102,241,0.3)", opacity: submitting || !body.trim() ? 0.6 : 1, flexShrink: 0 }}
+          style={{ padding: "11px 18px", borderRadius: 16, border: "none", background: "linear-gradient(135deg,#0d9488,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 6px 18px rgba(13,148,136,0.3)", opacity: submitting || !body.trim() ? 0.6 : 1, flexShrink: 0 }}
         >
           <Send size={14} />{submitting ? "..." : "Send"}
         </button>
@@ -210,7 +280,6 @@ const TechnicianDashboard = () => {
   const [confirmResolveTicket, setConfirmResolveTicket] = useState(null);
   const [resolveRemark, setResolveRemark] = useState("");
   const [resolving, setResolving] = useState(false);
-
 
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -289,7 +358,6 @@ const TechnicianDashboard = () => {
 
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
-    // mark all as read
     try {
       await fetch("http://localhost:3000/api/technician/notifications/read", {
         method: "PATCH", credentials: "include",
@@ -454,70 +522,41 @@ const TechnicianDashboard = () => {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-
-            {/* Notification Bell (UNCHANGED) */}
+            {/* Notification Bell */}
             <button
               onClick={handleOpenNotifications}
               style={{
-                position: "relative",
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                border: "1.5px solid rgba(99,102,241,0.2)",
-                background: "rgba(255,255,255,0.8)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#6366f1"
+                position: "relative", width: 42, height: 42, borderRadius: "50%",
+                border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.8)",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1"
               }}
             >
               <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-
               {unreadCount > 0 && (
                 <span style={{
-                  position: "absolute",
-                  top: 4,
-                  right: 4,
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  background: "#ef4444",
-                  color: "white",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
+                  position: "absolute", top: 4, right: 4, width: 16, height: 16, borderRadius: "50%",
+                  background: "#ef4444", color: "white", fontSize: 9, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Logout (UNCHANGED) */}
+            {/* Logout */}
             <button
               onClick={handleLogout}
               style={{
-                padding: "10px 20px",
-                borderRadius: 18,
-                border: "1.5px solid rgba(239,68,68,0.2)",
-                background: "rgba(254,242,242,0.8)",
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#dc2626",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6
+                padding: "10px 20px", borderRadius: 18, border: "1.5px solid rgba(239,68,68,0.2)",
+                background: "rgba(254,242,242,0.8)", fontSize: 13, fontWeight: 500,
+                color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", gap: 6
               }}
             >
               Logout
             </button>
-
           </div>
         </div>
       </header>
@@ -535,9 +574,7 @@ const TechnicianDashboard = () => {
             </div>
             <div style={{ padding: "20px 24px", maxHeight: "60vh", overflowY: "auto" }}>
               {notifications.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af", fontSize: 14 }}>
-                  No notifications yet
-                </div>
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#9ca3af", fontSize: 14 }}>No notifications yet</div>
               ) : notifications.map((n) => (
                 <div key={n.id} style={{ padding: "14px 16px", borderRadius: 16, background: n.isRead ? "rgba(0,0,0,0.02)" : "rgba(239,68,68,0.06)", border: n.isRead ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(239,68,68,0.18)", marginBottom: 10, display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: n.isRead ? "rgba(0,0,0,0.05)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: n.isRead ? "#9ca3af" : "#dc2626" }}>
@@ -775,10 +812,42 @@ const TechnicianDashboard = () => {
                 ))}
               </div>
 
-              <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 16 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 6 }}>DESCRIPTION</div>
-                <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{displayedTicket.body}</div>
-              </div>
+              {/* ── DESCRIPTION: split view for follow-up tickets ── */}
+              {!prevTicket && selectedTicket.prevId && selectedTicket.prev?.body ? (
+                <div style={{ marginBottom: 16 }}>
+                  {/* Previous ticket description — greyed out */}
+                  <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(0,0,0,0.025)", border: "1px dashed rgba(156,163,175,0.55)", marginBottom: 8, opacity: 0.75 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af", flexShrink: 0 }} />
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.05em" }}>
+                        PREVIOUS TICKET #{selectedTicket.prevId} — DESCRIPTION
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, fontStyle: "italic" }}>
+                      {selectedTicket.prev.body}
+                    </div>
+                  </div>
+
+                  {/* Current ticket description — bold and prominent */}
+                  <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.08)", border: "2px solid rgba(99,102,241,0.28)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", flexShrink: 0 }} />
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em" }}>
+                        CURRENT TICKET — DESCRIPTION
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65 }}>
+                      {selectedTicket.body}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Normal single description (non-follow-up or prevTicket view) */
+                <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 6 }}>DESCRIPTION</div>
+                  <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{displayedTicket.body}</div>
+                </div>
+              )}
 
               {displayedTicket.imageUrl && (
                 <div style={{ marginBottom: 16 }}>
@@ -787,7 +856,7 @@ const TechnicianDashboard = () => {
                 </div>
               )}
 
-              {/* ── Comments — only shown for the current ticket, not the previous one ── */}
+              {/* Comments — only shown for the current ticket, not the previous one */}
               {!prevTicket && (
                 <CommentSection ticketId={selectedTicket.id} role="technician" />
               )}
@@ -929,7 +998,6 @@ const TechnicianDashboard = () => {
             <div style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 8 }}>Mark as Resolved?</div>
             <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Are you sure you want to resolve</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#059669", marginBottom: 20 }}>#{confirmResolveTicket.id} — {confirmResolveTicket.subject}</div>
-
             <div style={{ textAlign: "left", marginBottom: 20 }}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 7, letterSpacing: "0.03em" }}>
                 REMARK <span style={{ fontWeight: 400, color: "#9ca3af" }}>(sent to user via email)</span>
@@ -965,7 +1033,6 @@ const TechnicianDashboard = () => {
             <div style={{ fontSize: 20, fontWeight: 600, color: "#111827", marginBottom: 8 }}>Close Ticket?</div>
             <div style={{ fontSize: 14, color: "#6b7280", marginBottom: 4 }}>Are you sure you want to close</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#6366f1", marginBottom: 20 }}>#{confirmCloseTicket.id} — {confirmCloseTicket.subject}</div>
-
             <div style={{ textAlign: "left", marginBottom: 20 }}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 7, letterSpacing: "0.03em" }}>
                 REMARK <span style={{ fontWeight: 400, color: "#9ca3af" }}>(sent to user via email)</span>
