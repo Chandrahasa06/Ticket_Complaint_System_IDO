@@ -155,7 +155,7 @@ const CommentSection = ({ ticketId, role }) => {
       )}
 
       <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment..." rows={2} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }} />
+        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment..." rows={1} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }} />
         <button onClick={handleSubmit} disabled={submitting || !body.trim()} style={{ padding: "11px 18px", borderRadius: 16, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 6px 18px rgba(99,102,241,0.3)", opacity: submitting || !body.trim() ? 0.6 : 1, flexShrink: 0 }}>
           <Send size={14} />{submitting ? "..." : "Send"}
         </button>

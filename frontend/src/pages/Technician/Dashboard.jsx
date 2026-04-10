@@ -239,7 +239,7 @@ const CommentSection = ({ ticketId, role }) => {
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder="Write a comment..."
-          rows={2}
+          rows={1}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
           style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(13,148,136,0.22)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }}
         />
