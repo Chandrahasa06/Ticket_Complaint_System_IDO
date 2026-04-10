@@ -582,6 +582,8 @@ const EngineerDashboard = () => {
                 { label: "DEPARTMENT", val: selectedTicket.type },
                 { label: "LOCATION", val: selectedTicket.location || "—" },
                 { label: "STATUS", val: selectedTicket.status },
+                { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
+                { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
                 { label: "DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
                 { label: "DESCRIPTION", val: selectedTicket.body },
               ].map((f, i) => (

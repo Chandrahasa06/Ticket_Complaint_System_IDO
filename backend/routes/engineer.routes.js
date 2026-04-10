@@ -274,6 +274,11 @@ engineerRouter.get("/tickets", async(req, res) => {
             where: whereCondition,
             orderBy: { createdAt: "desc" },
             skip, take,
+            include: {
+                user: {
+                    select: { username: true, phone: true }
+                },
+            },
         });
 
         const totalTickets = await prisma.ticket.count({ where: whereCondition });
@@ -285,7 +290,6 @@ engineerRouter.get("/tickets", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-
 // GET ticket details with comments (engineer can only see tickets of their department)
 engineerRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "engineer"){

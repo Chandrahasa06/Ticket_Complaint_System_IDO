@@ -803,6 +803,7 @@ const TechnicianDashboard = () => {
                   { label: "AREA", val: displayedTicket.area, span: false },
                   { label: "LOCATION", val: displayedTicket.location || "—", span: false },
                   { label: "RAISED BY", val: displayedTicket.user?.username || "—", span: false },
+                  { label: "CONTACT NUMBER", val: displayedTicket.phone || "—", span: false }, 
                   { label: "DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString(), span: false },
                 ].map((f, i) => (
                   <div key={i} style={{ padding: "13px 15px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>

@@ -818,6 +818,8 @@ const AdminDashboard = () => {
                   { label:"SUBJECT",    val:selectedTicket.subject },
                   { label:"DEPARTMENT", val:selectedTicket.type },
                   { label:"LOCATION",   val:selectedTicket.location||"—" },
+                   { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
+                { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
                   { label:"STATUS",     val:selectedTicket.status },
                   { label:"DATE",       val:new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f,i) => (
