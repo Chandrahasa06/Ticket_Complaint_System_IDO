@@ -292,7 +292,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder="Write a comment..."
-          rows={2}
+          rows={1}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
           style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(13,148,136,0.22)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }}
         />
@@ -862,6 +862,7 @@ const TechnicianDashboard = () => {
                   { label: "AREA", val: displayedTicket.area, span: false },
                   { label: "LOCATION", val: displayedTicket.location || "—", span: false },
                   { label: "RAISED BY", val: displayedTicket.user?.username || "—", span: false },
+                  { label: "CONTACT NUMBER", val: displayedTicket.phone || "—", span: false }, 
                   { label: "DATE", val: new Date(displayedTicket.createdAt).toLocaleDateString(), span: false },
                 ].map((f, i) => (
                   <div key={i} style={{ padding: "13px 15px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", gridColumn: f.span ? "1 / -1" : "auto" }}>

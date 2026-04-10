@@ -369,7 +369,7 @@ userRouter.post("/forgot-password/send-otp", async (req, res) => {
 // FORGOT PASSWORD - verify OTP then reset password
 userRouter.post("/forgot-password/reset", async (req, res) => {
   try {
-    const { email, newPassword } = req.body;  // ← remove otp from here
+    const { email, newPassword } = req.body;
 
     if (!email || !newPassword) {
       return res.status(400).json({ message: "All fields are required" });
@@ -453,7 +453,6 @@ userRouter.get("/tickets", async (req, res) => {
     }
 });
 
-// NEW: Get a single ticket by ID (used for viewing previous ticket in follow-up)
 userRouter.get("/tickets/:id", async (req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
@@ -473,10 +472,11 @@ userRouter.get("/tickets/:id", async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 userRouter.post("/raise", upload.single("image"), async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
-    const { type, subject, body, area, location } = req.body;
+    const { type, subject, body, area, location, phone } = req.body;
     if(!type || !subject || !body || !area || !location)
         return res.status(400).json({ message: "All fields are required!" });
 
@@ -484,7 +484,7 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
         const imageUrl = req.file ? `/uploads/tickets/${req.file.filename}` : "";
 
         const ticket = await prisma.ticket.create({
-            data: { type, subject, body, area, location, imageUrl, status: "PENDING", userId: req.user.id }
+            data: { type, subject, body, area, location, imageUrl, phone: phone || "", status: "PENDING", userId: req.user.id }
         });
 
         // Notify all technicians whose department + area matches
@@ -510,6 +510,7 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 userRouter.put("/tickets/:id/satisfied", async (req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
@@ -525,7 +526,6 @@ userRouter.put("/tickets/:id/satisfied", async (req, res) => {
     }
 });
 
-// CANCEL TICKET - deletes the ticket completely
 userRouter.delete("/tickets/:id/cancel", async(req, res) => {
     if(req.user.role !== "user") return res.status(403).json({ message: "Access denied" });
 
@@ -546,6 +546,7 @@ userRouter.delete("/tickets/:id/cancel", async(req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+
 userRouter.patch("/followup/:id", async (req, res) => {
     if (req.user.role !== "user") {
         return res.status(403).json({ message: "Access denied" });

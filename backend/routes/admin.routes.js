@@ -187,7 +187,12 @@ adminRouter.get("/tickets", async(req, res) => {
             where: (status && status !== "ALL") ? { status } : undefined,
             orderBy: { createdAt: "desc" },
             skip, take,
-            include: { prev: true },
+            include: {
+                prev: true,
+                user: {
+                    select: { username: true, phone: true }
+                },
+            },
         });
         const totalTickets = await prisma.ticket.count({
             where: (status && status !== "ALL") ? { status } : undefined,
@@ -200,7 +205,7 @@ adminRouter.get("/tickets", async(req, res) => {
     }
 });
 
-// GET ticket details with comments
+// GET single ticket by ID (with comments)
 adminRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "admin"){
         return res.status(403).json({ message: "Access denied" });
@@ -210,10 +215,13 @@ adminRouter.get("/tickets/:id", async(req, res) => {
             where: { id: Number(req.params.id) },
             include: {
                 prev: true,
+                user: {
+                    select: { username: true, phone: true }
+                },
                 comments: {
                     orderBy: { createdAt: "asc" },
                     include: {
-                        admin: { select: { id: true, username: true } },
+                        admin:    { select: { id: true, username: true } },
                         engineer: { select: { id: true, username: true, department: true } },
                     },
                 },
@@ -221,18 +229,21 @@ adminRouter.get("/tickets/:id", async(req, res) => {
         });
         if(!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-        // Format comments so frontend knows exactly what to display
-        const formattedComments = ticket.comments.map(c => ({
+        const comments = ticket.comments.map(c => ({
             id: c.id,
             body: c.body,
-            authorRole: c.authorRole,                          // "admin" | "engineer"
-            authorName: c.admin?.username ?? c.engineer?.username,
-            authorDepartment: c.engineer?.department ?? null,  // only for engineer
+            authorRole: c.authorRole,
+            authorName: c.authorRole === "admin"
+                ? c.admin?.username
+                : c.engineer?.username,
+            authorDepartment: c.authorRole === "engineer"
+                ? c.engineer?.department
+                : null,
             createdAt: c.createdAt,
             updatedAt: c.updatedAt,
         }));
 
-        res.json({ ticket: { ...ticket, comments: formattedComments } });
+        res.json({ ticket: { ...ticket, comments } });
     }
     catch(e) {
         console.log(e);

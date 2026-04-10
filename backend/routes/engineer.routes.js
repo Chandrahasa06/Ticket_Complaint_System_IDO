@@ -274,6 +274,11 @@ engineerRouter.get("/tickets", async(req, res) => {
             where: whereCondition,
             orderBy: { createdAt: "desc" },
             skip, take,
+            include: {
+                user: {
+                    select: { username: true, phone: true }
+                },
+            },
         });
 
         const totalTickets = await prisma.ticket.count({ where: whereCondition });

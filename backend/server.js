@@ -11,6 +11,7 @@ import technicianRouter from "./routes/technician.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import pushRouter from './routes/push.routes.js';
 import "./cron/overdue.js";
+import "./cron/overdue_admin.js"
 
 dotenv.config({ path: new URL('.env', import.meta.url).pathname });
 

@@ -412,7 +412,7 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
           value={body}
           onChange={e => setBody(e.target.value)}
           placeholder="Write a comment..."
-          rows={2}
+          rows={1}
           onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleSubmit(); } }}
           style={{ flex:1, padding:"11px 14px", borderRadius:16, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"none", boxSizing:"border-box" }}
         />
@@ -837,6 +837,8 @@ const AdminDashboard = () => {
                   { label:"SUBJECT",    val:selectedTicket.subject },
                   { label:"DEPARTMENT", val:selectedTicket.type },
                   { label:"LOCATION",   val:selectedTicket.location||"—" },
+                   { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
+                { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
                   { label:"STATUS",     val:selectedTicket.status },
                   { label:"DATE",       val:new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f,i) => (
