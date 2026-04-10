@@ -54,8 +54,59 @@ const ROLE_STYLE = {
   },
 };
 
-// ─── Shared Comment Section ───────────────────────────────────────────────────
-const CommentSection = ({ ticketId, role }) => {
+// ─── Smart description renderer ───────────────────────────────────────────────
+const renderDescription = (body = "") => {
+  const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
+  const match = body.match(separatorRegex);
+
+  if (match) {
+    const followupText = body.replace(separatorRegex, "").replace(/^\[Follow-up\]\s*/, "").trim();
+    const originalDate = match[1];
+    const originalText = match[2].trim();
+
+    return (
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", letterSpacing: "0.06em", textTransform: "uppercase" }}>Follow-up complaint</span>
+          </div>
+          <div style={{
+            fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65,
+            padding: "12px 16px", borderRadius: 12,
+            background: "rgba(99,102,241,0.08)", border: "1.5px solid rgba(99,102,241,0.22)",
+          }}>
+            {followupText}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>
+            Original complaint · {originalDate}
+          </span>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        </div>
+
+        <div style={{
+          fontSize: 13, color: "#9ca3af", lineHeight: 1.65,
+          padding: "10px 14px", borderRadius: 12,
+          background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.06)", fontStyle: "italic",
+        }}>
+          {originalText}
+        </div>
+      </div>
+    );
+  }
+
+  return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
+};
+
+// ─── Comment Section ──────────────────────────────────────────────────────────
+// FIX: receives `loggedInUserId` so we can do an exact author-ID comparison
+//      instead of a role-name comparison. This means only the specific user who
+//      wrote a comment will see its Edit / Delete buttons.
+const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
@@ -143,30 +194,32 @@ const CommentSection = ({ ticketId, role }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
             const rs = ROLE_STYLE[c.authorRole] ?? ROLE_STYLE.engineer;
-            const isOwn =
-              c.authorRole === role ||
-              (role === "technician" && c.authorRole === "engineer");
+
+            // ── FIX ──────────────────────────────────────────────────────────
+            // A comment is "own" only when:
+            //   1. The role matches (the logged-in user is a technician and the
+            //      comment was written by a technician), AND
+            //   2. The authorId exactly matches the logged-in user's ID.
+            //
+            // This replaces the old broken check:
+            //   c.authorRole === role ||
+            //   (role === "technician" && c.authorRole === "engineer")   ← was WRONG
+            const isOwn = c.authorRole === role && c.authorId === loggedInUserId;
+            // ─────────────────────────────────────────────────────────────────
 
             return (
               <div
                 key={c.id}
                 style={{
-                  padding: "13px 15px",
-                  borderRadius: 18,
-                  background: rs.bg,
-                  border: `1px solid ${rs.border}`,
+                  padding: "13px 15px", borderRadius: 18,
+                  background: rs.bg, border: `1px solid ${rs.border}`,
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                     <span style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: rs.color,
-                      background: rs.tagBg,
-                      padding: "2px 9px",
-                      borderRadius: 20,
-                      letterSpacing: "0.04em",
+                      fontSize: 11, fontWeight: 800, color: rs.color,
+                      background: rs.tagBg, padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em",
                     }}>
                       {rs.label}
                     </span>
@@ -265,6 +318,8 @@ const TechnicianDashboard = () => {
   const [prevTicketLoading, setPrevTicketLoading] = useState(false);
   const [confirmCloseTicket, setConfirmCloseTicket] = useState(null);
   const [techInfo, setTechInfo] = useState({ username: "", department: "", area: "" });
+  // FIX: track the logged-in technician's numeric DB id
+  const [loggedInUserId, setLoggedInUserId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
 
@@ -325,11 +380,15 @@ const TechnicianDashboard = () => {
       try {
         const res = await fetch("http://localhost:3000/api/technician/dashboard", { credentials: "include" });
         const data = await res.json();
-        if (res.ok) setTechInfo({
-          username: data.user?.username || "Technician",
-          department: data.user?.department || "",
-          area: data.user?.area || "",
-        });
+        if (res.ok) {
+          setTechInfo({
+            username: data.user?.username || "Technician",
+            department: data.user?.department || "",
+            area: data.user?.area || "",
+          });
+          // FIX: store the logged-in user's numeric ID from the JWT payload
+          setLoggedInUserId(data.user?.id ?? null);
+        }
       } catch (e) { console.error(e); }
     };
     const fetchProfile = async () => {
@@ -747,7 +806,7 @@ const TechnicianDashboard = () => {
         })}
       </div>
 
-      {/* ── VIEW DETAILS MODAL with Comments ── */}
+      {/* ── VIEW DETAILS MODAL ── */}
       {selectedTicket && (
         <div onClick={closeModal} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 620, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
@@ -812,42 +871,10 @@ const TechnicianDashboard = () => {
                 ))}
               </div>
 
-              {/* ── DESCRIPTION: split view for follow-up tickets ── */}
-              {!prevTicket && selectedTicket.prevId && selectedTicket.prev?.body ? (
-                <div style={{ marginBottom: 16 }}>
-                  {/* Previous ticket description — greyed out */}
-                  <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(0,0,0,0.025)", border: "1px dashed rgba(156,163,175,0.55)", marginBottom: 8, opacity: 0.75 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af", flexShrink: 0 }} />
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.05em" }}>
-                        PREVIOUS TICKET #{selectedTicket.prevId} — DESCRIPTION
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, fontStyle: "italic" }}>
-                      {selectedTicket.prev.body}
-                    </div>
-                  </div>
-
-                  {/* Current ticket description — bold and prominent */}
-                  <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.08)", border: "2px solid rgba(99,102,241,0.28)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", flexShrink: 0 }} />
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em" }}>
-                        CURRENT TICKET — DESCRIPTION
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65 }}>
-                      {selectedTicket.body}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Normal single description (non-follow-up or prevTicket view) */
-                <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 6 }}>DESCRIPTION</div>
-                  <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{displayedTicket.body}</div>
-                </div>
-              )}
+              <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>DETAILED DESCRIPTION</div>
+                {renderDescription(displayedTicket.body)}
+              </div>
 
               {displayedTicket.imageUrl && (
                 <div style={{ marginBottom: 16 }}>
@@ -856,9 +883,13 @@ const TechnicianDashboard = () => {
                 </div>
               )}
 
-              {/* Comments — only shown for the current ticket, not the previous one */}
+              {/* FIX: pass loggedInUserId so CommentSection can compute isOwn correctly */}
               {!prevTicket && (
-                <CommentSection ticketId={selectedTicket.id} role="technician" />
+                <CommentSection
+                  ticketId={selectedTicket.id}
+                  role="technician"
+                  loggedInUserId={loggedInUserId}
+                />
               )}
 
               <button onClick={closeModal} style={{ width: "100%", marginTop: 14, padding: "12px", borderRadius: 18, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Close</button>

@@ -292,6 +292,8 @@ technicianRouter.get("/tickets", async(req, res) => {
 });
 
 // GET single ticket by ID with comments
+// FIX: authorId is now included in each comment so the frontend can
+//      determine ownership without mixing up technician vs engineer comments.
 technicianRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "technician"){
         return res.status(403).json({ message: "Access denied" });
@@ -307,7 +309,6 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
                     include: {
                         admin: { select: { id: true, username: true } },
                         engineer: { select: { id: true, username: true, department: true } },
-                        // ── include the technician relation so we can read their name ──
                         technician: { select: { id: true, username: true, department: true } },
                     },
                 },
@@ -316,7 +317,6 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
 
         if(!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-        // Technician can only view tickets from their own department and area
         if(ticket.type !== req.user.department){
             return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
         }
@@ -333,7 +333,14 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
             id: c.id,
             body: c.body,
             authorRole: c.authorRole,
-            // Pick the correct author based on role
+            // ── FIX: expose the numeric ID of whoever wrote this comment ──
+            // The frontend uses this to decide whether to show edit/delete buttons.
+            authorId:
+                c.authorRole === "admin"
+                    ? c.admin?.id
+                    : c.authorRole === "technician"
+                        ? c.technician?.id
+                        : c.engineer?.id,
             authorName:
                 c.authorRole === "admin"
                     ? c.admin?.username
@@ -386,9 +393,9 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
         const comment = await prisma.ticketComment.create({
             data: {
                 body: body.trim(),
-                authorRole: "technician",      // ✅ correct role
+                authorRole: "technician",
                 ticketId: Number(req.params.id),
-                technicianId: req.user.id,     // ✅ link to technician, not engineer
+                technicianId: req.user.id,
             },
             include: {
                 technician: { select: { id: true, username: true, department: true } },
@@ -401,7 +408,8 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
                 id: comment.id,
                 body: comment.body,
                 authorRole: comment.authorRole,
-                authorName: comment.technician.username,       // ✅ technician's real name
+                authorId: comment.technician.id,   // ── FIX: include authorId
+                authorName: comment.technician.username,
                 authorDepartment: comment.technician.department,
                 createdAt: comment.createdAt,
                 updatedAt: comment.updatedAt,
@@ -431,7 +439,6 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
         });
         if(!comment) return res.status(404).json({ message: "Comment not found" });
 
-        // ✅ check against "technician" role and technicianId
         if(comment.authorRole !== "technician" || comment.technicianId !== req.user.id){
             return res.status(403).json({ message: "You can only edit your own comments." });
         }
@@ -450,7 +457,8 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
                 id: updated.id,
                 body: updated.body,
                 authorRole: updated.authorRole,
-                authorName: updated.technician.username,       // ✅ technician's real name
+                authorId: updated.technician.id,   // ── FIX: include authorId
+                authorName: updated.technician.username,
                 authorDepartment: updated.technician.department,
                 createdAt: updated.createdAt,
                 updatedAt: updated.updatedAt,
@@ -475,7 +483,6 @@ technicianRouter.delete("/tickets/:ticketId/comments/:commentId", async(req, res
         });
         if(!comment) return res.status(404).json({ message: "Comment not found" });
 
-        // ✅ check against "technician" role and technicianId
         if(comment.authorRole !== "technician" || comment.technicianId !== req.user.id){
             return res.status(403).json({ message: "You can only delete your own comments." });
         }
@@ -494,10 +501,15 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
     if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
     try {
+        const { remark } = req.body;
+
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "RESOLVED" },
+            include: { user: true },
         });
+
+        await sendResolveEmail(ticket.user.email, ticket.user.username, ticket.subject, remark);
 
         await sendPushToUser(ticket.userId, {
             title: "Ticket Resolved ✅",
@@ -517,13 +529,15 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
     if(req.user.role !== "technician")
         return res.status(403).json({ message: "Access denied" });
     try {
+        const { remark } = req.body;
+
         const ticket = await prisma.ticket.update({
             where: { id: Number(req.params.id) },
             data: { status: "CLOSED" },
             include: { user: true }
         });
 
-        await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject);
+        await sendCloseEmail(ticket.user.email, ticket.user.username, ticket.subject, remark);
 
         await sendPushToUser(ticket.userId, {
             title: "Ticket Closed 🔒",

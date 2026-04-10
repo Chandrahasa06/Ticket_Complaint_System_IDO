@@ -49,12 +49,10 @@ const UserDashboard = () => {
   // ── Raise ticket: phone editable copy (auto-filled from profile) ──
   const [ticketPhone, setTicketPhone] = useState("");
 
-  // Sync ticketPhone when phone changes from profile
   useEffect(() => {
     setTicketPhone(phone);
   }, [phone]);
 
-  // ── Fetch profile from backend ──
   const fetchProfile = async () => {
     setProfileLoading(true);
     try {
@@ -81,7 +79,6 @@ const UserDashboard = () => {
     fetchProfile();
   }, []);
 
-  // ── Update phone ──
   const handleUpdatePhone = async () => {
     if (!newPhone || newPhone.length < 10) {
       setPhoneUpdateMsg({ type: "error", text: "Please enter a valid 10-digit mobile number." });
@@ -113,7 +110,6 @@ const UserDashboard = () => {
     }
   };
 
-  // ── Ticket fetching ──
   const fetchTickets = async (status) => {
     setLoading(true);
     try {
@@ -154,7 +150,6 @@ const UserDashboard = () => {
 
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // ── Submit ticket ──
   const handleSubmitTicket = async () => {
     if (!formData.title || !formData.department || !formData.description || !formData.area || !formData.location) {
       alert("All fields are required!"); return;
@@ -204,30 +199,20 @@ const UserDashboard = () => {
     }
   };
 
-  // ── Mark ticket as satisfied (persisted to backend) ──
   const handleSatisfied = async (ticketId) => {
     try {
       const res = await fetch(`http://localhost:3000/api/user/tickets/${ticketId}/satisfied`, {
         method: "PUT",
         credentials: "include",
       });
-
-      const text = await res.text(); // ← safe: read raw text first
-      console.log("Satisfied response:", text); // helpful for debugging
-
+      const text = await res.text();
       let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        // Server returned non-JSON (HTML error page, empty body, etc.)
+      try { data = JSON.parse(text); } catch {
         console.error("Non-JSON response from /satisfied endpoint:", text);
         alert("Server error: unexpected response. Check that the /satisfied route exists on your backend.");
         return;
       }
-
       if (!res.ok) { alert(data.message); return; }
-
-      // Update local tickets state so UI updates instantly without refetch
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, satisfied: true } : t));
     } catch (err) {
       console.error(err);
@@ -300,6 +285,72 @@ const UserDashboard = () => {
   const displayedTicket = prevTicket ?? selectedTicket;
   const initials = username ? username.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "?";
 
+  // ── Smart description renderer ──
+  const renderDescription = (body = "") => {
+    const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
+    const match = body.match(separatorRegex);
+
+    if (match) {
+      const followupText = body.replace(separatorRegex, "").replace(/^\[Follow-up\]\s*/, "").trim();
+      const originalDate = match[1];
+      const originalText = match[2].trim();
+
+      return (
+        <div>
+          {/* Follow-up part — bold, prominent */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", letterSpacing: "0.06em", textTransform: "uppercase" }}>Follow-up complaint</span>
+            </div>
+            <div style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: "#111827",
+              lineHeight: 1.65,
+              padding: "12px 16px",
+              borderRadius: 12,
+              background: "rgba(99,102,241,0.08)",
+              border: "1.5px solid rgba(99,102,241,0.22)",
+            }}>
+              {followupText}
+            </div>
+          </div>
+
+          {/* Divider with date */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+            <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>
+              Original complaint · {originalDate}
+            </span>
+            <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          </div>
+
+          {/* Original part — greyed out, smaller, italic */}
+          <div style={{
+            fontSize: 13,
+            color: "#9ca3af",
+            lineHeight: 1.65,
+            padding: "10px 14px",
+            borderRadius: 12,
+            background: "rgba(0,0,0,0.025)",
+            border: "1px solid rgba(0,0,0,0.06)",
+            fontStyle: "italic",
+          }}>
+            {originalText}
+          </div>
+        </div>
+      );
+    }
+
+    // Normal ticket — plain render
+    return (
+      <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+        {body}
+      </div>
+    );
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "#eef2ff", fontFamily: "'Inter','Segoe UI',sans-serif", color: "#111827", position: "relative", overflowX: "hidden" }}>
 
@@ -311,7 +362,6 @@ const UserDashboard = () => {
       <header style={{ position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(25px)", WebkitBackdropFilter: "blur(25px)", background: "rgba(255,255,255,0.55)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(255,255,255,0.6)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", height: 68, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
 
-          {/* Profile button — clickable */}
           <button
             onClick={() => { setShowProfileModal(true); setEditingPhone(false); setPhoneUpdateMsg(null); setNewPhone(""); }}
             style={{ display: "flex", alignItems: "center", gap: 14, background: "none", border: "none", cursor: "pointer", padding: "6px 10px 6px 6px", borderRadius: 40, transition: "background 0.18s" }}
@@ -619,7 +669,6 @@ const UserDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Only show action buttons if NOT satisfied */}
                   {!ticket.satisfied && (
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
                       <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ flex: 1, minWidth: 130, padding: "11px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
@@ -637,7 +686,6 @@ const UserDashboard = () => {
                     </div>
                   )}
 
-                  {/* If satisfied: show a subtle "View Details" only */}
                   {ticket.satisfied && (
                     <div style={{ marginTop: 4 }}>
                       <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ padding: "10px 20px", borderRadius: 18, border: "1px solid rgba(16,185,129,0.2)", background: "rgba(16,185,129,0.07)", color: "#059669", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7 }}>
@@ -870,9 +918,10 @@ const UserDashboard = () => {
                 ))}
               </div>
 
+              {/* ── SMART DESCRIPTION RENDERER ── */}
               <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 6 }}>DETAILED DESCRIPTION</div>
-                <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{displayedTicket.body}</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>DETAILED DESCRIPTION</div>
+                {renderDescription(displayedTicket.body)}
               </div>
 
               <div style={{ display: "flex", gap: 10 }}>

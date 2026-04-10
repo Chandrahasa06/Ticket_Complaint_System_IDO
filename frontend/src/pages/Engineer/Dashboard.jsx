@@ -22,8 +22,47 @@ const getStatusStyle = (status) => {
   return map[s] || { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" };
 };
 
-// ─── Shared Comment Section ───────────────────────────────────────────────────
-const CommentSection = ({ ticketId, role }) => {
+// ─── Smart description renderer ──────────────────────────────────────────────
+const renderDescription = (body = "") => {
+  const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
+  const match = body.match(separatorRegex);
+
+  if (match) {
+    const followupText = body.replace(separatorRegex, "").replace(/^\[Follow-up\]\s*/, "").trim();
+    const originalDate = match[1];
+    const originalText = match[2].trim();
+
+    return (
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", letterSpacing: "0.06em", textTransform: "uppercase" }}>Follow-up complaint</span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65, padding: "12px 16px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1.5px solid rgba(99,102,241,0.22)" }}>
+            {followupText}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>Original complaint · {originalDate}</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        </div>
+        <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, padding: "10px 14px", borderRadius: 12, background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.06)", fontStyle: "italic" }}>
+          {originalText}
+        </div>
+      </div>
+    );
+  }
+
+  return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
+};
+
+// ─── Comment Section ──────────────────────────────────────────────────────────
+// FIX: receives `loggedInUserId` so we can do an exact author-ID comparison
+//      instead of a role-name comparison. This means only the specific engineer
+//      who wrote a comment will see its Edit / Delete buttons.
+const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
@@ -91,7 +130,6 @@ const CommentSection = ({ ticketId, role }) => {
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) + " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   };
 
-
   return (
     <div style={{ marginTop: 18 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
@@ -108,12 +146,22 @@ const CommentSection = ({ ticketId, role }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
             const isAdmin = c.authorRole === "admin";
-            const isOwn = c.authorRole === role;
+
+            // ── FIX ──────────────────────────────────────────────────────────
+            // A comment is "own" only when:
+            //   1. The logged-in user is an engineer AND the comment was written
+            //      by an engineer (not an admin), AND
+            //   2. The comment's authorId exactly matches the logged-in user's ID.
+            //
+            // This replaces the old broken check `c.authorRole === role` which
+            // allowed any engineer to edit/delete any other engineer's comment.
+            const isOwn = c.authorRole === role && c.authorId === loggedInUserId;
+            // ─────────────────────────────────────────────────────────────────
+
             return (
               <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                    {/* Role badge — ADMIN is bold/prominent */}
                     {isAdmin ? (
                       <span style={{ fontSize: 11, fontWeight: 800, color: "#6366f1", background: "rgba(99,102,241,0.12)", padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>ADMIN</span>
                     ) : (
@@ -170,6 +218,8 @@ const EngineerDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [technicians, setTechnicians] = useState([]);
   const [engineerInfo, setEngineerInfo] = useState({ username: "", department: "" });
+  // FIX: track the logged-in engineer's numeric DB id
+  const [loggedInUserId, setLoggedInUserId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const navigate = useNavigate();
@@ -188,20 +238,22 @@ const EngineerDashboard = () => {
 
   const [notifyingId, setNotifyingId] = useState(null);
   const [notifiedIds, setNotifiedIds] = useState(() => {
-  try {
-    const stored = localStorage.getItem("notifiedTicketIds");
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-});
+    try {
+      const stored = localStorage.getItem("notifiedTicketIds");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
 
   useEffect(() => {
     const fetchEngineerInfo = async () => {
       try {
         const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials: "include" });
         const data = await res.json();
-        if (res.ok) setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
+        if (res.ok) {
+          setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
+          // FIX: store the logged-in user's numeric ID from the JWT payload
+          setLoggedInUserId(data.user?.id ?? null);
+        }
       } catch (e) { console.error(e); }
     };
     const fetchProfile = async () => {
@@ -261,31 +313,21 @@ const EngineerDashboard = () => {
     }
   };
 
- const handleNotifyTechnician = async (ticket) => {
-  setNotifyingId(ticket.id);
-  try {
-    const res = await fetch(
-      `http://localhost:3000/api/engineer/tickets/${ticket.id}/notify-technician`,
-      { method: "POST", credentials: "include" }
-    );
-    const data = await res.json();
-    if (!res.ok) { alert(data.message); return; }
-
-    // Save to localStorage so it persists across reloads
-    setNotifiedIds(prev => {
-      const updated = [...prev, ticket.id];
-      localStorage.setItem("notifiedTicketIds", JSON.stringify(updated));
-      return updated;
-    });
-
-    alert(`✅ ${data.message}`);
-  } catch (e) {
-    console.error(e);
-    alert("Server error while notifying");
-  } finally {
-    setNotifyingId(null);
-  }
-};
+  const handleNotifyTechnician = async (ticket) => {
+    setNotifyingId(ticket.id);
+    try {
+      const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/notify-technician`, { method: "POST", credentials: "include" });
+      const data = await res.json();
+      if (!res.ok) { alert(data.message); return; }
+      setNotifiedIds(prev => {
+        const updated = [...prev, ticket.id];
+        localStorage.setItem("notifiedTicketIds", JSON.stringify(updated));
+        return updated;
+      });
+      alert(`✅ ${data.message}`);
+    } catch (e) { console.error(e); alert("Server error while notifying"); }
+    finally { setNotifyingId(null); }
+  };
 
   const handleLogout = async () => {
     await unsubscribeFromPush();
@@ -420,32 +462,14 @@ const EngineerDashboard = () => {
                         <button
                           onClick={() => handleNotifyTechnician(ticket)}
                           disabled={notifyingId === ticket.id || notifiedIds.includes(ticket.id)}
-                          style={{
-                            padding: "10px 18px", borderRadius: 18, border: "none", fontFamily: "inherit",
-                            fontSize: 13, fontWeight: 500, cursor: (notifyingId === ticket.id || notifiedIds.includes(ticket.id)) ? "not-allowed" : "pointer",
-                            display: "flex", alignItems: "center", gap: 7,
-                            background: notifiedIds.includes(ticket.id)
-                              ? "rgba(16,185,129,0.1)"
-                              : notifyingId === ticket.id
-                                ? "rgba(239,68,68,0.4)"
-                                : "linear-gradient(135deg,#ef4444,#dc2626)",
-                            color: notifiedIds.includes(ticket.id) ? "#059669" : "white",
-                            boxShadow: notifiedIds.includes(ticket.id) || notifyingId === ticket.id ? "none" : "0 8px 24px rgba(239,68,68,0.3)",
-                            border: notifiedIds.includes(ticket.id) ? "1px solid rgba(16,185,129,0.3)" : "none",
-                          }}
+                          style={{ padding: "10px 18px", borderRadius: 18, border: "none", fontFamily: "inherit", fontSize: 13, fontWeight: 500, cursor: (notifyingId === ticket.id || notifiedIds.includes(ticket.id)) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, background: notifiedIds.includes(ticket.id) ? "rgba(16,185,129,0.1)" : notifyingId === ticket.id ? "rgba(239,68,68,0.4)" : "linear-gradient(135deg,#ef4444,#dc2626)", color: notifiedIds.includes(ticket.id) ? "#059669" : "white", boxShadow: notifiedIds.includes(ticket.id) || notifyingId === ticket.id ? "none" : "0 8px 24px rgba(239,68,68,0.3)", border: notifiedIds.includes(ticket.id) ? "1px solid rgba(16,185,129,0.3)" : "none" }}
                         >
                           {notifiedIds.includes(ticket.id) ? (
                             <><CheckCircle size={15} color="#059669" /> Notified</>
                           ) : notifyingId === ticket.id ? (
-                            <>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
-                              Notifying...
-                            </>
+                            <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>Notifying...</>
                           ) : (
-                            <>
-                              <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                              Notify Technician
-                            </>
+                            <><svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>Notify Technician</>
                           )}
                         </button>
                       )}
@@ -506,10 +530,7 @@ const EngineerDashboard = () => {
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>{profile.username}</div>
                 <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>{profile.department} Department</div>
               </div>
-              {[
-                { label: "EMAIL", val: profile.email },
-                { label: "DEPARTMENT", val: profile.department },
-              ].map((f, i) => (
+              {[{ label: "EMAIL", val: profile.email }, { label: "DEPARTMENT", val: profile.department }].map((f, i) => (
                 <div key={i} style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>{f.label}</div>
                   <div style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>{f.val}</div>
@@ -583,7 +604,6 @@ const EngineerDashboard = () => {
                 { label: "LOCATION", val: selectedTicket.location || "—" },
                 { label: "STATUS", val: selectedTicket.status },
                 { label: "DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
-                { label: "DESCRIPTION", val: selectedTicket.body },
               ].map((f, i) => (
                 <div key={i} style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>{f.label}</div>
@@ -591,8 +611,17 @@ const EngineerDashboard = () => {
                 </div>
               ))}
 
-              {/* ── Comments ── */}
-              <CommentSection ticketId={selectedTicket.id} role="engineer" />
+              <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>DESCRIPTION</div>
+                {renderDescription(selectedTicket.body)}
+              </div>
+
+              {/* FIX: pass loggedInUserId so CommentSection can compute isOwn correctly */}
+              <CommentSection
+                ticketId={selectedTicket.id}
+                role="engineer"
+                loggedInUserId={loggedInUserId}
+              />
 
               <button onClick={() => setSelectedTicket(null)} style={{ width: "100%", marginTop: 14, padding: "12px", borderRadius: 18, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Close</button>
             </div>

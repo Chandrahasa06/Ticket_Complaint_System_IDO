@@ -286,7 +286,9 @@ engineerRouter.get("/tickets", async(req, res) => {
     }
 });
 
-// GET ticket details with comments (engineer can only see tickets of their department)
+// GET ticket details with comments
+// FIX: authorId is now included in each comment so the frontend can
+//      determine ownership without mixing up engineer vs admin comments.
 engineerRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "engineer"){
         return res.status(403).json({ message: "Access denied" });
@@ -308,7 +310,6 @@ engineerRouter.get("/tickets/:id", async(req, res) => {
 
         if(!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-        // Engineer can only view tickets from their own department
         if(ticket.type !== req.user.department){
             return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
         }
@@ -316,9 +317,11 @@ engineerRouter.get("/tickets/:id", async(req, res) => {
         const formattedComments = ticket.comments.map(c => ({
             id: c.id,
             body: c.body,
-            authorRole: c.authorRole,                          // "admin" | "engineer"
+            authorRole: c.authorRole,
+            // ── FIX: expose the numeric ID of whoever wrote this comment ──
+            authorId: c.authorRole === "admin" ? c.admin?.id : c.engineer?.id,
             authorName: c.admin?.username ?? c.engineer?.username,
-            authorDepartment: c.engineer?.department ?? null,  // only for engineer
+            authorDepartment: c.engineer?.department ?? null,
             createdAt: c.createdAt,
             updatedAt: c.updatedAt,
         }));
@@ -344,7 +347,6 @@ engineerRouter.post("/tickets/:id/comments", async(req, res) => {
         const ticket = await prisma.ticket.findUnique({ where: { id: Number(req.params.id) } });
         if(!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-        // Engineer can only comment on tickets from their own department
         if(ticket.type !== req.user.department){
             return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
         }
@@ -367,6 +369,7 @@ engineerRouter.post("/tickets/:id/comments", async(req, res) => {
                 id: comment.id,
                 body: comment.body,
                 authorRole: comment.authorRole,
+                authorId: comment.engineer.id,     // ── FIX: include authorId
                 authorName: comment.engineer.username,
                 authorDepartment: comment.engineer.department,
                 createdAt: comment.createdAt,
@@ -412,6 +415,7 @@ engineerRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res) =
                 id: updated.id,
                 body: updated.body,
                 authorRole: updated.authorRole,
+                authorId: updated.engineer.id,     // ── FIX: include authorId
                 authorName: updated.engineer.username,
                 authorDepartment: updated.engineer.department,
                 createdAt: updated.createdAt,
@@ -477,7 +481,6 @@ engineerRouter.post("/tickets/:id/notify-technician", async (req, res) => {
   try {
     const ticketId = Number(req.params.id);
 
-    // get the ticket
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
     });
@@ -490,7 +493,6 @@ engineerRouter.post("/tickets/:id/notify-technician", async (req, res) => {
       return res.status(400).json({ message: "Only overdue tickets can be notified" });
     }
 
-    // find technicians matching ticket's department AND area
     const technicians = await prisma.technician.findMany({
       where: { department: ticket.type },
     });
@@ -505,7 +507,6 @@ engineerRouter.post("/tickets/:id/notify-technician", async (req, res) => {
       return res.status(404).json({ message: "No technicians found for this ticket's area" });
     }
 
-    // send email + create notification for each matching technician
     await Promise.all(
       matchingTechs.map(async (tech) => {
         await sendOverdueNotifyEmail(

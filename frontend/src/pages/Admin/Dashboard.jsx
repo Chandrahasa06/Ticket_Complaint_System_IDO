@@ -335,14 +335,12 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
 
   return (
     <div style={{ marginTop:18 }}>
-      {/* Section header */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
         <div style={{ flex:1, height:1, background:"rgba(99,102,241,0.15)" }} />
         <span style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.08em", textTransform:"uppercase" }}>Comments</span>
         <div style={{ flex:1, height:1, background:"rgba(99,102,241,0.15)" }} />
       </div>
 
-      {/* Comment list */}
       {loading ? (
         <div style={{ textAlign:"center", padding:"20px 0", color:"#9ca3af", fontSize:13 }}>Loading comments...</div>
       ) : comments.length === 0 ? (
@@ -351,14 +349,11 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
           {comments.map(c => {
             const isAdmin   = c.authorRole === "admin";
-            const isOwn     = c.authorRole === role; // same role as current user — ownership check is server-side too
+            const isOwn     = c.authorRole === role;
             return (
               <div key={c.id} style={{ padding:"13px 15px", borderRadius:18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
-
-                {/* Author row */}
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6, flexWrap:"wrap", gap:6 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
-                    {/* Role badge */}
                     {isAdmin ? (
                       <span style={{ fontSize:11, fontWeight:800, color:"#6366f1", background:"rgba(99,102,241,0.12)", padding:"2px 9px", borderRadius:20, letterSpacing:"0.04em" }}>ADMIN</span>
                     ) : (
@@ -371,7 +366,6 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <span style={{ fontSize:11, color:"#9ca3af" }}>{formatDate(c.createdAt)}</span>
-                    {/* Show edit/delete only for own comments */}
                     {isOwn && (
                       <div style={{ display:"flex", gap:6 }}>
                         <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} style={{ width:26, height:26, borderRadius:8, border:"none", background:"rgba(99,102,241,0.1)", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -385,7 +379,6 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
                   </div>
                 </div>
 
-                {/* Body or edit input */}
                 {editingId === c.id ? (
                   <div>
                     <textarea
@@ -405,7 +398,6 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
                   <div style={{ fontSize:13, color:"#374151", lineHeight:1.6 }}>{c.body}</div>
                 )}
 
-                {/* Edited indicator */}
                 {c.updatedAt !== c.createdAt && editingId !== c.id && (
                   <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>edited {formatDate(c.updatedAt)}</div>
                 )}
@@ -415,7 +407,6 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
         </div>
       )}
 
-      {/* New comment input */}
       <div style={{ display:"flex", gap:10, alignItems:"flex-end" }}>
         <textarea
           value={body}
@@ -431,6 +422,50 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
       </div>
     </div>
   );
+};
+
+// ─── Smart description renderer ──────────────────────────────────────────────
+const renderDescription = (body = "") => {
+  const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
+  const match = body.match(separatorRegex);
+
+  if (match) {
+    const followupText = body.replace(separatorRegex, "").replace(/^\[Follow-up\]\s*/, "").trim();
+    const originalDate = match[1];
+    const originalText = match[2].trim();
+
+    return (
+      <div>
+        {/* Follow-up part — bold, prominent */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", letterSpacing: "0.06em", textTransform: "uppercase" }}>Follow-up complaint</span>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65, padding: "12px 16px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1.5px solid rgba(99,102,241,0.22)" }}>
+            {followupText}
+          </div>
+        </div>
+
+        {/* Divider with original date */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+          <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>
+            Original complaint · {originalDate}
+          </span>
+          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        </div>
+
+        {/* Original part — greyed out, italic */}
+        <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, padding: "10px 14px", borderRadius: 12, background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.06)", fontStyle: "italic" }}>
+          {originalText}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal ticket — plain render
+  return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
 };
 
 const AdminDashboard = () => {
@@ -619,16 +654,8 @@ const AdminDashboard = () => {
 
       {sidebarOpen&&(<div onClick={()=>setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.2)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", zIndex:150 }} />)}
 
-     {/* SIDEBAR DRAWER */}
-      <div style={{
-        position:"fixed", top:0, left:0, height:"100vh", width:280,
-        background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)",
-        boxShadow: sidebarOpen ? "8px 0 48px rgba(0,0,0,0.12)" : "none",
-        borderRight:"1px solid rgba(255,255,255,0.7)",
-        transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-        transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)",
-        zIndex:160, display:"flex", flexDirection:"column",
-      }}>
+      {/* SIDEBAR DRAWER */}
+      <div style={{ position:"fixed", top:0, left:0, height:"100vh", width:280, background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", boxShadow: sidebarOpen ? "8px 0 48px rgba(0,0,0,0.12)" : "none", borderRight:"1px solid rgba(255,255,255,0.7)", transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex:160, display:"flex", flexDirection:"column" }}>
         <div style={{ padding:"24px 24px 20px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:42, height:42, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative", overflow:"hidden" }}>
@@ -651,27 +678,21 @@ const AdminDashboard = () => {
         <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", gap:6, overflowY:"auto" }}>
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>People</div>
 
-          <button onClick={() => { setSidebarOpen(false); setShowAddPeople(true); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.2),rgba(14,165,233,0.14))"}
-            onMouseLeave={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))"}>
+          <button onClick={() => { setSidebarOpen(false); setShowAddPeople(true); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.2),rgba(14,165,233,0.14))"} onMouseLeave={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))"}>
             <div style={{ width:34, height:34, borderRadius:10, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
               <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
             </div>
             Add People
           </button>
 
-          <button onClick={() => { setSidebarOpen(false); setShowManageEngineers(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"}
-            onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
+          <button onClick={() => { setSidebarOpen(false); setShowManageEngineers(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
             <div style={{ width:34, height:34, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </div>
             Manage Engineers
           </button>
 
-          <button onClick={() => { setSidebarOpen(false); setShowManageTechnicians(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"}
-            onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
+          <button onClick={() => { setSidebarOpen(false); setShowManageTechnicians(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
             <div style={{ width:34, height:34, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </div>
@@ -681,9 +702,7 @@ const AdminDashboard = () => {
           <div style={{ height:1, background:"rgba(0,0,0,0.06)", margin:"10px 8px" }} />
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>Account</div>
 
-          <button onClick={handleLogout} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(100,116,139,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background="rgba(100,116,139,0.12)"}
-            onMouseLeave={e => e.currentTarget.style.background="rgba(100,116,139,0.06)"}>
+          <button onClick={handleLogout} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(100,116,139,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(100,116,139,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(100,116,139,0.06)"}>
             <div style={{ width:34, height:34, borderRadius:10, background:"rgba(100,116,139,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <svg width="15" height="15" fill="none" stroke="#1e293b" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </div>
@@ -827,9 +846,11 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+
+              {/* ── SMART DESCRIPTION ── */}
               <div style={{ marginTop:12, padding:"15px 17px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
-                <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:6 }}>DESCRIPTION</div>
-                <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{selectedTicket.body}</div>
+                <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:10 }}>DESCRIPTION</div>
+                {renderDescription(selectedTicket.body)}
               </div>
 
               {/* ── Comments ── */}
@@ -857,9 +878,9 @@ const AdminDashboard = () => {
               </div>
               <form onSubmit={handleAddPeople}>
                 {[
-                  { label:"Username",     key:"username",   type:"text",     placeholder:"Enter username" },
-                  { label:"Email",        key:"email",      type:"email",    placeholder:"Enter email address" },
-                  { label:"Password",     key:"password",   type:"password", placeholder:"Set a password" },
+                  { label:"Username", key:"username", type:"text",     placeholder:"Enter username" },
+                  { label:"Email",    key:"email",    type:"email",    placeholder:"Enter email address" },
+                  { label:"Password", key:"password", type:"password", placeholder:"Set a password" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom:16 }}>
                     <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>{f.label}</label>
