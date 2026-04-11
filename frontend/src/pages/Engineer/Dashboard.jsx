@@ -3,6 +3,237 @@ import { X, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, 
 import { useNavigate } from "react-router-dom";
 import { unsubscribeFromPush } from '../../utils/pushNotifications';
 
+/* ─── Responsive style injection ─────────────────────────────────────────── */
+const RESPONSIVE_CSS = `
+  /* ── Header ── */
+  .eng-header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 68px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  @media (max-width: 768px) {
+    .eng-header-inner { padding: 0 16px; height: 58px; }
+  }
+  @media (max-width: 400px) {
+    .eng-header-inner { padding: 0 10px; }
+  }
+
+  /* ── Header username/dept text ── */
+  .eng-header-name { font-size: 17px; font-weight: 600; color: #111827; }
+  .eng-header-dept { font-size: 12px; color: #6b7280; margin-top: 1px; display: flex; align-items: center; gap: 6px; }
+  @media (max-width: 400px) {
+    .eng-header-name { font-size: 14px; }
+    .eng-header-dept { font-size: 11px; }
+  }
+
+  /* ── Logout button ── */
+  .eng-logout-btn {
+    padding: 10px 20px;
+    border-radius: 18px;
+    border: 1.5px solid rgba(239,68,68,0.2);
+    background: rgba(254,242,242,0.8);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    color: #dc2626;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .eng-logout-btn { padding: 8px 12px; font-size: 12px; border-radius: 14px; }
+    .eng-logout-btn span { display: none; }
+  }
+
+  /* ── Tab bar strip ── */
+  .eng-tab-strip {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 14px 32px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 768px) {
+    .eng-tab-strip { padding: 10px 16px; gap: 7px; }
+  }
+  @media (max-width: 480px) {
+    .eng-tab-strip { padding: 8px 10px; gap: 5px; }
+    .eng-tab-strip button { font-size: 12px !important; padding: 8px 12px !important; }
+  }
+
+  /* ── Main content area ── */
+  .eng-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px 32px;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 768px) {
+    .eng-main { padding: 18px 16px; }
+  }
+  @media (max-width: 480px) {
+    .eng-main { padding: 12px 10px; }
+  }
+
+  /* ── Ticket card ── */
+  .eng-ticket-body { padding: 24px 26px; }
+  .eng-ticket-footer {
+    display: flex;
+    gap: 10px;
+    padding: 14px 26px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .eng-ticket-body { padding: 14px 14px; }
+    .eng-ticket-footer { padding: 10px 14px; gap: 8px; }
+    .eng-ticket-footer button { flex: 1; justify-content: center; }
+  }
+
+  /* ── Ticket header row ── */
+  .eng-ticket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Ticket meta row (dept + date) ── */
+  .eng-ticket-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 400px) {
+    .eng-ticket-meta { gap: 14px; }
+  }
+
+  /* ── Technicians grid ── */
+  .eng-tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  @media (max-width: 640px) {
+    .eng-tech-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  }
+  @media (max-width: 420px) {
+    .eng-tech-grid { grid-template-columns: 1fr; gap: 12px; }
+  }
+
+  /* ── Profile / ticket modal box ── */
+  .eng-modal-sm {
+    width: 100%;
+    max-width: 460px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  .eng-modal-md {
+    width: 100%;
+    max-width: 620px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  .eng-modal-lg {
+    width: 100%;
+    max-width: 560px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  @media (max-width: 680px) {
+    .eng-modal-sm, .eng-modal-md, .eng-modal-lg {
+      border-radius: 20px;
+      max-width: 98vw;
+    }
+  }
+
+  /* ── Modal scroll bodies ── */
+  .eng-modal-body-sm {
+    padding: 24px 28px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .eng-modal-body-md {
+    padding: 24px 28px;
+    max-height: 76vh;
+    overflow-y: auto;
+  }
+  .eng-modal-body-lg {
+    padding: 24px 28px;
+    max-height: 68vh;
+    overflow-y: auto;
+  }
+  @media (max-width: 480px) {
+    .eng-modal-body-sm,
+    .eng-modal-body-md,
+    .eng-modal-body-lg { padding: 16px 14px; }
+  }
+
+  /* ── Ticket detail grid (8 fields) ── */
+  .eng-ticket-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 0;
+  }
+  @media (max-width: 520px) {
+    .eng-ticket-detail-grid { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  /* ── Comment input row ── */
+  .eng-comment-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  @media (max-width: 420px) {
+    .eng-comment-row { flex-direction: column; }
+    .eng-comment-row textarea { width: 100%; box-sizing: border-box; }
+    .eng-comment-row button { width: 100%; justify-content: center; }
+  }
+
+  /* ── Password change form buttons ── */
+  .eng-pw-btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  @media (max-width: 380px) {
+    .eng-pw-btn-row { flex-direction: column; }
+    .eng-pw-btn-row button { width: 100%; }
+  }
+
+  /* ── "My Team" section header ── */
+  .eng-team-header { margin-bottom: 22px; }
+  .eng-team-title { font-size: 20px; font-weight: 600; color: #111827; }
+  .eng-team-sub { font-size: 13px; color: #6b7280; margin-top: 3px; }
+  @media (max-width: 480px) {
+    .eng-team-title { font-size: 17px; }
+    .eng-team-sub { font-size: 12px; }
+  }
+`;
+
 const glassCard = {
   borderRadius: 28,
   backdropFilter: "blur(30px)",
@@ -59,9 +290,6 @@ const renderDescription = (body = "") => {
 };
 
 // ─── Comment Section ──────────────────────────────────────────────────────────
-// FIX: receives `loggedInUserId` so we can do an exact author-ID comparison
-//      instead of a role-name comparison. This means only the specific engineer
-//      who wrote a comment will see its Edit / Delete buttons.
 const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -146,18 +374,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
             const isAdmin = c.authorRole === "admin";
-
-            // ── FIX ──────────────────────────────────────────────────────────
-            // A comment is "own" only when:
-            //   1. The logged-in user is an engineer AND the comment was written
-            //      by an engineer (not an admin), AND
-            //   2. The comment's authorId exactly matches the logged-in user's ID.
-            //
-            // This replaces the old broken check `c.authorRole === role` which
-            // allowed any engineer to edit/delete any other engineer's comment.
             const isOwn = c.authorRole === role && c.authorId === loggedInUserId;
-            // ─────────────────────────────────────────────────────────────────
-
             return (
               <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
@@ -202,7 +419,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+      <div className="eng-comment-row">
         <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment..." rows={1} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} style={{ flex: 1, padding: "11px 14px", borderRadius: 16, border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "none", boxSizing: "border-box" }} />
         <button onClick={handleSubmit} disabled={submitting || !body.trim()} style={{ padding: "11px 18px", borderRadius: 16, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 6px 18px rgba(99,102,241,0.3)", opacity: submitting || !body.trim() ? 0.6 : 1, flexShrink: 0 }}>
           <Send size={14} />{submitting ? "..." : "Send"}
@@ -218,7 +435,6 @@ const EngineerDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [technicians, setTechnicians] = useState([]);
   const [engineerInfo, setEngineerInfo] = useState({ username: "", department: "" });
-  // FIX: track the logged-in engineer's numeric DB id
   const [loggedInUserId, setLoggedInUserId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -251,7 +467,6 @@ const EngineerDashboard = () => {
         const data = await res.json();
         if (res.ok) {
           setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
-          // FIX: store the logged-in user's numeric ID from the JWT payload
           setLoggedInUserId(data.user?.id ?? null);
         }
       } catch (e) { console.error(e); }
@@ -380,31 +595,42 @@ const EngineerDashboard = () => {
 
   return (
     <div style={{ minHeight: "100vh", background: "#eef2ff", fontFamily: "'Inter','Segoe UI',sans-serif", color: "#111827", position: "relative", overflowX: "hidden" }}>
+      {/* Inject responsive CSS */}
+      <style>{RESPONSIVE_CSS}</style>
+
       <div style={{ position: "fixed", width: 560, height: 560, borderRadius: "50%", background: "#6366f1", filter: "blur(130px)", opacity: 0.45, top: -130, left: -130, pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "fixed", width: 460, height: 460, borderRadius: "50%", background: "#0ea5e9", filter: "blur(130px)", opacity: 0.45, bottom: -140, right: -110, pointerEvents: "none", zIndex: 0 }} />
 
+      {/* HEADER */}
       <header style={{ position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(25px)", WebkitBackdropFilter: "blur(25px)", background: "rgba(255,255,255,0.55)", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", borderBottom: "1px solid rgba(255,255,255,0.6)" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", height: 68, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="eng-header-inner">
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div onClick={() => { setShowProfile(true); resetPwForm(); }} style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(99,102,241,0.35)", flexShrink: 0, cursor: "pointer", overflow: "hidden", position: "relative" }}>
               <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 34, height: 22, borderRadius: "50% 50% 0 0", background: "rgba(255,255,255,0.9)" }} />
               <div style={{ position: "absolute", top: 9, left: "50%", transform: "translateX(-50%)", width: 16, height: 16, borderRadius: "50%", background: "rgba(255,255,255,0.9)" }} />
             </div>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 600, color: "#111827" }}>{engineerInfo.username}</div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1, display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />{engineerInfo.department} Department</div>
+              <div className="eng-header-name">{engineerInfo.username}</div>
+              <div className="eng-header-dept">
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", display: "inline-block" }} />
+                {engineerInfo.department} Department
+              </div>
             </div>
           </div>
-          <button onClick={handleLogout} style={{ padding: "10px 20px", borderRadius: 18, border: "1.5px solid rgba(239,68,68,0.2)", background: "rgba(254,242,242,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#dc2626", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            Logout <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          <button className="eng-logout-btn" onClick={handleLogout}>
+            <span>Logout</span>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           </button>
         </div>
       </header>
 
+      {/* TAB STRIP */}
       <div style={{ position: "sticky", top: 68, zIndex: 90, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", background: "rgba(255,255,255,0.45)", borderBottom: "1px solid rgba(255,255,255,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.04)" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "14px 32px", display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="eng-tab-strip">
           {tabs.map(tab => {
-            const isActive = activeTab === tab.key; const badge = tabBadgeStyle(tab.key, isActive); return (
+            const isActive = activeTab === tab.key;
+            const badge = tabBadgeStyle(tab.key, isActive);
+            return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ padding: "9px 18px", borderRadius: 20, border: "none", background: isActive ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.7)", color: isActive ? "white" : "#374151", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: isActive ? "0 8px 24px rgba(99,102,241,0.3)" : "0 2px 8px rgba(0,0,0,0.05)", transition: "all 0.2s" }}>
                 <span>{tab.label}</span>
                 {tab.count > 0 && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: badge.bg, color: badge.color, minWidth: 20, textAlign: "center" }}>{tab.count}</span>}
@@ -414,7 +640,8 @@ const EngineerDashboard = () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 32px", position: "relative", zIndex: 1 }}>
+      {/* MAIN CONTENT */}
+      <div className="eng-main">
         {activeTab !== "technicians" && (
           <div>
             {loading ? (
@@ -430,16 +657,16 @@ const EngineerDashboard = () => {
                 const ss = getStatusStyle(statusKey);
                 return (
                   <div key={ticket.id} style={{ ...glassCard, marginBottom: 16 }}>
-                    <div style={{ padding: "24px 26px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-                        <div style={{ flex: 1 }}>
+                    <div className="eng-ticket-body">
+                      <div className="eng-ticket-header">
+                        <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                             <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>{getStatusIcon(ticket.status)}</div>
                             <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.06em" }}>#{ticket.id}</span>
                           </div>
                           <div style={{ fontSize: 17, fontWeight: 600, color: "#111827", marginBottom: 4 }}>{ticket.subject}</div>
                           <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>{ticket.body}</div>
-                          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                          <div className="eng-ticket-meta">
                             {[{ label: "Department", val: ticket.type }, { label: "Date", val: new Date(ticket.createdAt).toLocaleDateString() }].map((m, i) => (
                               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 <div><div style={{ fontSize: 11, color: "#9ca3af" }}>{m.label}</div><div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{m.val}</div></div>
@@ -447,12 +674,12 @@ const EngineerDashboard = () => {
                             ))}
                           </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 14, fontSize: 12, fontWeight: 600, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}`, whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 14, fontSize: 12, fontWeight: 600, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}`, whiteSpace: "nowrap", flexShrink: 0 }}>
                           {getStatusIcon(ticket.status)}{ticket.status}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 10, padding: "14px 26px", borderTop: "1px solid rgba(0,0,0,0.05)", flexWrap: "wrap" }}>
+                    <div className="eng-ticket-footer">
                       <button onClick={() => setSelectedTicket(ticket)} style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         View
@@ -483,16 +710,16 @@ const EngineerDashboard = () => {
 
         {activeTab === "technicians" && (
           <div>
-            <div style={{ marginBottom: 22 }}>
-              <div style={{ fontSize: 20, fontWeight: 600, color: "#111827" }}>My Team</div>
-              <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>Technicians in {engineerInfo.department} department</div>
+            <div className="eng-team-header">
+              <div className="eng-team-title">My Team</div>
+              <div className="eng-team-sub">Technicians in {engineerInfo.department} department</div>
             </div>
             {technicians.length === 0 ? (
               <div style={{ ...glassCard, padding: "60px 32px", textAlign: "center" }}>
                 <div style={{ fontSize: 18, fontWeight: 600, color: "#374151", marginBottom: 6 }}>No Technicians Found</div>
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 20 }}>
+              <div className="eng-tech-grid">
                 {technicians.map(tech => (
                   <div key={tech.id} style={{ ...glassCard, overflow: "hidden" }}>
                     <div style={{ height: 60, background: "linear-gradient(135deg,#6366f1,#0ea5e9)" }} />
@@ -519,12 +746,12 @@ const EngineerDashboard = () => {
       {/* PROFILE MODAL */}
       {showProfile && profile && (
         <div onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
+          <div onClick={e => e.stopPropagation()} className="eng-modal-sm">
             <div style={{ padding: "24px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative" }}>
               <div style={{ fontSize: 20, fontWeight: 600, color: "white" }}>My Profile</div>
               <button onClick={() => { setShowProfile(false); resetPwForm(); }} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={15} /></button>
             </div>
-            <div style={{ padding: "24px 28px", maxHeight: "80vh", overflowY: "auto" }}>
+            <div className="eng-modal-body-sm">
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ width: 72, height: 72, borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 28, fontWeight: 700, margin: "0 auto 12px", boxShadow: "0 8px 24px rgba(99,102,241,0.35)" }}>{(profile.username || "E").charAt(0).toUpperCase()}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>{profile.username}</div>
@@ -570,7 +797,7 @@ const EngineerDashboard = () => {
                             )}
                           </div>
                         ))}
-                        <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+                        <div className="eng-pw-btn-row">
                           <button onClick={resetPwForm} disabled={pwLoading} style={{ flex: 1, padding: "10px", borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: pwLoading ? "not-allowed" : "pointer" }}>Cancel</button>
                           <button onClick={handleChangePassword} disabled={pwLoading} style={{ flex: 1, padding: "10px", borderRadius: 14, border: "none", background: pwLoading ? "rgba(99,102,241,0.45)" : "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: pwLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
                             {pwLoading ? (<><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>Updating...</>) : (<><KeyRound size={13} /> Update Password</>)}
@@ -587,38 +814,39 @@ const EngineerDashboard = () => {
         </div>
       )}
 
-      {/* ── TICKET DETAIL MODAL with Comments ── */}
+      {/* TICKET DETAIL MODAL */}
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 620, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
+          <div onClick={e => e.stopPropagation()} className="eng-modal-md">
             <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative" }}>
               <div style={{ fontSize: 18, fontWeight: 600, color: "white" }}>Ticket Details</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>#{selectedTicket.id} · {selectedTicket.subject}</div>
               <button onClick={() => setSelectedTicket(null)} style={{ position: "absolute", top: 14, right: 14, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={15} /></button>
             </div>
-            <div style={{ padding: "24px 28px", maxHeight: "76vh", overflowY: "auto" }}>
-              {[
-                { label: "TICKET ID", val: selectedTicket.id },
-                { label: "SUBJECT", val: selectedTicket.subject },
-                { label: "DEPARTMENT", val: selectedTicket.type },
-                { label: "LOCATION", val: selectedTicket.location || "—" },
-                { label: "STATUS", val: selectedTicket.status },
-                { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
-                { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
-                { label: "DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
-              ].map((f, i) => (
-                <div key={i} style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>{f.label}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{f.val}</div>
-                </div>
-              ))}
+            <div className="eng-modal-body-md">
+              <div className="eng-ticket-detail-grid">
+                {[
+                  { label: "TICKET ID", val: selectedTicket.id },
+                  { label: "SUBJECT", val: selectedTicket.subject },
+                  { label: "DEPARTMENT", val: selectedTicket.type },
+                  { label: "LOCATION", val: selectedTicket.location || "—" },
+                  { label: "STATUS", val: selectedTicket.status },
+                  { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
+                  { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
+                  { label: "DATE", val: new Date(selectedTicket.createdAt).toLocaleDateString() },
+                ].map((f, i) => (
+                  <div key={i} style={{ padding: "12px 14px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 4 }}>{f.label}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#111827" }}>{f.val}</div>
+                  </div>
+                ))}
+              </div>
 
-              <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 10 }}>
+              <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginTop: 10 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>DESCRIPTION</div>
                 {renderDescription(selectedTicket.body)}
               </div>
 
-              {/* FIX: pass loggedInUserId so CommentSection can compute isOwn correctly */}
               <CommentSection
                 ticketId={selectedTicket.id}
                 role="engineer"
@@ -656,12 +884,12 @@ const EngineerDashboard = () => {
 
 const GlassModal = ({ children, onClose, title }) => (
   <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-    <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 560, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}>
+    <div onClick={e => e.stopPropagation()} className="eng-modal-lg">
       <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div><div style={{ fontSize: 18, fontWeight: 600, color: "white" }}>{title}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>View and manage information</div></div>
         <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={15} /></button>
       </div>
-      <div style={{ padding: "24px 28px", maxHeight: "68vh", overflowY: "auto" }}>
+      <div className="eng-modal-body-lg">
         {children}
         <button onClick={onClose} style={{ width: "100%", padding: "12px", borderRadius: 18, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 13, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer", marginTop: 8 }}>Close</button>
       </div>

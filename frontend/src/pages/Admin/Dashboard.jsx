@@ -3,6 +3,305 @@ import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download, Send, Pen
 import { useNavigate } from "react-router-dom";
 import { unsubscribeFromPush } from '../../utils/pushNotifications';
 
+/* ─── Responsive style injection ─────────────────────────────────────────── */
+const RESPONSIVE_CSS = `
+  /* ── Stat cards grid ── */
+  .admin-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 1100px) {
+    .admin-stat-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .admin-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+  }
+  @media (max-width: 400px) {
+    .admin-stat-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  }
+
+  /* ── Overview two-column grid ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.8fr;
+    gap: 20px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 900px) {
+    .overview-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Ticket detail 2-col meta grid ── */
+  .ticket-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 520px) {
+    .ticket-meta-grid { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  /* ── Ticket card 4-col info strip ── */
+  .ticket-info-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 700px) {
+    .ticket-info-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  }
+  @media (max-width: 420px) {
+    .ticket-info-strip { grid-template-columns: 1fr 1fr; gap: 6px; }
+  }
+
+  /* ── Main padding ── */
+  .admin-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 32px;
+    position: relative;
+    z-index: 1;
+  }
+  @media (max-width: 768px) {
+    .admin-main { padding: 20px 16px; }
+  }
+  @media (max-width: 480px) {
+    .admin-main { padding: 14px 10px; }
+  }
+
+  /* ── Header padding ── */
+  .admin-header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px;
+    height: 68px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  @media (max-width: 768px) {
+    .admin-header-inner { padding: 0 16px; height: 58px; }
+  }
+
+  /* ── Tab bar ── */
+  .admin-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 26px;
+    padding: 8px;
+    border-radius: 22px;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    width: fit-content;
+  }
+  @media (max-width: 600px) {
+    .admin-tab-bar { width: 100%; }
+    .admin-tab-bar button { flex: 1; font-size: 12px; padding: 9px 10px !important; }
+  }
+
+  /* ── Ticket card header row ── */
+  .ticket-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Modal ── */
+  .admin-modal-box {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+  @media (max-width: 680px) {
+    .admin-modal-box { border-radius: 20px; max-width: 98vw; }
+  }
+
+  .admin-modal-add {
+    width: 100%;
+    max-width: 500px;
+    border-radius: 32px;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+  }
+  @media (max-width: 540px) {
+    .admin-modal-add { border-radius: 18px; max-width: 98vw; }
+  }
+
+  .admin-modal-people {
+    width: 100%;
+    max-width: 620px;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 660px) {
+    .admin-modal-people { border-radius: 18px; max-width: 98vw; }
+  }
+
+  /* ── Modal scroll body ── */
+  .admin-modal-body {
+    padding: 24px 28px;
+    max-height: 76vh;
+    overflow-y: auto;
+  }
+  @media (max-width: 480px) {
+    .admin-modal-body { padding: 16px 14px; }
+  }
+
+  /* ── Add modal scroll body ── */
+  .admin-modal-add-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  @media (max-width: 480px) {
+    .admin-modal-add-body { padding: 16px 14px; }
+  }
+
+  /* ── Pie chart container ── */
+  .pie-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .pie-container { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .pie-container svg { width: 160px !important; height: 160px !important; }
+  }
+
+  /* ── Time range button bar ── */
+  .time-range-bar {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    background: rgba(99,102,241,0.08);
+    flex-shrink: 0;
+  }
+
+  /* ── Overview chart header ── */
+  .overview-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ── Pagination ── */
+  .admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 16px 22px;
+    border-radius: 22px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.7);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  @media (max-width: 520px) {
+    .admin-pagination { justify-content: center; padding: 12px 14px; }
+    .admin-pagination-label { display: none; }
+  }
+
+  /* ── Critical alerts ── */
+  .critical-alert-box {
+    padding: 20px 22px;
+    border-radius: 24px;
+    margin-bottom: 22px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(241,245,249,0.75);
+    border: 1px solid rgba(100,116,139,0.2);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  @media (max-width: 480px) {
+    .critical-alert-box { padding: 14px 14px; gap: 10px; border-radius: 16px; }
+  }
+
+  /* ── Ticket card padding ── */
+  .ticket-card-body { padding: 24px 26px; }
+  .ticket-card-footer { display: flex; gap: 10px; padding: 14px 26px; border-top: 1px solid rgba(0,0,0,0.05); }
+  @media (max-width: 480px) {
+    .ticket-card-body { padding: 16px 14px; }
+    .ticket-card-footer { padding: 10px 14px; }
+  }
+
+  /* ── Sidebar ── */
+  @media (max-width: 360px) {
+    .admin-sidebar { width: 90vw !important; }
+  }
+
+  /* ── Comment section ── */
+  .comment-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  @media (max-width: 420px) {
+    .comment-input-row { flex-direction: column; }
+    .comment-input-row textarea { width: 100%; box-sizing: border-box; }
+    .comment-input-row button { width: 100%; justify-content: center; }
+  }
+
+  /* ── Engineer/technician manage rows ── */
+  .people-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-radius: 16px;
+    background: rgba(99,102,241,0.06);
+    border: 1px solid rgba(99,102,241,0.1);
+    margin-bottom: 10px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .people-row { flex-direction: column; align-items: flex-start; }
+    .people-row-actions { width: 100%; display: flex; gap: 8px; }
+    .people-row-actions button { flex: 1; }
+  }
+
+  /* ── Stat card font ── */
+  @media (max-width: 480px) {
+    .stat-card-value { font-size: 24px !important; }
+    .stat-card-label { font-size: 11px !important; }
+  }
+`;
+
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
@@ -179,7 +478,7 @@ const OverviewTab = ({ stats }) => {
 
   return (
     <div>
-      <div style={{ padding:"20px 22px", borderRadius:24, marginBottom:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(241,245,249,0.75)", border:"1px solid rgba(100,116,139,0.2)", display:"flex", alignItems:"flex-start", gap:14 }}>
+      <div className="critical-alert-box">
         <div style={{ width:44, height:44, borderRadius:14, background:"rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}><AlertTriangle size={20} /></div>
         <div>
           <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:8 }}>⚠️ Critical Alerts</div>
@@ -189,13 +488,13 @@ const OverviewTab = ({ stats }) => {
           </div>
         </div>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1.8fr", gap:20, marginBottom:22 }}>
+      <div className="overview-grid">
         <div style={{ ...glassCard, padding:"24px 22px" }}>
           <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Status Distribution</div>
           {pieTotal === 0 ? (
             <div style={{ textAlign:"center", padding:"40px 0", color:"#9ca3af", fontSize:13 }}>No ticket data yet</div>
           ) : (
-            <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
+            <div className="pie-container">
               <div style={{ position:"relative", flexShrink:0 }}>
                 <svg width="220" height="220" viewBox="0 0 220 220">
                   {slices.map((s,i) => (
@@ -227,9 +526,9 @@ const OverviewTab = ({ stats }) => {
           )}
         </div>
         <div style={{ ...glassCard, padding:"24px 22px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+          <div className="overview-chart-header">
             <div style={{ fontSize:15, fontWeight:600, color:"#111827" }}>Tickets Over Time</div>
-            <div style={{ display:"flex", gap:4, padding:4, borderRadius:14, background:"rgba(99,102,241,0.08)" }}>
+            <div className="time-range-bar">
               {["day","month","year"].map(r => (
                 <button key={r} onClick={() => setRange(r)} style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background:range===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:range===r?"white":"#6b7280", boxShadow:range===r?"0 4px 12px rgba(99,102,241,0.3)":"none", transition:"all 0.15s", textTransform:"capitalize" }}>
                   {r==="day"?"Daily":r==="month"?"Monthly":"Yearly"}
@@ -407,7 +706,7 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
         </div>
       )}
 
-      <div style={{ display:"flex", gap:10, alignItems:"flex-end" }}>
+      <div className="comment-input-row">
         <textarea
           value={body}
           onChange={e => setBody(e.target.value)}
@@ -436,7 +735,6 @@ const renderDescription = (body = "") => {
 
     return (
       <div>
-        {/* Follow-up part — bold, prominent */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
@@ -447,7 +745,6 @@ const renderDescription = (body = "") => {
           </div>
         </div>
 
-        {/* Divider with original date */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
           <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>
@@ -456,7 +753,6 @@ const renderDescription = (body = "") => {
           <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
         </div>
 
-        {/* Original part — greyed out, italic */}
         <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, padding: "10px 14px", borderRadius: 12, background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.06)", fontStyle: "italic" }}>
           {originalText}
         </div>
@@ -464,7 +760,6 @@ const renderDescription = (body = "") => {
     );
   }
 
-  // Normal ticket — plain render
   return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
 };
 
@@ -649,13 +944,16 @@ const AdminDashboard = () => {
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
+      {/* Inject responsive CSS */}
+      <style>{RESPONSIVE_CSS}</style>
+
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
 
       {sidebarOpen&&(<div onClick={()=>setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.2)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", zIndex:150 }} />)}
 
       {/* SIDEBAR DRAWER */}
-      <div style={{ position:"fixed", top:0, left:0, height:"100vh", width:280, background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", boxShadow: sidebarOpen ? "8px 0 48px rgba(0,0,0,0.12)" : "none", borderRight:"1px solid rgba(255,255,255,0.7)", transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex:160, display:"flex", flexDirection:"column" }}>
+      <div className="admin-sidebar" style={{ position:"fixed", top:0, left:0, height:"100vh", width:280, background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", boxShadow: sidebarOpen ? "8px 0 48px rgba(0,0,0,0.12)" : "none", borderRight:"1px solid rgba(255,255,255,0.7)", transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex:160, display:"flex", flexDirection:"column" }}>
         <div style={{ padding:"24px 24px 20px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:42, height:42, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative", overflow:"hidden" }}>
@@ -713,7 +1011,7 @@ const AdminDashboard = () => {
 
       {/* HEADER */}
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto", padding:"0 32px", height:68, display:"flex", justifyContent:"flex-start", alignItems:"center" }}>
+        <div className="admin-header-inner">
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
             <button onClick={()=>setSidebarOpen(true)} style={{ width:42, height:42, borderRadius:14, border:"none", background:"rgba(99,102,241,0.08)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, flexShrink:0, transition:"background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(99,102,241,0.16)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(99,102,241,0.08)"}>
               <span style={{ width:18, height:2, borderRadius:2, background:"#6366f1", display:"block" }} />
@@ -726,17 +1024,17 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main style={{ maxWidth:1280, margin:"0 auto", padding:"32px 32px", position:"relative", zIndex:1 }}>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:16, marginBottom:28 }}>
+      <main className="admin-main">
+        <div className="admin-stat-grid">
           {statCards.map((c,i) => (
             <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
-              <div style={{ fontSize:12, color:"#6b7280", fontWeight:500, marginBottom:4 }}>{c.label}</div>
-              <div style={{ fontSize:32, fontWeight:600, background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{c.value}</div>
+              <div className="stat-card-label" style={{ fontSize:12, color:"#6b7280", fontWeight:500, marginBottom:4 }}>{c.label}</div>
+              <div className="stat-card-value" style={{ fontSize:32, fontWeight:600, background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{c.value}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:26, padding:8, borderRadius:22, backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)", width:"fit-content" }}>
+        <div className="admin-tab-bar">
           {tabs.map(tab => (
             <button key={tab.id} onClick={()=>handleTabChange(tab.id)} style={{ padding:"10px 18px", borderRadius:15, border:"none", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", background:activeTab===tab.id?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:activeTab===tab.id?"white":"#6b7280", boxShadow:activeTab===tab.id?"0 8px 24px rgba(99,102,241,0.3)":"none" }}>
               {tab.label}
@@ -772,26 +1070,26 @@ const AdminDashboard = () => {
                           <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c" }}>OVERDUE — Past Due Ticket</span>
                         </div>
                       )}
-                      <div style={{ padding:"24px 26px" }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
-                          <div style={{ flex:1 }}>
+                      <div className="ticket-card-body">
+                        <div className="ticket-card-header">
+                          <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
                               <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{t.id}</span>
                             </div>
                             <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{t.subject}</div>
                             <div style={{ fontSize:13, color:"#6b7280", marginBottom:14 }}>{t.body}</div>
-                            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
+                            <div className="ticket-info-strip">
                               {[{ label:"Department", val:t.type },{ label:"Location", val:t.location||"—" },{ label:"Created", val:new Date(t.createdAt).toLocaleDateString() },{ label:"Status", val:t.status }].map((m,i) => (
                                 <div key={i}><div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>{m.label}</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{m.val}</div></div>
                               ))}
                             </div>
                           </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.background, border:`1px solid ${ss.border}`, whiteSpace:"nowrap" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.background, border:`1px solid ${ss.border}`, whiteSpace:"nowrap", flexShrink:0 }}>
                             {getStatusIcon(statusKey)}{t.status}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display:"flex", gap:10, padding:"14px 26px", borderTop:"1px solid rgba(0,0,0,0.05)" }}>
+                      <div className="ticket-card-footer">
                         <button onClick={()=>setSelectedTicket(t)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
                           <Eye size={15} /> View Details
                         </button>
@@ -800,8 +1098,8 @@ const AdminDashboard = () => {
                   );
                 })}
                 {totalPages>1 && (
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:8, padding:"16px 22px", borderRadius:22, backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 8px 24px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.7)" }}>
-                    <div style={{ fontSize:13, color:"#6b7280" }}>Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets</div>
+                  <div className="admin-pagination">
+                    <div className="admin-pagination-label" style={{ fontSize:13, color:"#6b7280" }}>Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets</div>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage===1} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -824,21 +1122,21 @@ const AdminDashboard = () => {
       {/* ── TICKET DETAIL MODAL with Comments ── */}
       {selectedTicket && (
         <div onClick={()=>setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:640, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)" }}>
+          <div onClick={e=>e.stopPropagation()} className="admin-modal-box">
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Ticket Details</div>
               <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginTop:3 }}>#{selectedTicket.id} · {selectedTicket.subject}</div>
               <button onClick={()=>setSelectedTicket(null)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
-            <div style={{ padding:"24px 28px", maxHeight:"76vh", overflowY:"auto" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div className="admin-modal-body">
+              <div className="ticket-meta-grid">
                 {[
                   { label:"TICKET ID",  val:selectedTicket.id },
                   { label:"SUBJECT",    val:selectedTicket.subject },
                   { label:"DEPARTMENT", val:selectedTicket.type },
                   { label:"LOCATION",   val:selectedTicket.location||"—" },
-                   { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
-                { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
+                  { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
+                  { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
                   { label:"STATUS",     val:selectedTicket.status },
                   { label:"DATE",       val:new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f,i) => (
@@ -849,13 +1147,11 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
-              {/* ── SMART DESCRIPTION ── */}
               <div style={{ marginTop:12, padding:"15px 17px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:10 }}>DESCRIPTION</div>
                 {renderDescription(selectedTicket.body)}
               </div>
 
-              {/* ── Comments ── */}
               <CommentSection ticketId={selectedTicket.id} role="admin" />
 
               <button onClick={()=>setSelectedTicket(null)} style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
@@ -867,12 +1163,12 @@ const AdminDashboard = () => {
       {/* ADD PEOPLE MODAL */}
       {showAddPeople && (
         <div onClick={()=>setShowAddPeople(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", display:"flex", flexDirection:"column", maxHeight:"90vh" }}>
+          <div onClick={e=>e.stopPropagation()} className="admin-modal-add">
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0, borderRadius:"32px 32px 0 0" }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Add New Member</div>
               <button onClick={()=>setShowAddPeople(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
-            <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
+            <div className="admin-modal-add-body">
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
                 {["engineer","technician"].map(r => (
                   <button key={r} onClick={()=>{ setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background:addRole===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:addRole===r?"white":"#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", textTransform:"capitalize" }}>{r}</button>
@@ -921,7 +1217,7 @@ const AdminDashboard = () => {
       {/* MANAGE ENGINEERS */}
       {showManageEngineers && (
         <div onClick={()=>setShowManageEngineers(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"90vh", display:"flex", flexDirection:"column" }}>
+          <div onClick={e=>e.stopPropagation()} className="admin-modal-people">
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Manage Engineers</div>
               <button onClick={()=>setShowManageEngineers(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
@@ -929,12 +1225,14 @@ const AdminDashboard = () => {
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : (
                 engineers.map(eng => (
-                  <div key={eng.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                  <div key={eng.id} className="people-row">
                     <div>
                       <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{eng.username}</div>
                       <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{eng.email} · {eng.department}</div>
                     </div>
-                    <button onClick={()=>setDeleteConfirm({ role:"engineer", id:eng.id, name:eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                    <div className="people-row-actions">
+                      <button onClick={()=>setDeleteConfirm({ role:"engineer", id:eng.id, name:eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                    </div>
                   </div>
                 ))
               )}
@@ -946,7 +1244,7 @@ const AdminDashboard = () => {
       {/* MANAGE TECHNICIANS */}
       {showManageTechnicians && (
         <div onClick={()=>setShowManageTechnicians(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-          <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:620, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"90vh", display:"flex", flexDirection:"column" }}>
+          <div onClick={e=>e.stopPropagation()} className="admin-modal-people">
             <div style={{ padding:"24px 28px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
               <div style={{ fontSize:20, fontWeight:600, color:"white" }}>Manage Technicians</div>
               <button onClick={()=>setShowManageTechnicians(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
@@ -954,13 +1252,13 @@ const AdminDashboard = () => {
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
               {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : (
                 technicians.map(tech => (
-                  <div key={tech.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"13px 16px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)", marginBottom:10 }}>
+                  <div key={tech.id} className="people-row">
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{tech.username}</div>
                       <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{tech.email} · {tech.department}</div>
                       <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>Areas: {tech.area||"—"}</div>
                     </div>
-                    <div style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
+                    <div className="people-row-actions" style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
                       <button onClick={()=>{ const currentAreas=tech.area?tech.area.split(",").map(a=>a.trim()):[]; setEditTech({ id:tech.id, name:tech.username, area:currentAreas }); setEditAreaError(""); }} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.07)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Edit Area</button>
                       <button onClick={()=>setDeleteConfirm({ role:"technician", id:tech.id, name:tech.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
                     </div>
