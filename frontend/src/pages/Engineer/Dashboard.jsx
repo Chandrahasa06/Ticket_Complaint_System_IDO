@@ -451,6 +451,9 @@ const EngineerDashboard = () => {
   const [pwSuccess, setPwSuccess] = useState(false);
 
   const [tabCounts, setTabCounts] = useState({ pending: 0, overdue: 0, resolved: 0, closed: 0 });
+  const [notifs, setNotifs] = useState([]);
+const [showNotifs, setShowNotifs] = useState(false);
+const [unread, setUnread] = useState(0);
 
   const [notifyingId, setNotifyingId] = useState(null);
   const [notifiedIds, setNotifiedIds] = useState(() => {
@@ -460,35 +463,46 @@ const EngineerDashboard = () => {
     } catch { return []; }
   });
 
-  useEffect(() => {
-    const fetchEngineerInfo = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials: "include" });
-        const data = await res.json();
-        if (res.ok) {
-          setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
-          setLoggedInUserId(data.user?.id ?? null);
-        }
-      } catch (e) { console.error(e); }
-    };
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/engineer/profile", { credentials: "include" });
-        const data = await res.json();
-        if (res.ok) setProfile(data.engineer);
-      } catch (e) { console.error(e); }
-    };
-    const fetchAllCounts = async () => {
-      try {
-        const statuses = ["pending", "overdue", "resolved", "closed"];
-        const results = await Promise.all(statuses.map(s => fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())));
-        setTabCounts({ pending: results[0].tickets?.length || 0, overdue: results[1].tickets?.length || 0, resolved: results[2].tickets?.length || 0, closed: results[3].tickets?.length || 0 });
-      } catch (e) { console.error(e); }
-    };
-    fetchEngineerInfo();
-    fetchProfile();
-    fetchAllCounts();
-  }, []);
+useEffect(() => {
+  const fetchEngineerInfo = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) {
+        setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
+        setLoggedInUserId(data.user?.id ?? null);
+      }
+    } catch (e) { console.error(e); }
+  };
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/engineer/profile", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) setProfile(data.engineer);
+    } catch (e) { console.error(e); }
+  };
+  const fetchAllCounts = async () => {
+    try {
+      const statuses = ["pending", "overdue", "resolved", "closed"];
+      const results = await Promise.all(statuses.map(s => fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())));
+      setTabCounts({ pending: results[0].tickets?.length || 0, overdue: results[1].tickets?.length || 0, resolved: results[2].tickets?.length || 0, closed: results[3].tickets?.length || 0 });
+    } catch (e) { console.error(e); }
+  };
+  const fetchNotifs = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/engineer/notifications", { credentials: "include" });
+      const data = await res.json();
+      if (res.ok) {
+        setNotifs(data.notifications);
+        setUnread(data.notifications.filter(n => !n.isRead).length);
+      }
+    } catch(e) { console.error(e); }
+  };
+  fetchEngineerInfo();
+  fetchProfile();
+  fetchAllCounts();
+  fetchNotifs();
+}, []);
 
   const fetchTechnicians = async () => {
     try {
@@ -617,10 +631,32 @@ const EngineerDashboard = () => {
               </div>
             </div>
           </div>
-          <button className="eng-logout-btn" onClick={handleLogout}>
-            <span>Logout</span>
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          </button>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+  <button
+    onClick={async () => {
+      setShowNotifs(true);
+      if (unread > 0) {
+        await fetch("http://localhost:3000/api/engineer/notifications/read", { method:"PATCH", credentials:"include" });
+        setUnread(0);
+        setNotifs(p => p.map(n => ({ ...n, isRead: true })));
+      }
+    }}
+    style={{ position:"relative", width:38, height:38, borderRadius:"50%", border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#6366f1", flexShrink:0 }}
+  >
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+    </svg>
+    {unread > 0 && (
+      <span style={{ position:"absolute", top:2, right:2, width:16, height:16, borderRadius:"50%", background:"#ef4444", color:"white", fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {unread > 9 ? "9+" : unread}
+      </span>
+    )}
+  </button>
+  <button className="eng-logout-btn" onClick={handleLogout}>
+    <span>Logout</span>
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+  </button>
+</div>
         </div>
       </header>
 
@@ -876,7 +912,33 @@ const EngineerDashboard = () => {
           ))}
         </GlassModal>
       )}
-
+{showNotifs && (
+  <div onClick={() => setShowNotifs(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
+    <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"80vh", display:"flex", flexDirection:"column" }}>
+      <div style={{ padding:"22px 28px", background:"linear-gradient(135deg,#ef4444,#dc2626)", position:"relative", flexShrink:0 }}>
+        <div style={{ fontSize:18, fontWeight:600, color:"white" }}>Notifications</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Overdue ticket alerts</div>
+        <button onClick={() => setShowNotifs(false)} style={{ position:"absolute", top:14, right:14, width:32, height:32, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={14} /></button>
+      </div>
+      <div style={{ padding:"20px 24px", overflowY:"auto", flex:1 }}>
+        {notifs.length === 0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0", color:"#9ca3af", fontSize:13 }}>No notifications yet</div>
+        ) : notifs.map(n => (
+          <div key={n.id} style={{ padding:"12px 14px", borderRadius:14, background:n.isRead?"rgba(0,0,0,0.02)":"rgba(239,68,68,0.06)", border:n.isRead?"1px solid rgba(0,0,0,0.06)":"1px solid rgba(239,68,68,0.18)", marginBottom:8, display:"flex", gap:10, alignItems:"flex-start" }}>
+            <div style={{ width:32, height:32, borderRadius:9, background:n.isRead?"rgba(0,0,0,0.05)":"rgba(239,68,68,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:n.isRead?"#9ca3af":"#dc2626" }}>
+              <AlertTriangle size={14} />
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:n.isRead?400:600, color:"#111827", lineHeight:1.5 }}>{n.message}</div>
+              <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>{new Date(n.createdAt).toLocaleString()}</div>
+            </div>
+            {!n.isRead && <span style={{ width:7, height:7, borderRadius:"50%", background:"#ef4444", flexShrink:0, marginTop:4 }} />}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );

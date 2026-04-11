@@ -659,7 +659,6 @@ const TechnicianDashboard = () => {
             <div className="td-handle" />
             <div className="td-sh-hd" style={{ background: "linear-gradient(135deg,#ef4444,#dc2626)" }}>
               <div className="td-sh-hd-title">Notifications</div>
-              <div className="td-sh-hd-sub">Overdue ticket alerts from your engineer</div>
               <button className="td-sh-close" onClick={() => setShowN(false)}><X size={13} /></button>
             </div>
             <div className="td-sh-body">

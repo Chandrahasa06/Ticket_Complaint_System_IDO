@@ -497,12 +497,12 @@ userRouter.post("/raise", upload.single("image"), async(req, res) => {
         );
 
         for (const tech of matchingTechs) {
-            await sendPushToTechnician(tech.id, {
-                title: "New Ticket Assigned",
-                body: `Ticket #${ticket.id}: ${subject}`,
-                url: `/technician/dashboard`
-            });
-        }
+  await sendPushToTechnician(tech.id, {
+    title: "New Ticket Assigned",
+    body: `Ticket #${ticket.id}: ${subject}`,
+    url: `/technician/dashboard`
+  }, ticket.id); // ← ticketId as 3rd argument
+}
 
         res.json({ message: "Ticket raised successfully", ticketId: ticket.id });
     } catch(e) {

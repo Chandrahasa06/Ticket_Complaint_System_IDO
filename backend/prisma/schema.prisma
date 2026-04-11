@@ -136,12 +136,13 @@ model PushSubscription {
 }
 
 model Notification {
-  id           Int      @id @default(autoincrement())
-  technicianId Int
-  ticketId     Int
-  message      String
-  isRead       Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  message       String
+  isRead        Boolean  @default(false)
+  recipientType String   // "technician" | "user"
+  recipientId   Int
+  ticketId      Int?
+  createdAt     DateTime @default(now())
 
   @@map("notification")
 }

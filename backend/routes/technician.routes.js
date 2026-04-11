@@ -515,7 +515,7 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
             title: "Ticket Resolved ✅",
             body: `Your ticket #${ticket.id} "${ticket.subject}" has been resolved.`,
             url: `/user/dashboard`
-        });
+        },ticket.id);
 
         res.json({ message: "Ticket resolved", ticket });
     } catch(e) {
@@ -543,7 +543,7 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
             title: "Ticket Closed 🔒",
             body: `Your ticket #${ticket.id} "${ticket.subject}" has been closed.`,
             url: `/user/dashboard`
-        });
+        }, ticket.id);
 
         res.json({ message: "Ticket closed", ticket });
     } catch(e) {
@@ -554,12 +554,13 @@ technicianRouter.patch("/tickets/:id/close", async(req, res) => {
 
 // GET notifications for this technician
 technicianRouter.get("/notifications", async (req, res) => {
-  if (req.user.role !== "technician") return res.status(403).json({ message: "Access denied" });
+  if (req.user.role !== "technician")
+    return res.status(403).json({ message: "Access denied" });
   try {
     const notifications = await prisma.notification.findMany({
-      where: { technicianId: req.user.id },
+      where: { recipientType: "technician", recipientId: req.user.id },
       orderBy: { createdAt: "desc" },
-      take: 30,
+      take: 20,
     });
     res.json({ notifications });
   } catch (e) {
@@ -568,15 +569,15 @@ technicianRouter.get("/notifications", async (req, res) => {
   }
 });
 
-// PATCH mark all notifications as read
 technicianRouter.patch("/notifications/read", async (req, res) => {
-  if (req.user.role !== "technician") return res.status(403).json({ message: "Access denied" });
+  if (req.user.role !== "technician")
+    return res.status(403).json({ message: "Access denied" });
   try {
     await prisma.notification.updateMany({
-      where: { technicianId: req.user.id, isRead: false },
+      where: { recipientType: "technician", recipientId: req.user.id, isRead: false },
       data: { isRead: true },
     });
-    res.json({ message: "All marked as read" });
+    res.json({ success: true });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: "Internal server error" });

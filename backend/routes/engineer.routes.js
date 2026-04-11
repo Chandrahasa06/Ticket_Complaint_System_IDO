@@ -543,4 +543,37 @@ engineerRouter.post("/tickets/:id/notify-technician", async (req, res) => {
   }
 });
 
+// GET notifications for engineer
+engineerRouter.get("/notifications", async (req, res) => {
+  if (req.user.role !== "engineer")
+    return res.status(403).json({ message: "Access denied" });
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { recipientType: "engineer", recipientId: req.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+    res.json({ notifications });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// PATCH mark all engineer notifications as read
+engineerRouter.patch("/notifications/read", async (req, res) => {
+  if (req.user.role !== "engineer")
+    return res.status(403).json({ message: "Access denied" });
+  try {
+    await prisma.notification.updateMany({
+      where: { recipientType: "engineer", recipientId: req.user.id, isRead: false },
+      data: { isRead: true },
+    });
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 export default engineerRouter;

@@ -1,24 +1,54 @@
 import cron from "node-cron";
 import { prisma } from "../prisma/client.js";
+import { sendOverdueNotifyEmail } from "../middlewares/mailer.js";
 
-// cron job for every 9 am
 cron.schedule("0 9 * * *", async () => {
-    try{
-        let sixDaysAgo = new Date();
-        sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
+  try {
+    const sixDaysAgo = new Date();
+    sixDaysAgo.setDate(sixDaysAgo.getDate() - 6);
 
-        const overdueCount = await prisma.ticket.count({
-            where: {
-                status: "OVERDUE",
-                createdAt: { lt: sixDaysAgo }
-            },
-        })
+    const overdueTickets = await prisma.ticket.findMany({
+      where: {
+        status: "OVERDUE",
+        createdAt: { lt: sixDaysAgo }
+      }
+    });
 
-        // send as notification to admin {
-        console.log(`Found ${overdueCount} overdue ticket${overdueCount !== 1 ? "s" : ""} older than 6 days.`);
-        // }
+    if (overdueTickets.length === 0) {
+      console.log("No tickets older than 6 days to alert admin about.");
+      return;
     }
-    catch(e){
-        console.log("Error in overdue tickets 4+2 cron job:", e);
+
+    console.log(`Found ${overdueTickets.length} overdue ticket(s) older than 6 days.`);
+
+    // Get all admins
+    const admins = await prisma.admin.findMany();
+
+    for (const ticket of overdueTickets) {
+      for (const admin of admins) {
+        // Email admin
+        await sendOverdueNotifyEmail(
+          admin.email,
+          admin.username,
+          ticket.id,
+          ticket.subject,
+          ticket.area
+        );
+
+        // Save in-app notification for admin
+        await prisma.notification.create({
+          data: {
+            message: `🚨 Ticket #${ticket.id} "${ticket.subject}" has been overdue for 6+ days!`,
+            recipientType: "admin",
+            recipientId: admin.id,
+            ticketId: ticket.id,
+            isRead: false,
+          }
+        });
+      }
     }
+
+  } catch (e) {
+    console.log("Error in overdue_admin cron job:", e);
+  }
 });
