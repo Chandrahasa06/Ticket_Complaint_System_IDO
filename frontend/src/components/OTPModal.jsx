@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 
-const OTPModal = ({ isOpen, email, username, password, onClose, onSuccess }) => {
+const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +60,7 @@ const OTPModal = ({ isOpen, email, username, password, onClose, onSuccess }) => 
       const res2 = await fetch("http://localhost:3000/api/user/register", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username, email: email, password: password }),
+        body: JSON.stringify({ username: username, email: email, password: password, phone: phone }),
       });
       const data2 = await res2.json();
       if (!res2.ok) { 

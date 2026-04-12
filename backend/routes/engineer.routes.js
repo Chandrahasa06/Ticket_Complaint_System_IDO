@@ -7,6 +7,30 @@ import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
 import { sendOverdueNotifyEmail } from "../middlewares/mailer.js";
 import { createCommentNotifications } from "../utils/commentNotifications.js";
+import webpush from "web-push";
+
+webpush.setVapidDetails(
+  process.env.VAPID_MAILTO,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
+
+async function sendPushToRole(prismaClient, recipientType, recipientId, payload, ticketId) {
+  const subs = await prismaClient.pushSubscription.findMany({
+    where: { subscriberType: recipientType, subscriberId: recipientId },
+  });
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payload)
+      );
+    } catch (err) {
+      if (err.statusCode === 410)
+        await prismaClient.pushSubscription.delete({ where: { id: sub.id } });
+    }
+  }
+}
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -590,6 +614,52 @@ engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
       where: { id: Number(req.params.id) },
       data: { isPriority: !ticket.isPriority }
     });
+
+    // Only send notifications when marking AS priority (not when unmarking)
+    if (updated.isPriority) {
+      const payload = {
+        title: "🔴 Priority Ticket #" + ticket.id,
+        body: `"${ticket.subject}" has been marked as priority!`,
+        url: `/dashboard`
+      };
+
+      // Notify all admins
+      const admins = await prisma.admin.findMany({ select: { id: true } });
+      for (const admin of admins) {
+        await prisma.notification.create({
+          data: {
+            message: `🔴 Ticket #${ticket.id} "${ticket.subject}" marked as priority by engineer`,
+            recipientType: "admin",
+            recipientId: admin.id,
+            ticketId: ticket.id,
+            isRead: false,
+          }
+        });
+        await sendPushToRole(prisma, "admin", admin.id, payload, ticket.id);
+      }
+
+      // Notify technicians in same dept + area
+      const technicians = await prisma.technician.findMany({
+        where: { department: ticket.type },
+        select: { id: true, area: true }
+      });
+      const matching = technicians.filter(t =>
+        t.area ? t.area.split(",").map(a => a.trim()).includes(ticket.area) : false
+      );
+      for (const tech of matching) {
+        await prisma.notification.create({
+          data: {
+            message: `🔴 Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} marked as priority!`,
+            recipientType: "technician",
+            recipientId: tech.id,
+            ticketId: ticket.id,
+            isRead: false,
+          }
+        });
+        await sendPushToRole(prisma, "technician", tech.id, payload, ticket.id);
+      }
+    }
+
     res.json({ message: "Priority updated", isPriority: updated.isPriority });
   } catch (e) {
     console.error(e);

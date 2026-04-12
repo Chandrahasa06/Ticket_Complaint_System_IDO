@@ -14,11 +14,13 @@ const UserLogin = () => {
   const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
+  const [regPhone, setRegPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isFocused, setIsFocused] = useState({ email: false, password: false, regUsername: false, regEmail: false, regPassword: false });
+  const [isFocused, setIsFocused] = useState({ email: false, password: false, regUsername: false, regEmail: false, regPassword: false,regPhone:false  });
   const [showForgotModal, setShowForgotModal] = useState(false);
+
 
   const googleWrapperRef = useRef(null);
 
@@ -109,7 +111,7 @@ const UserLogin = () => {
     if (loading) return;
 
     try {
-      if (!regUsername || !regEmail || !regPassword) {
+      if (!regUsername || !regEmail || !regPassword||!regPhone) {
         alert("All fields are required!");
         return;
       }
@@ -118,6 +120,10 @@ const UserLogin = () => {
         alert("Only @iiti.ac.in email addresses are allowed!");
         return;
       }
+      if (regPhone.length < 10) {
+  alert("Please enter a valid 10-digit mobile number!");
+  return;
+}
 
       setLoading(true);
 
@@ -291,7 +297,24 @@ const UserLogin = () => {
                   <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={eyePath} /></svg>
                 </button>
               </div>
-            </div>
+            </div><div style={{ marginBottom: 20 }}>
+  <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>Mobile Number</label>
+  <div style={{ position: "relative" }}>
+    <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#6366f1", display: "flex", pointerEvents: "none" }}>
+      <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+    </span>
+    <input
+      type="tel"
+      value={regPhone}
+      onChange={e => setRegPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+      onFocus={() => focus("regPhone")}
+      onBlur={() => blur("regPhone")}
+      placeholder="10-digit mobile number"
+      maxLength={10}
+      style={inputStyle(isFocused.regPhone)}
+    />
+  </div>
+</div>
 
             <button type="submit" style={{ width: "100%", padding: "15px", borderRadius: 30, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 15, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", boxShadow: "0 16px 48px rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               {loading ? (<>Sending OTP...</>) :
@@ -338,12 +361,14 @@ const UserLogin = () => {
         email={regEmail}
         username={regUsername}
         password={regPassword}
+        phone={regPhone}
         onClose={() => setShowOtpModal(false)}
         onSuccess={() => {
           setMode("login");
           setRegUsername("");
           setRegEmail("");
           setRegPassword("");
+          setRegPhone("");
           alert("Account created successfully! Please login.");
         }}
       />

@@ -47,7 +47,7 @@ userRouter.get("/dashboard", (req, res) => {
 });
 
 userRouter.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password , phone} = req.body;
 
   if (!username || !email || !password) {
     return res.status(400).json({ message: "All fields are required!" });
@@ -84,6 +84,7 @@ userRouter.post("/register", async (req, res) => {
         username,
         email,
         password: hashedPassword,
+        phone:phone || "",
         isGoogle: false
       }
     });
