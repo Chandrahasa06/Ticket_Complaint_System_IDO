@@ -601,8 +601,9 @@ const TechnicianDashboard = () => {
     { id: "overdue",  label: "Overdue",  ct: overdue  },
     { id: "resolved", label: "Resolved", ct: resolved },
     { id: "closed",   label: "Closed",   ct: closed   },
-  ];
-  const filtered = activeTab === "all" ? tickets : tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status));
+  ];const filtered = (activeTab === "all" ? tickets : tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status)))
+  .slice()
+  .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
   const disp = prev ?? sel;
 
   const pwScore = [pwF.newPw.length >= 6, pwF.newPw.length >= 10, /[A-Z]/.test(pwF.newPw) || /[0-9]/.test(pwF.newPw), /[^a-zA-Z0-9]/.test(pwF.newPw)].filter(Boolean).length;
@@ -657,7 +658,7 @@ const TechnicianDashboard = () => {
         <div className="td-bk" onClick={() => setShowN(false)}>
           <div className="td-sheet" style={{ maxWidth: 540 }} onClick={e => e.stopPropagation()}>
             <div className="td-handle" />
-            <div className="td-sh-hd" style={{ background: "linear-gradient(135deg,#ef4444,#dc2626)" }}>
+            <div className="td-sh-hd" style={{ background: "linear-gradient(135deg,#4f69e7,#5a71e4)" }}>
               <div className="td-sh-hd-title">Notifications</div>
               <button className="td-sh-close" onClick={() => setShowN(false)}><X size={13} /></button>
             </div>
@@ -673,7 +674,7 @@ const TechnicianDashboard = () => {
                       <div style={{ fontSize: 13, fontWeight: n.isRead ? 400 : 600, color: "#111827", lineHeight: 1.5 }}>{n.message}</div>
                       <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 3 }}>{new Date(n.createdAt).toLocaleString("en-IN")}</div>
                     </div>
-                    {!n.isRead && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", flexShrink: 0, marginTop: 3 }} />}
+                    {!n.isRead && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f2261b", flexShrink: 0, marginTop: 3 }} />}
                   </div>
                 ))}
             </div>
@@ -721,58 +722,57 @@ const TechnicianDashboard = () => {
         {loading && <div className="td-empty"><div style={{ fontSize: 14, color: "#6b7280" }}>Loading tickets…</div></div>}
 
         {/* EMPTY */}
-        {!loading && filtered.length === 0 && (
-          <div className="td-empty">
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(99,102,241,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}><Wrench size={22} color="#9ca3af" /></div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#374151", marginBottom: 4 }}>No {activeTab === "all" ? "" : TABS.find(t => t.id === activeTab)?.label + " "}Tickets</div>
-            <div style={{ fontSize: 12, color: "#9ca3af" }}>{activeTab === "all" ? "No tickets match your area and department yet." : `You have no ${activeTab} tickets.`}</div>
-          </div>
-        )}
-
-        {/* TICKETS */}
-        {!loading && filtered.map(t => {
-          const ss = statusStyle(t.status);
-          const isDone = t.status === "RESOLVED" || t.status === "CLOSED";
-          const isRes  = t.status === "RESOLVED";
-          const isCls  = t.status === "CLOSED";
-          return (
-            <div key={t.id} className="td-card">
-              <div className="td-card-bd">
-                <div className="td-card-top">
-                  <div className="td-card-left">
-                    <div className="td-id-row">
-                      <span className="td-tid">#{t.id}</span>
-                      {t.prevId && <span className="td-fu-tag">Follow-up</span>}
-                    </div>
-                    <div className="td-subj">{t.subject}</div>
-                    <div className="td-prev">{t.body}</div>
-                    <div className="td-meta">
-                      {[
-                        { icon: <MapPin size={12} color="#9ca3af" />, label: "Area",     val: t.area },
-                        { icon: <MapPin size={12} color="#9ca3af" />, label: "Location", val: t.location || "—" },
-                        { icon: <Calendar size={12} color="#9ca3af" />, label: "Raised", val: new Date(t.createdAt).toLocaleDateString() },
-                      ].map((m, i) => (
-                        <div key={i} className="td-mi">
-                          <div style={{ flexShrink: 0, marginTop: 1 }}>{m.icon}</div>
-                          <div style={{ minWidth: 0 }}>
-                            <div className="td-ml">{m.label}</div>
-                            <div className="td-mv">{m.val}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="td-status" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>{t.status}</div>
-                </div>
-              </div>
-              <div className="td-acts">
-                <button className="td-act td-act-view" onClick={() => { setPrev(null); setSel(t); }}><Eye size={13} /> View</button>
-                <button className="td-act td-act-res" onClick={() => !isDone && setRConf(t)} disabled={isDone}><CheckCircle size={13} />{isRes ? "Resolved ✓" : "Resolve"}</button>
-                <button className="td-act td-act-cls" onClick={() => !isDone && setCConf(t)} disabled={isDone}><X size={13} />{isCls ? "Closed ✓" : "Close"}</button>
-              </div>
+     {!loading && filtered.map(t => {
+  const ss = statusStyle(t.status);
+  const isDone = t.status === "RESOLVED" || t.status === "CLOSED";
+  const isRes  = t.status === "RESOLVED";
+  const isCls  = t.status === "CLOSED";
+  return (
+    <div key={t.id} className="td-card" style={{ outline: t.isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
+      {t.isPriority && (
+        <div style={{ padding: "5px 14px", borderBottom: "1px solid rgba(239,68,68,0.1)", background: "rgba(254,242,242,0.8)", display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="12" height="12" fill="#dc2626" viewBox="0 0 24 24">
+            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY TICKET</span>
+        </div>
+      )}
+      <div className="td-card-bd">
+        <div className="td-card-top">
+          <div className="td-card-left">
+            <div className="td-id-row">
+              <span className="td-tid">#{t.id}</span>
+              {t.prevId && <span className="td-fu-tag">Follow-up</span>}
             </div>
-          );
-        })}
+            <div className="td-subj">{t.subject}</div>
+            <div className="td-prev">{t.body}</div>
+            <div className="td-meta">
+              {[
+                { icon: <MapPin size={12} color="#9ca3af" />, label: "Area",     val: t.area },
+                { icon: <MapPin size={12} color="#9ca3af" />, label: "Location", val: t.location || "—" },
+                { icon: <Calendar size={12} color="#9ca3af" />, label: "Raised", val: new Date(t.createdAt).toLocaleDateString() },
+              ].map((m, i) => (
+                <div key={i} className="td-mi">
+                  <div style={{ flexShrink: 0, marginTop: 1 }}>{m.icon}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="td-ml">{m.label}</div>
+                    <div className="td-mv">{m.val}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="td-status" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>{t.status}</div>
+        </div>
+      </div>
+      <div className="td-acts">
+        <button className="td-act td-act-view" onClick={() => { setPrev(null); setSel(t); }}><Eye size={13} /> View</button>
+        <button className="td-act td-act-res" onClick={() => !isDone && setRConf(t)} disabled={isDone}><CheckCircle size={13} />{isRes ? "Resolved ✓" : "Resolve"}</button>
+        <button className="td-act td-act-cls" onClick={() => !isDone && setCConf(t)} disabled={isDone}><X size={13} />{isCls ? "Closed ✓" : "Close"}</button>
+      </div>
+    </div>
+  );
+})}
       </div>
 
       {/* ══ VIEW DETAILS MODAL ══ */}

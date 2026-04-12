@@ -57,6 +57,20 @@ app.get("/protectedRoute", (req, res) => {
   }
 });
 
+app.get('/seed-admin', async (req, res) => {
+  const bcrypt = await import('bcrypt');
+  const hashed = await bcrypt.default.hash('admin123', 10);
+  const admin = await prisma.admin.create({
+    data: {
+      username: 'Admin',
+      email: 'admin@test.com',
+      password: hashed,
+      isGoogle: false,
+    }
+  });
+  res.json({ message: 'Admin created', admin });
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

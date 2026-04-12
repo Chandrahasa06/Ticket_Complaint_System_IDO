@@ -454,6 +454,8 @@ const EngineerDashboard = () => {
   const [notifs, setNotifs] = useState([]);
 const [showNotifs, setShowNotifs] = useState(false);
 const [unread, setUnread] = useState(0);
+const [priorityIds, setPriorityIds] = useState([]);
+const [priorityLoading, setPriorityLoading] = useState(null);
 
   const [notifyingId, setNotifyingId] = useState(null);
   const [notifiedIds, setNotifiedIds] = useState(() => {
@@ -557,6 +559,20 @@ useEffect(() => {
     } catch (e) { console.error(e); alert("Server error while notifying"); }
     finally { setNotifyingId(null); }
   };
+  const handleTogglePriority = async (ticket) => {
+  setPriorityLoading(ticket.id);
+  try {
+    const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/priority`, {
+      method: "PATCH", credentials: "include"
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.message); return; }
+    setTickets(prev => prev.map(t =>
+      t.id === ticket.id ? { ...t, isPriority: data.isPriority } : t
+    ));
+  } catch (e) { console.error(e); alert("Server error"); }
+  finally { setPriorityLoading(null); }
+};
 
   const handleLogout = async () => {
     await unsubscribeFromPush();
@@ -688,59 +704,132 @@ useEffect(() => {
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>There are no {activeTab.replace("-", " ")} tickets at the moment.</div>
               </div>
             ) : (
-              tickets.map(ticket => {
-                const statusKey = (ticket.status || "").toLowerCase().replace("_", "-");
-                const ss = getStatusStyle(statusKey);
-                return (
-                  <div key={ticket.id} style={{ ...glassCard, marginBottom: 16 }}>
-                    <div className="eng-ticket-body">
-                      <div className="eng-ticket-header">
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                            <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>{getStatusIcon(ticket.status)}</div>
-                            <span style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.06em" }}>#{ticket.id}</span>
-                          </div>
-                          <div style={{ fontSize: 17, fontWeight: 600, color: "#111827", marginBottom: 4 }}>{ticket.subject}</div>
-                          <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>{ticket.body}</div>
-                          <div className="eng-ticket-meta">
-                            {[{ label: "Department", val: ticket.type }, { label: "Date", val: new Date(ticket.createdAt).toLocaleDateString() }].map((m, i) => (
-                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <div><div style={{ fontSize: 11, color: "#9ca3af" }}>{m.label}</div><div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{m.val}</div></div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 14px", borderRadius: 14, fontSize: 12, fontWeight: 600, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}`, whiteSpace: "nowrap", flexShrink: 0 }}>
-                          {getStatusIcon(ticket.status)}{ticket.status}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="eng-ticket-footer">
-                      <button onClick={() => setSelectedTicket(ticket)} style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
-                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        View
-                      </button>
+  (tickets ?? [])
+    .slice()
+    .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
+    .map(ticket => {
+      const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
+      const ss = getStatusStyle(statusKey);
+      const isPriority = ticket.isPriority;
+      const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
 
-                      {ticket.status === "OVERDUE" && (
-                        <button
-                          onClick={() => handleNotifyTechnician(ticket)}
-                          disabled={notifyingId === ticket.id || notifiedIds.includes(ticket.id)}
-                          style={{ padding: "10px 18px", borderRadius: 18, border: "none", fontFamily: "inherit", fontSize: 13, fontWeight: 500, cursor: (notifyingId === ticket.id || notifiedIds.includes(ticket.id)) ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, background: notifiedIds.includes(ticket.id) ? "rgba(16,185,129,0.1)" : notifyingId === ticket.id ? "rgba(239,68,68,0.4)" : "linear-gradient(135deg,#ef4444,#dc2626)", color: notifiedIds.includes(ticket.id) ? "#059669" : "white", boxShadow: notifiedIds.includes(ticket.id) || notifyingId === ticket.id ? "none" : "0 8px 24px rgba(239,68,68,0.3)", border: notifiedIds.includes(ticket.id) ? "1px solid rgba(16,185,129,0.3)" : "none" }}
-                        >
-                          {notifiedIds.includes(ticket.id) ? (
-                            <><CheckCircle size={15} color="#059669" /> Notified</>
-                          ) : notifyingId === ticket.id ? (
-                            <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>Notifying...</>
-                          ) : (
-                            <><svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>Notify Technician</>
-                          )}
-                        </button>
-                      )}
+      return (
+        <div
+          key={ticket.id}
+          style={{
+            ...glassCard,
+            marginBottom: 16,
+            outline: isPriority ? "2px solid rgba(239,68,68,0.4)" : "none"
+          }}
+        >
+          {isPriority && (
+            <div
+              style={{
+                padding: "6px 14px",
+                borderBottom: "1px solid rgba(239,68,68,0.1)",
+                background: "rgba(254,242,242,0.7)",
+                borderRadius: "28px 28px 0 0",
+                display: "flex",
+                alignItems: "center",
+                gap: 6
+              }}
+            >
+              <svg width="13" height="13" fill="#dc2626" viewBox="0 0 24 24">
+                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>
+                PRIORITY TICKET
+              </span>
+            </div>
+          )}
+
+          <div className="eng-ticket-body">
+            <div className="eng-ticket-header">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: 12,
+                    background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "white"
+                  }}>
+                    {getStatusIcon(ticket.status)}
+                  </div>
+                  <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                    #{ticket.id}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: 17, fontWeight: 600 }}>
+                  {ticket.subject || "No Subject"}
+                </div>
+
+                <div style={{ fontSize: 13, color: "#6b7280" }}>
+                  {ticket.body || "No Description"}
+                </div>
+
+                <div className="eng-ticket-meta">
+                  <div>
+                    <div>Department</div>
+                    <div>{ticket.type}</div>
+                  </div>
+                  <div>
+                    <div>Date</div>
+                    <div>
+                      {ticket.createdAt
+                        ? new Date(ticket.createdAt).toLocaleDateString()
+                        : "-"}
                     </div>
                   </div>
-                );
-              })
-            )}
+                </div>
+              </div>
+
+              <div style={{
+                padding: "10px 14px",
+                borderRadius: 14,
+                color: ss.color,
+                background: ss.bg,
+                border: `1px solid ${ss.border}`
+              }}>
+                {getStatusIcon(ticket.status)} {ticket.status}
+              </div>
+            </div>
+          </div>
+
+          <div className="eng-ticket-footer">
+  <button
+    onClick={() => setSelectedTicket(ticket)}
+    style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}
+  >
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+    View
+  </button>
+
+  {canPriority && (
+    <button
+      onClick={() => handleTogglePriority(ticket)}
+      disabled={priorityLoading === ticket.id}
+      style={{
+        padding: "10px 18px", borderRadius: 18, fontFamily: "inherit", fontSize: 13, fontWeight: 500,
+        cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
+        display: "flex", alignItems: "center", gap: 7,
+        border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)",
+        background: isPriority ? "rgba(239,68,68,0.12)" : "rgba(254,242,242,0.85)",
+        color: "#dc2626",
+        opacity: priorityLoading === ticket.id ? 0.6 : 1,
+      }}
+    >
+      <svg width="14" height="14" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+      </svg>
+      {priorityLoading === ticket.id ? "Updating..." : isPriority ? "Unmark Priority" : "Mark Priority"}
+    </button>
+  )}
+</div>
+        </div>
+      );
+    })
+)}
           </div>
         )}
 

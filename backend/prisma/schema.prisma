@@ -72,6 +72,7 @@ model Ticket {
   location String  @default("")
   imageUrl String  @default("")
   phone    String  @default("")
+  isPriority Boolean @default(false)
 
   prevId   Int?
   prev     Ticket?  @relation("TicketChain", fields: [prevId], references: [id])

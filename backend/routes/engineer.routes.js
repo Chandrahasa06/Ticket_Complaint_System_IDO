@@ -575,5 +575,25 @@ engineerRouter.patch("/notifications/read", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+// PATCH toggle priority on a ticket
+engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
+  if (req.user.role !== "engineer")
+    return res.status(403).json({ message: "Access denied" });
+  try {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: Number(req.params.id) }
+    });
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+    const updated = await prisma.ticket.update({
+      where: { id: Number(req.params.id) },
+      data: { isPriority: !ticket.isPriority }
+    });
+    res.json({ message: "Priority updated", isPriority: updated.isPriority });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 export default engineerRouter;
