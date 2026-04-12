@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, Mail, Send, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { unsubscribeFromPush } from '../../utils/pushNotifications';
+import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
 
 /* ─── Responsive style injection ─────────────────────────────────────────── */
 const RESPONSIVE_CSS = `
@@ -312,6 +312,9 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   };
 
   useEffect(() => { fetchComments(); }, [ticketId]);
+  useEffect(() => {
+  subscribeToPush();
+}, []);
 
   const handleSubmit = async () => {
     if (!body.trim()) return;
@@ -504,6 +507,7 @@ useEffect(() => {
   fetchProfile();
   fetchAllCounts();
   fetchNotifs();
+  subscribeToPush();
 }, []);
 
   const fetchTechnicians = async () => {

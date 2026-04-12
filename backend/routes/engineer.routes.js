@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
 import { sendOverdueNotifyEmail } from "../middlewares/mailer.js";
+import { createCommentNotifications } from "../utils/commentNotifications.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -367,7 +368,7 @@ engineerRouter.post("/tickets/:id/comments", async(req, res) => {
                 engineer: { select: { id: true, username: true, department: true } },
             },
         });
-
+await createCommentNotifications(Number(req.params.id), "engineer", req.user.username, ticket.subject);
         res.status(201).json({
             message: "Comment added",
             comment: {

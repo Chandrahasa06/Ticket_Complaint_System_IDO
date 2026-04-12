@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
 import { sendPushToUser } from '../utils/notify.js';
+import { createCommentNotifications } from "../utils/commentNotifications.js";
 
 import { sendCloseEmail, sendResolveEmail } from "../middlewares/mailer.js";
 
@@ -401,6 +402,7 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
                 technician: { select: { id: true, username: true, department: true } },
             },
         });
+await createCommentNotifications(Number(req.params.id), "technician", req.user.username, ticket.subject);
 
         res.status(201).json({
             message: "Comment added",

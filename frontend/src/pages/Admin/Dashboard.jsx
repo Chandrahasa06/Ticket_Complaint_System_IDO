@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download, Send, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { unsubscribeFromPush } from '../../utils/pushNotifications';
+import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
 
 /* ─── Responsive style injection ─────────────────────────────────────────── */
 const RESPONSIVE_CSS = `
@@ -904,7 +904,9 @@ const AdminDashboard = () => {
     if(activeTab==="overview") fetchStats();
     else { setCurrentPage(1); fetchTickets(activeTab, 1); }
   }, [activeTab]);
-
+useEffect(() => {
+  subscribeToPush();
+}, []);
   
   useEffect(() => {
   const fetchNotifs = async () => {
@@ -918,6 +920,7 @@ const AdminDashboard = () => {
     } catch(e) { console.error(e); }
   };
   fetchNotifs();
+  subscribeToPush();
 }, []);
 
   useEffect(() => {

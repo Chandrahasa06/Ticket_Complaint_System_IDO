@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { checkAuth } from "../middlewares/checkAuth.js";
 import { OAuth2Client } from "google-auth-library";
+import { createCommentNotifications } from "../utils/commentNotifications.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -275,7 +276,7 @@ adminRouter.post("/tickets/:id/comments", async(req, res) => {
                 admin: { select: { id: true, username: true } },
             },
         });
-
+        await createCommentNotifications(Number(req.params.id), "admin", req.user.username, ticket.subject);
         res.status(201).json({
             message: "Comment added",
             comment: {

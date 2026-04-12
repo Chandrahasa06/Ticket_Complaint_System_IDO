@@ -5,7 +5,7 @@ import {
   Send, Pencil, Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { unsubscribeFromPush } from "../../utils/pushNotifications";
+import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    GLOBAL RESPONSIVE CSS  (mobile-first, namespaced td-)
@@ -419,6 +419,9 @@ const Comments = ({ ticketId, role, uid }) => {
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { reload(); }, [ticketId]);
+  useEffect(() => {
+  subscribeToPush();
+}, []);
 
   const post = async () => {
     if (!body.trim()) return; setSub(true);
@@ -544,6 +547,7 @@ const TechnicianDashboard = () => {
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/profile", { credentials: "include" }); const d = await r.json(); if (r.ok) setProfile(d.technician); } catch (e) { console.error(e); } })();
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/notifications", { credentials: "include" }); const d = await r.json(); if (r.ok) { setNotifs(d.notifications); setUnread(d.notifications.filter(n => !n.isRead).length); } } catch (e) { console.error(e); } })();
     loadTickets();
+    subscribeToPush();
   }, []);
 
   const openN = async () => {
