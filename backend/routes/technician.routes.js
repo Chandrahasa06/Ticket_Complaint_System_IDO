@@ -514,7 +514,7 @@ technicianRouter.patch("/tickets/:id/resolve", async(req, res) => {
         await sendResolveEmail(ticket.user.email, ticket.user.username, ticket.subject, remark);
 
         await sendPushToUser(ticket.userId, {
-            title: "Ticket Resolved ✅",
+            title: "Ticket Resolved ",
             body: `Your ticket #${ticket.id} "${ticket.subject}" has been resolved.`,
             url: `/user/dashboard`
         },ticket.id);

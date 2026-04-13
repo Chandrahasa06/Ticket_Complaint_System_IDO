@@ -53,7 +53,7 @@ cron.schedule("0 9 * * *", async () => {
         // Bell notification
         await prisma.notification.create({
           data: {
-            message: `🚨 Ticket #${ticket.id} "${ticket.subject}" has been overdue for 6+ days!`,
+            message: `Ticket #${ticket.id} "${ticket.subject}" has been overdue for 6+ days!`,
             recipientType: "admin",
             recipientId: admin.id,
             ticketId: ticket.id,
@@ -63,7 +63,7 @@ cron.schedule("0 9 * * *", async () => {
 
         // ← ADD: Push notification for admin
         await sendPushToRole("admin", admin.id, {
-          title: "🚨 Ticket Overdue 6+ Days",
+          title: "Ticket Overdue 6+ Days",
           body: `Ticket #${ticket.id} "${ticket.subject}" needs immediate attention!`,
           url: `/admin/dashboard`
         }, ticket.id);
