@@ -44,19 +44,6 @@ const RESPONSIVE_CSS = `
     .ticket-meta-grid { grid-template-columns: 1fr; gap: 8px; }
   }
 
-  /* ── Ticket card 4-col info strip ── */
-  .ticket-info-strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-  }
-  @media (max-width: 700px) {
-    .ticket-info-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  }
-  @media (max-width: 420px) {
-    .ticket-info-strip { grid-template-columns: 1fr 1fr; gap: 6px; }
-  }
-
   /* ── Main padding ── */
   .admin-main {
     max-width: 1280px;
@@ -103,15 +90,6 @@ const RESPONSIVE_CSS = `
   @media (max-width: 600px) {
     .admin-tab-bar { width: 100%; }
     .admin-tab-bar button { flex: 1; font-size: 12px; padding: 9px 10px !important; }
-  }
-
-  /* ── Ticket card header row ── */
-  .ticket-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-    flex-wrap: wrap;
   }
 
   /* ── Modal ── */
@@ -252,14 +230,6 @@ const RESPONSIVE_CSS = `
     .critical-alert-box { padding: 14px 14px; gap: 10px; border-radius: 16px; }
   }
 
-  /* ── Ticket card padding ── */
-  .ticket-card-body { padding: 24px 26px; }
-  .ticket-card-footer { display: flex; gap: 10px; padding: 14px 26px; border-top: 1px solid rgba(0,0,0,0.05); }
-  @media (max-width: 480px) {
-    .ticket-card-body { padding: 16px 14px; }
-    .ticket-card-footer { padding: 10px 14px; }
-  }
-
   /* ── Sidebar ── */
   @media (max-width: 360px) {
     .admin-sidebar { width: 90vw !important; }
@@ -301,6 +271,76 @@ const RESPONSIVE_CSS = `
     .stat-card-value { font-size: 24px !important; }
     .stat-card-label { font-size: 11px !important; }
   }
+
+  /* ── Ticket list table ── */
+  .ticket-list-wrap {
+    border-radius: 24px;
+    overflow: hidden;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.6);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+    margin-bottom: 16px;
+  }
+
+  .ticket-table-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 130px 110px 100px 110px;
+    gap: 0;
+    padding: 11px 20px;
+    background: rgba(99,102,241,0.07);
+    border-bottom: 1px solid rgba(99,102,241,0.1);
+    align-items: center;
+  }
+  @media (max-width: 860px) {
+    .ticket-table-header { grid-template-columns: 52px 1fr 120px 90px 110px; }
+    .ticket-table-header .th-dept { display: none; }
+  }
+  @media (max-width: 640px) {
+    .ticket-table-header { grid-template-columns: 44px 1fr 80px 110px; }
+    .ticket-table-header .th-dept { display: none; }
+    .ticket-table-header .th-date { display: none; }
+  }
+  @media (max-width: 420px) {
+    .ticket-table-header { grid-template-columns: 38px 1fr 110px; }
+    .ticket-table-header .th-status { display: none; }
+  }
+
+  .ticket-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 130px 110px 100px 110px;
+    gap: 0;
+    padding: 13px 20px;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+    transition: background 0.15s;
+    cursor: default;
+  }
+  .ticket-row:last-child { border-bottom: none; }
+  .ticket-row:hover { background: rgba(99,102,241,0.04); }
+
+  @media (max-width: 860px) {
+    .ticket-row { grid-template-columns: 52px 1fr 120px 90px 110px; }
+    .ticket-row .td-dept { display: none; }
+  }
+  @media (max-width: 640px) {
+    .ticket-row { grid-template-columns: 44px 1fr 80px 110px; }
+    .ticket-row .td-dept { display: none; }
+    .ticket-row .td-date { display: none; }
+  }
+  @media (max-width: 420px) {
+    .ticket-row { grid-template-columns: 38px 1fr 110px; }
+    .ticket-row .td-status { display: none; }
+  }
+
+  .ticket-row-overdue-banner {
+    padding: 5px 20px;
+    background: rgba(254,242,242,0.7);
+    border-bottom: 1px solid rgba(254,202,202,0.5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 `;
 
 const getStatusStyle = (status) => {
@@ -316,7 +356,7 @@ const getStatusStyle = (status) => {
 
 const getStatusIcon = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
-  const props = { size: 15 };
+  const props = { size: 13 };
   switch (s) {
     case "overdue":  return <AlertTriangle {...props} />;
     case "pending":  return <Clock {...props} />;
@@ -334,7 +374,7 @@ const glassCard = {
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
 };
 
-const TICKETS_PER_PAGE = 3;
+const TICKETS_PER_PAGE = 10;
 
 const AREAS = [
   "Hostels", "KV School", "Abhinandhan Bhavan", "Academic Block",
@@ -425,7 +465,6 @@ const OverviewTab = ({ stats }) => {
   const [pieTooltip, setPieTooltip] = useState(null);
   const svgRef = React.useRef(null);
 
-
   useEffect(() => {
     const fetch_ = async () => {
       setTimeLoading(true);
@@ -438,7 +477,6 @@ const OverviewTab = ({ stats }) => {
     };
     fetch_();
   }, [range]);
-
 
   const pieData = [
     { label:"Pending",  value:stats.pending,  color:COLORS.PENDING  },
@@ -766,6 +804,143 @@ const renderDescription = (body = "") => {
   return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
 };
 
+// ─── Compact Ticket Row ───────────────────────────────────────────────────────
+const TicketRow = ({ t, onView, isOverdue }) => {
+  const statusKey = (t.status || "").toLowerCase().replace("_", "-");
+  const ss = getStatusStyle(statusKey);
+
+  return (
+    <div className="ticket-row">
+      {/* ID */}
+      <div style={{ fontSize:12, fontWeight:600, color:"#9ca3af", letterSpacing:"0.04em" }}>
+        #{t.id}
+      </div>
+
+      {/* Title + raised by */}
+      <div style={{ minWidth:0, paddingRight:12 }}>
+        <div style={{
+          fontSize:13,
+          fontWeight:600,
+          color:"#111827",
+          whiteSpace:"nowrap",
+          overflow:"hidden",
+          textOverflow:"ellipsis",
+          marginBottom:2
+        }}>
+          {t.subject}
+        </div>
+        <div style={{
+          fontSize:11,
+          color:"#9ca3af",
+          whiteSpace:"nowrap",
+          overflow:"hidden",
+          textOverflow:"ellipsis"
+        }}>
+          {t.user?.username ? `By ${t.user.username}` : "—"}
+          {t.location ? ` · ${t.location}` : ""}
+        </div>
+      </div>
+
+      {/* Department */}
+      <div className="td-dept" style={{ fontSize:12, color:"#374151", fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+        {t.type || "—"}
+      </div>
+
+      {/* Date */}
+      <div className="td-date" style={{ fontSize:12, color:"#6b7280" }}>
+        {new Date(t.createdAt).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" })}
+      </div>
+
+      {/* Status badge */}
+      <div className="td-status" style={{ display:"flex", alignItems:"center" }}>
+        <span style={{
+          display:"inline-flex",
+          alignItems:"center",
+          gap:5,
+          padding:"4px 10px",
+          borderRadius:20,
+          fontSize:11,
+          fontWeight:600,
+          color:ss.color,
+          background:ss.background,
+          border:`1px solid ${ss.border}`,
+          whiteSpace:"nowrap"
+        }}>
+          {getStatusIcon(statusKey)}
+          {t.status}
+        </span>
+      </div>
+
+      {/* View button */}
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <button
+          onClick={() => onView(t)}
+          style={{
+            padding:"7px 14px",
+            borderRadius:14,
+            border:"none",
+            background:"linear-gradient(135deg,#6366f1,#0ea5e9)",
+            color:"white",
+            fontSize:12,
+            fontWeight:600,
+            fontFamily:"inherit",
+            cursor:"pointer",
+            display:"flex",
+            alignItems:"center",
+            gap:5,
+            boxShadow:"0 4px 14px rgba(99,102,241,0.28)",
+            whiteSpace:"nowrap",
+            transition:"opacity 0.15s"
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity="0.88"}
+          onMouseLeave={e => e.currentTarget.style.opacity="1"}
+        >
+          <Eye size={13} /> View
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ─── Ticket List with header ──────────────────────────────────────────────────
+const TicketTable = ({ tickets, overdueTickets, activeTab, onView }) => {
+  const displayList = activeTab === "pending"
+    ? [...tickets, ...overdueTickets]
+    : tickets;
+
+  const pendingCount = tickets.length;
+
+  return (
+    <div className="ticket-list-wrap">
+      {/* Column headers */}
+      <div className="ticket-table-header">
+        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>ID</div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Subject</div>
+        <div className="th-dept" style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Dept</div>
+        <div className="th-date" style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Created</div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Status</div>
+        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase", textAlign:"right" }}>Action</div>
+      </div>
+
+      {/* Rows */}
+      {displayList.map((t, idx) => {
+        const isOverdueSuffix = activeTab === "pending" && idx >= pendingCount;
+        return (
+          <React.Fragment key={t.id}>
+            {isOverdueSuffix && idx === pendingCount && (
+              <div className="ticket-row-overdue-banner">
+                <AlertTriangle size={12} color="#b91c1c" />
+                <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c" }}>OVERDUE — Past Due Tickets</span>
+              </div>
+            )}
+            <TicketRow t={t} onView={onView} isOverdue={isOverdueSuffix} />
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -905,10 +1080,10 @@ const AdminDashboard = () => {
     if(activeTab==="overview") fetchStats();
     else { setCurrentPage(1); fetchTickets(activeTab, 1); }
   }, [activeTab]);
-useEffect(() => {
-  subscribeToPush();
-}, []);
-  
+
+  useEffect(() => {
+    subscribeToPush();
+  }, []);
 
   useEffect(() => {
     if(activeTab!=="overview") fetchTickets(activeTab, currentPage);
@@ -950,7 +1125,6 @@ useEffect(() => {
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
-      {/* Inject responsive CSS */}
       <style>{RESPONSIVE_CSS}</style>
 
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
@@ -1025,7 +1199,7 @@ useEffect(() => {
               <span style={{ width:18, height:2, borderRadius:2, background:"#6366f1", display:"block" }} />
             </button>
             <div style={{ width:1, height:28, background:"rgba(0,0,0,0.08)" }} />
-  <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Admin Dashboard</div>
+            <div style={{ fontSize:17, fontWeight:600, color:"#111827" }}>Admin Dashboard</div>
           </div>
         </div>
       </header>
@@ -1053,59 +1227,32 @@ useEffect(() => {
         {activeTab!=="overview" && (
           <div>
             {loading ? (
-              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}><div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div></div>
-            ) : (activeTab==="pending"?pendingCombinedTickets:tickets).length===0 ? (
+              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
+                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
+              </div>
+            ) : (activeTab==="pending" ? pendingCombinedTickets : tickets).length === 0 ? (
               <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
                 <div style={{ fontSize:18, fontWeight:600, color:"#111827", marginBottom:6 }}>No Tickets Found</div>
                 <div style={{ fontSize:14, color:"#6b7280" }}>There are no {activeTab.replace("-"," ")} tickets at the moment.</div>
               </div>
             ) : (
               <>
-                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
+                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
                   <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
                 </div>
-                {(activeTab==="pending"?pendingCombinedTickets:tickets).map((t,idx) => {
-                  const isOverdueSuffix=activeTab==="pending"&&idx>=tickets.length;
-                  const statusKey=(t.status||"").toLowerCase().replace("_","-");
-                  const ss=getStatusStyle(statusKey);
-                  return (
-                    <div key={t.id} style={{ ...glassCard, marginBottom:16, outline:isOverdueSuffix?"1.5px solid rgba(100,116,139,0.3)":"none" }}>
-                      {isOverdueSuffix && (
-                        <div style={{ padding:"7px 26px", borderBottom:"1px solid rgba(185,28,28,0.1)", background:"rgba(254,242,242,0.6)", borderRadius:"28px 28px 0 0", display:"flex", alignItems:"center", gap:6 }}>
-                          <AlertTriangle size={13} color="#b91c1c" />
-                          <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c" }}>OVERDUE — Past Due Ticket</span>
-                        </div>
-                      )}
-                      <div className="ticket-card-body">
-                        <div className="ticket-card-header">
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                              <span style={{ fontSize:11, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em" }}>#{t.id}</span>
-                            </div>
-                            <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:4 }}>{t.subject}</div>
-                            <div style={{ fontSize:13, color:"#6b7280", marginBottom:14 }}>{t.body}</div>
-                            <div className="ticket-info-strip">
-                              {[{ label:"Department", val:t.type },{ label:"Location", val:t.location||"—" },{ label:"Created", val:new Date(t.createdAt).toLocaleDateString() },{ label:"Status", val:t.status }].map((m,i) => (
-                                <div key={i}><div style={{ fontSize:11, color:"#9ca3af", marginBottom:2 }}>{m.label}</div><div style={{ fontSize:13, fontWeight:500, color:"#374151" }}>{m.val}</div></div>
-                              ))}
-                            </div>
-                          </div>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, padding:"10px 14px", borderRadius:14, fontSize:12, fontWeight:600, color:ss.color, background:ss.background, border:`1px solid ${ss.border}`, whiteSpace:"nowrap", flexShrink:0 }}>
-                            {getStatusIcon(statusKey)}{t.status}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="ticket-card-footer">
-                        <button onClick={()=>setSelectedTicket(t)} style={{ padding:"10px 18px", borderRadius:18, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
-                          <Eye size={15} /> View Details
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-                {totalPages>1 && (
+
+                <TicketTable
+                  tickets={tickets}
+                  overdueTickets={overdueTickets}
+                  activeTab={activeTab}
+                  onView={setSelectedTicket}
+                />
+
+                {totalPages > 1 && (
                   <div className="admin-pagination">
-                    <div className="admin-pagination-label" style={{ fontSize:13, color:"#6b7280" }}>Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets</div>
+                    <div className="admin-pagination-label" style={{ fontSize:13, color:"#6b7280" }}>
+                      Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets
+                    </div>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage===1} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -1141,8 +1288,8 @@ useEffect(() => {
                   { label:"SUBJECT",    val:selectedTicket.subject },
                   { label:"DEPARTMENT", val:selectedTicket.type },
                   { label:"LOCATION",   val:selectedTicket.location||"—" },
-                  { label: "RAISED BY", val: selectedTicket.user?.username || "—" },
-                  { label: "CONTACT NUMBER", val: selectedTicket.phone || "—" },
+                  { label:"RAISED BY",  val:selectedTicket.user?.username||"—" },
+                  { label:"CONTACT NUMBER", val:selectedTicket.phone||"—" },
                   { label:"STATUS",     val:selectedTicket.status },
                   { label:"DATE",       val:new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f,i) => (

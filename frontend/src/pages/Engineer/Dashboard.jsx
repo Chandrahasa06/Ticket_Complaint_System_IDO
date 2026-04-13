@@ -84,6 +84,78 @@ const RESPONSIVE_CSS = `
     .eng-main { padding: 12px 10px; }
   }
 
+  /* ── Compact ticket row ── */
+  .eng-ticket-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    flex-wrap: nowrap;
+  }
+  .eng-ticket-row-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+  .eng-ticket-row-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .eng-ticket-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  /* On mobile, stack the row */
+  @media (max-width: 600px) {
+    .eng-ticket-row {
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .eng-ticket-row-left {
+      width: 100%;
+    }
+    .eng-ticket-row-meta {
+      gap: 10px;
+    }
+    .eng-ticket-row-actions {
+      margin-left: auto;
+    }
+  }
+  @media (max-width: 400px) {
+    .eng-ticket-row-meta { gap: 8px; }
+  }
+
+  /* ── Meta pill labels ── */
+  .eng-meta-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .eng-meta-pill-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .eng-meta-pill-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+  }
+  /* Hide department on very small screens */
+  @media (max-width: 480px) {
+    .eng-meta-dept { display: none; }
+  }
+
   /* ── Ticket card ── */
   .eng-ticket-body { padding: 24px 26px; }
   .eng-ticket-footer {
@@ -233,6 +305,48 @@ const RESPONSIVE_CSS = `
     .eng-team-title { font-size: 17px; }
     .eng-team-sub { font-size: 12px; }
   }
+
+  /* ── View button compact ── */
+  .eng-view-btn {
+    padding: 8px 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .eng-view-btn:hover { opacity: 0.92; }
+
+  /* ── Priority compact button ── */
+  .eng-priority-btn {
+    padding: 7px 10px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Ticket list wrapper ── */
+  .eng-ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 `;
 
 const glassCard = {
@@ -241,6 +355,16 @@ const glassCard = {
   WebkitBackdropFilter: "blur(30px)",
   background: "rgba(255,255,255,0.6)",
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
+};
+
+/* Compact row card — slightly tighter than glassCard */
+const rowCard = {
+  borderRadius: 18,
+  backdropFilter: "blur(30px)",
+  WebkitBackdropFilter: "blur(30px)",
+  background: "rgba(255,255,255,0.65)",
+  boxShadow: "0 4px 18px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+  overflow: "hidden",
 };
 
 const getStatusStyle = (status) => {
@@ -254,9 +378,6 @@ const getStatusStyle = (status) => {
   return map[s] || { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" };
 };
 
-// ─── Role style map for comments ─────────────────────────────────────────────
-// FIX: added "technician" entry so technician comments render with their own
-//      colour, label and authorName instead of falling through to "ENGINEER".
 const COMMENT_ROLE_STYLE = {
   admin: {
     label: "ADMIN",
@@ -281,7 +402,6 @@ const COMMENT_ROLE_STYLE = {
   },
 };
 
-// ─── Smart description renderer ──────────────────────────────────────────────
 const renderDescription = (body = "") => {
   const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
   const match = body.match(separatorRegex);
@@ -317,7 +437,20 @@ const renderDescription = (body = "") => {
   return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
 };
 
-// ─── Comment Section ──────────────────────────────────────────────────────────
+/* ─── Status icon ──────────────────────────────────────────────────────────── */
+const getStatusIcon = (status) => {
+  const s = (status || "").toLowerCase().replace("_", "-");
+  switch (s) {
+    case "pending": return <Clock size={13} />;
+    case "in-progress": return <Activity size={13} />;
+    case "overdue": return <AlertTriangle size={13} />;
+    case "resolved": return <CheckCircle size={13} />;
+    case "closed": return <X size={13} />;
+    default: return null;
+  }
+};
+
+/* ─── Comment Section ──────────────────────────────────────────────────────── */
 const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -402,20 +535,16 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
-            // FIX: look up the correct style for each role (admin / engineer / technician)
             const rs = COMMENT_ROLE_STYLE[c.authorRole] ?? COMMENT_ROLE_STYLE.engineer;
-            // FIX: ownership check — engineer can only edit/delete their own engineer comments
             const isOwn = c.authorRole === role && c.authorId === loggedInUserId;
 
             return (
               <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: rs.bg, border: `1px solid ${rs.border}` }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                    {/* FIX: role label now comes from rs.label, not hardcoded */}
                     <span style={{ fontSize: 11, fontWeight: 800, color: rs.color, background: rs.tagBg, padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>
                       {rs.label}
                     </span>
-                    {/* FIX: authorName is already correctly resolved by the backend */}
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.authorName}</span>
                     {c.authorDepartment && <span style={{ fontSize: 11, color: "#9ca3af" }}>· {c.authorDepartment}</span>}
                   </div>
@@ -461,6 +590,100 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   );
 };
 
+/* ─── Compact Ticket Row ───────────────────────────────────────────────────── */
+const TicketRow = ({ ticket, onView, onTogglePriority, priorityLoading }) => {
+  const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
+  const ss = getStatusStyle(statusKey);
+  const isPriority = ticket.isPriority;
+  const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
+
+  const formattedDate = ticket.createdAt
+    ? new Date(ticket.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+    : "—";
+
+  return (
+    <div style={{ ...rowCard, outline: isPriority ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
+      {/* Priority strip */}
+      {isPriority && (
+        <div style={{ padding: "4px 16px", background: "rgba(254,242,242,0.8)", borderBottom: "1px solid rgba(239,68,68,0.1)", display: "flex", alignItems: "center", gap: 5 }}>
+          <svg width="11" height="11" fill="#dc2626" viewBox="0 0 24 24">
+            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY</span>
+        </div>
+      )}
+
+      <div className="eng-ticket-row">
+        {/* LEFT: icon + title + id */}
+        <div className="eng-ticket-row-left">
+          {/* Status icon bubble */}
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            {getStatusIcon(ticket.status)}
+          </div>
+
+          {/* Title + id */}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {ticket.subject || "No Subject"}
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>#{ticket.id}</span>
+          </div>
+        </div>
+
+        {/* MIDDLE: meta chips */}
+        <div className="eng-ticket-row-meta">
+          <div className="eng-meta-pill eng-meta-dept">
+            <span className="eng-meta-pill-label">Dept</span>
+            <span className="eng-meta-pill-val">{ticket.type || "—"}</span>
+          </div>
+          <div className="eng-meta-pill">
+            <span className="eng-meta-pill-label">Date</span>
+            <span className="eng-meta-pill-val">{formattedDate}</span>
+          </div>
+          {/* Status badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}`, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
+            {getStatusIcon(ticket.status)}
+            <span>{ticket.status}</span>
+          </div>
+        </div>
+
+        {/* RIGHT: actions */}
+        <div className="eng-ticket-row-actions">
+          {canPriority && (
+            <button
+              className="eng-priority-btn"
+              onClick={() => onTogglePriority(ticket)}
+              disabled={priorityLoading === ticket.id}
+              style={{
+                border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)",
+                background: isPriority ? "rgba(239,68,68,0.1)" : "rgba(254,242,242,0.85)",
+                color: "#dc2626",
+                opacity: priorityLoading === ticket.id ? 0.6 : 1,
+                cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
+              }}
+            >
+              <svg width="12" height="12" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              <span className="eng-priority-label">{priorityLoading === ticket.id ? "..." : isPriority ? "Unmark" : "Priority"}</span>
+            </button>
+          )}
+          <button className="eng-view-btn" onClick={() => onView(ticket)}>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            View
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Main Dashboard ───────────────────────────────────────────────────────── */
 const EngineerDashboard = () => {
   const [activeTab, setActiveTab] = useState("pending");
   const [tickets, setTickets] = useState([]);
@@ -565,18 +788,6 @@ const EngineerDashboard = () => {
     if (activeTab === "technicians") fetchTechnicians();
     else fetchTickets(activeTab);
   }, [activeTab]);
-
-  const getStatusIcon = (status) => {
-    const s = (status || "").toLowerCase().replace("_", "-");
-    switch (s) {
-      case "pending": return <Clock size={16} />;
-      case "in-progress": return <Activity size={16} />;
-      case "overdue": return <AlertTriangle size={16} />;
-      case "resolved": return <CheckCircle size={16} />;
-      case "closed": return <X size={16} />;
-      default: return null;
-    }
-  };
 
   const handleNotifyTechnician = async (ticket) => {
     setNotifyingId(ticket.id);
@@ -748,70 +959,21 @@ const EngineerDashboard = () => {
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>There are no {activeTab.replace("-", " ")} tickets at the moment.</div>
               </div>
             ) : (
-              (tickets ?? [])
-                .slice()
-                .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
-                .map(ticket => {
-                  const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
-                  const ss = getStatusStyle(statusKey);
-                  const isPriority = ticket.isPriority;
-                  const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
-
-                  return (
-                    <div key={ticket.id} style={{ ...glassCard, marginBottom: 16, outline: isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
-                      {isPriority && (
-                        <div style={{ padding: "6px 14px", borderBottom: "1px solid rgba(239,68,68,0.1)", background: "rgba(254,242,242,0.7)", borderRadius: "28px 28px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
-                          <svg width="13" height="13" fill="#dc2626" viewBox="0 0 24 24">
-                            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                          </svg>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>PRIORITY TICKET</span>
-                        </div>
-                      )}
-
-                      <div className="eng-ticket-body">
-                        <div className="eng-ticket-header">
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                              <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-                                {getStatusIcon(ticket.status)}
-                              </div>
-                              <span style={{ fontSize: 11, color: "#9ca3af" }}>#{ticket.id}</span>
-                            </div>
-                            <div style={{ fontSize: 17, fontWeight: 600 }}>{ticket.subject || "No Subject"}</div>
-                            <div style={{ fontSize: 13, color: "#6b7280" }}>{ticket.body || "No Description"}</div>
-                            <div className="eng-ticket-meta">
-                              <div><div>Department</div><div>{ticket.type}</div></div>
-                              <div><div>Date</div><div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "-"}</div></div>
-                            </div>
-                          </div>
-                          <div style={{ padding: "10px 14px", borderRadius: 14, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>
-                            {getStatusIcon(ticket.status)} {ticket.status}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="eng-ticket-footer">
-                        <button onClick={() => setSelectedTicket(ticket)} style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
-                          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          View
-                        </button>
-
-                        {canPriority && (
-                          <button
-                            onClick={() => handleTogglePriority(ticket)}
-                            disabled={priorityLoading === ticket.id}
-                            style={{ padding: "10px 18px", borderRadius: 18, fontFamily: "inherit", fontSize: 13, fontWeight: 500, cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)", background: isPriority ? "rgba(239,68,68,0.12)" : "rgba(254,242,242,0.85)", color: "#dc2626", opacity: priorityLoading === ticket.id ? 0.6 : 1 }}
-                          >
-                            <svg width="14" height="14" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                            </svg>
-                            {priorityLoading === ticket.id ? "Updating..." : isPriority ? "Unmark Priority" : "Mark Priority"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
+              <div className="eng-ticket-list">
+                {(tickets ?? [])
+                  .slice()
+                  .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
+                  .map(ticket => (
+                    <TicketRow
+                      key={ticket.id}
+                      ticket={ticket}
+                      onView={setSelectedTicket}
+                      onTogglePriority={handleTogglePriority}
+                      priorityLoading={priorityLoading}
+                    />
+                  ))
+                }
+              </div>
             )}
           </div>
         )}
