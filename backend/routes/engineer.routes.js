@@ -317,8 +317,8 @@ engineerRouter.get("/tickets", async(req, res) => {
 });
 
 // GET ticket details with comments
-// FIX: authorId is now included in each comment so the frontend can
-//      determine ownership without mixing up engineer vs admin comments.
+// FIX: technician is now included in the comment include + authorId/authorName
+//      resolution handles admin / engineer / technician roles correctly.
 engineerRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "engineer"){
         return res.status(403).json({ message: "Access denied" });
@@ -331,8 +331,11 @@ engineerRouter.get("/tickets/:id", async(req, res) => {
                 comments: {
                     orderBy: { createdAt: "asc" },
                     include: {
-                        admin: { select: { id: true, username: true } },
-                        engineer: { select: { id: true, username: true, department: true } },
+                        admin:       { select: { id: true, username: true } },
+                        engineer:    { select: { id: true, username: true, department: true } },
+                        // ── FIX: include technician relation so engineer dashboard
+                        //         can display technician comments correctly ──
+                        technician:  { select: { id: true, username: true, department: true } },
                     },
                 },
             },
@@ -344,17 +347,36 @@ engineerRouter.get("/tickets/:id", async(req, res) => {
             return res.status(403).json({ message: "Access denied. This ticket belongs to a different department." });
         }
 
-        const formattedComments = ticket.comments.map(c => ({
-            id: c.id,
-            body: c.body,
-            authorRole: c.authorRole,
-            // ── FIX: expose the numeric ID of whoever wrote this comment ──
-            authorId: c.authorRole === "admin" ? c.admin?.id : c.engineer?.id,
-            authorName: c.admin?.username ?? c.engineer?.username,
-            authorDepartment: c.engineer?.department ?? null,
-            createdAt: c.createdAt,
-            updatedAt: c.updatedAt,
-        }));
+        const formattedComments = ticket.comments.map(c => {
+            // ── FIX: resolve author fields for all three possible roles ──
+            let authorId, authorName, authorDepartment;
+
+            if (c.authorRole === "admin") {
+                authorId         = c.admin?.id;
+                authorName       = c.admin?.username ?? "Admin";
+                authorDepartment = null;
+            } else if (c.authorRole === "technician") {
+                authorId         = c.technician?.id;
+                authorName       = c.technician?.username ?? "Technician";
+                authorDepartment = c.technician?.department ?? null;
+            } else {
+                // engineer
+                authorId         = c.engineer?.id;
+                authorName       = c.engineer?.username ?? "Engineer";
+                authorDepartment = c.engineer?.department ?? null;
+            }
+
+            return {
+                id: c.id,
+                body: c.body,
+                authorRole: c.authorRole,
+                authorId,
+                authorName,
+                authorDepartment,
+                createdAt: c.createdAt,
+                updatedAt: c.updatedAt,
+            };
+        });
 
         res.json({ ticket: { ...ticket, comments: formattedComments } });
     }
@@ -392,14 +414,16 @@ engineerRouter.post("/tickets/:id/comments", async(req, res) => {
                 engineer: { select: { id: true, username: true, department: true } },
             },
         });
-await createCommentNotifications(Number(req.params.id), "engineer", req.user.username, ticket.subject);
+
+        await createCommentNotifications(Number(req.params.id), "engineer", req.user.username, ticket.subject);
+
         res.status(201).json({
             message: "Comment added",
             comment: {
                 id: comment.id,
                 body: comment.body,
                 authorRole: comment.authorRole,
-                authorId: comment.engineer.id,     // ── FIX: include authorId
+                authorId: comment.engineer.id,
                 authorName: comment.engineer.username,
                 authorDepartment: comment.engineer.department,
                 createdAt: comment.createdAt,
@@ -445,7 +469,7 @@ engineerRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res) =
                 id: updated.id,
                 body: updated.body,
                 authorRole: updated.authorRole,
-                authorId: updated.engineer.id,     // ── FIX: include authorId
+                authorId: updated.engineer.id,
                 authorName: updated.engineer.username,
                 authorDepartment: updated.engineer.department,
                 createdAt: updated.createdAt,
@@ -600,6 +624,7 @@ engineerRouter.patch("/notifications/read", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 // PATCH toggle priority on a ticket
 engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
   if (req.user.role !== "engineer")

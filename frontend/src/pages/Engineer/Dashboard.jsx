@@ -254,6 +254,33 @@ const getStatusStyle = (status) => {
   return map[s] || { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" };
 };
 
+// ─── Role style map for comments ─────────────────────────────────────────────
+// FIX: added "technician" entry so technician comments render with their own
+//      colour, label and authorName instead of falling through to "ENGINEER".
+const COMMENT_ROLE_STYLE = {
+  admin: {
+    label: "ADMIN",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,0.07)",
+    border: "rgba(99,102,241,0.15)",
+    tagBg: "rgba(99,102,241,0.12)",
+  },
+  engineer: {
+    label: "ENGINEER",
+    color: "#0ea5e9",
+    bg: "rgba(14,165,233,0.06)",
+    border: "rgba(14,165,233,0.15)",
+    tagBg: "rgba(14,165,233,0.1)",
+  },
+  technician: {
+    label: "TECHNICIAN",
+    color: "#0d9488",
+    bg: "rgba(13,148,136,0.07)",
+    border: "rgba(13,148,136,0.18)",
+    tagBg: "rgba(13,148,136,0.12)",
+  },
+};
+
 // ─── Smart description renderer ──────────────────────────────────────────────
 const renderDescription = (body = "") => {
   const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
@@ -313,9 +340,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   };
 
   useEffect(() => { fetchComments(); }, [ticketId]);
-  useEffect(() => {
-  subscribeToPush();
-}, []);
+  useEffect(() => { subscribeToPush(); }, []);
 
   const handleSubmit = async () => {
     if (!body.trim()) return;
@@ -377,17 +402,20 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
           {comments.map(c => {
-            const isAdmin = c.authorRole === "admin";
+            // FIX: look up the correct style for each role (admin / engineer / technician)
+            const rs = COMMENT_ROLE_STYLE[c.authorRole] ?? COMMENT_ROLE_STYLE.engineer;
+            // FIX: ownership check — engineer can only edit/delete their own engineer comments
             const isOwn = c.authorRole === role && c.authorId === loggedInUserId;
+
             return (
-              <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
+              <div key={c.id} style={{ padding: "13px 15px", borderRadius: 18, background: rs.bg, border: `1px solid ${rs.border}` }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                    {isAdmin ? (
-                      <span style={{ fontSize: 11, fontWeight: 800, color: "#6366f1", background: "rgba(99,102,241,0.12)", padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>ADMIN</span>
-                    ) : (
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#0ea5e9", background: "rgba(14,165,233,0.1)", padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>ENGINEER</span>
-                    )}
+                    {/* FIX: role label now comes from rs.label, not hardcoded */}
+                    <span style={{ fontSize: 11, fontWeight: 800, color: rs.color, background: rs.tagBg, padding: "2px 9px", borderRadius: 20, letterSpacing: "0.04em" }}>
+                      {rs.label}
+                    </span>
+                    {/* FIX: authorName is already correctly resolved by the backend */}
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{c.authorName}</span>
                     {c.authorDepartment && <span style={{ fontSize: 11, color: "#9ca3af" }}>· {c.authorDepartment}</span>}
                   </div>
@@ -456,10 +484,9 @@ const EngineerDashboard = () => {
 
   const [tabCounts, setTabCounts] = useState({ pending: 0, overdue: 0, resolved: 0, closed: 0 });
   const [notifs, setNotifs] = useState([]);
-const [showNotifs, setShowNotifs] = useState(false);
-const [unread, setUnread] = useState(0);
-const [priorityIds, setPriorityIds] = useState([]);
-const [priorityLoading, setPriorityLoading] = useState(null);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const [priorityLoading, setPriorityLoading] = useState(null);
 
   const [notifyingId, setNotifyingId] = useState(null);
   const [notifiedIds, setNotifiedIds] = useState(() => {
@@ -469,47 +496,49 @@ const [priorityLoading, setPriorityLoading] = useState(null);
     } catch { return []; }
   });
 
-useEffect(() => {
-  const fetchEngineerInfo = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials: "include" });
-      const data = await res.json();
-      if (res.ok) {
-        setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
-        setLoggedInUserId(data.user?.id ?? null);
-      }
-    } catch (e) { console.error(e); }
-  };
-  const fetchProfile = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/engineer/profile", { credentials: "include" });
-      const data = await res.json();
-      if (res.ok) setProfile(data.engineer);
-    } catch (e) { console.error(e); }
-  };
-  const fetchAllCounts = async () => {
-    try {
-      const statuses = ["pending", "overdue", "resolved", "closed"];
-      const results = await Promise.all(statuses.map(s => fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())));
-      setTabCounts({ pending: results[0].tickets?.length || 0, overdue: results[1].tickets?.length || 0, resolved: results[2].tickets?.length || 0, closed: results[3].tickets?.length || 0 });
-    } catch (e) { console.error(e); }
-  };
-  const fetchNotifs = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/engineer/notifications", { credentials: "include" });
-      const data = await res.json();
-      if (res.ok) {
-        setNotifs(data.notifications);
-        setUnread(data.notifications.filter(n => !n.isRead).length);
-      }
-    } catch(e) { console.error(e); }
-  };
-  fetchEngineerInfo();
-  fetchProfile();
-  fetchAllCounts();
-  fetchNotifs();
-  subscribeToPush();
-}, []);
+  useEffect(() => {
+    const fetchEngineerInfo = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/engineer/dashboard", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          setEngineerInfo({ username: data.user?.username || "Engineer", department: data.user?.department || "" });
+          setLoggedInUserId(data.user?.id ?? null);
+        }
+      } catch (e) { console.error(e); }
+    };
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/engineer/profile", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) setProfile(data.engineer);
+      } catch (e) { console.error(e); }
+    };
+    const fetchAllCounts = async () => {
+      try {
+        const statuses = ["pending", "overdue", "resolved", "closed"];
+        const results = await Promise.all(statuses.map(s =>
+          fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())
+        ));
+        setTabCounts({ pending: results[0].tickets?.length || 0, overdue: results[1].tickets?.length || 0, resolved: results[2].tickets?.length || 0, closed: results[3].tickets?.length || 0 });
+      } catch (e) { console.error(e); }
+    };
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/engineer/notifications", { credentials: "include" });
+        const data = await res.json();
+        if (res.ok) {
+          setNotifs(data.notifications);
+          setUnread(data.notifications.filter(n => !n.isRead).length);
+        }
+      } catch(e) { console.error(e); }
+    };
+    fetchEngineerInfo();
+    fetchProfile();
+    fetchAllCounts();
+    fetchNotifs();
+    subscribeToPush();
+  }, []);
 
   const fetchTechnicians = async () => {
     try {
@@ -564,20 +593,21 @@ useEffect(() => {
     } catch (e) { console.error(e); CustomToast("Server error while notifying"); }
     finally { setNotifyingId(null); }
   };
+
   const handleTogglePriority = async (ticket) => {
-  setPriorityLoading(ticket.id);
-  try {
-    const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/priority`, {
-      method: "PATCH", credentials: "include"
-    });
-    const data = await res.json();
-    if (!res.ok) { CustomToast(data.message); return; }
-    setTickets(prev => prev.map(t =>
-      t.id === ticket.id ? { ...t, isPriority: data.isPriority } : t
-    ));
-  } catch (e) { console.error(e); CustomToast("Server error"); }
-  finally { setPriorityLoading(null); }
-};
+    setPriorityLoading(ticket.id);
+    try {
+      const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/priority`, {
+        method: "PATCH", credentials: "include"
+      });
+      const data = await res.json();
+      if (!res.ok) { CustomToast(data.message); return; }
+      setTickets(prev => prev.map(t =>
+        t.id === ticket.id ? { ...t, isPriority: data.isPriority } : t
+      ));
+    } catch (e) { console.error(e); CustomToast("Server error"); }
+    finally { setPriorityLoading(null); }
+  };
 
   const handleLogout = async () => {
     await unsubscribeFromPush();
@@ -618,7 +648,17 @@ useEffect(() => {
   const pwStrengthColors = ["#334155", "#475569", "#eab308", "#10b981"];
   const pwStrengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
 
-  const tabBadgeStyle = (tabKey, isActive) => { const colorMap = { pending: { color: "#d97706", bg: "rgba(254,243,199,0.9)" }, overdue: { color: "#dc2626", bg: "rgba(254,226,226,0.9)" }, resolved: { color: "#16a34a", bg: "rgba(220,252,231,0.9)" }, closed: { color: "#6b7280", bg: "rgba(243,244,246,0.9)" }, technicians: { color: "#6366f1", bg: "rgba(224,231,255,0.9)" } }; if (isActive) return { color: "rgba(255,255,255,0.95)", bg: "rgba(255,255,255,0.25)" }; return colorMap[tabKey] || { color: "#6b7280", bg: "rgba(243,244,246,0.9)" }; };
+  const tabBadgeStyle = (tabKey, isActive) => {
+    const colorMap = {
+      pending: { color: "#d97706", bg: "rgba(254,243,199,0.9)" },
+      overdue: { color: "#dc2626", bg: "rgba(254,226,226,0.9)" },
+      resolved: { color: "#16a34a", bg: "rgba(220,252,231,0.9)" },
+      closed: { color: "#6b7280", bg: "rgba(243,244,246,0.9)" },
+      technicians: { color: "#6366f1", bg: "rgba(224,231,255,0.9)" }
+    };
+    if (isActive) return { color: "rgba(255,255,255,0.95)", bg: "rgba(255,255,255,0.25)" };
+    return colorMap[tabKey] || { color: "#6b7280", bg: "rgba(243,244,246,0.9)" };
+  };
 
   const tabs = [
     { key: "pending", label: "Pending", count: tabCounts.pending },
@@ -630,7 +670,6 @@ useEffect(() => {
 
   return (
     <div style={{ minHeight: "100vh", background: "#eef2ff", fontFamily: "'Inter','Segoe UI',sans-serif", color: "#111827", position: "relative", overflowX: "hidden" }}>
-      {/* Inject responsive CSS */}
       <style>{RESPONSIVE_CSS}</style>
 
       <div style={{ position: "fixed", width: 560, height: 560, borderRadius: "50%", background: "#6366f1", filter: "blur(130px)", opacity: 0.45, top: -130, left: -130, pointerEvents: "none", zIndex: 0 }} />
@@ -652,32 +691,32 @@ useEffect(() => {
               </div>
             </div>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-  <button
-    onClick={async () => {
-      setShowNotifs(true);
-      if (unread > 0) {
-        await fetch("http://localhost:3000/api/engineer/notifications/read", { method:"PATCH", credentials:"include" });
-        setUnread(0);
-        setNotifs(p => p.map(n => ({ ...n, isRead: true })));
-      }
-    }}
-    style={{ position:"relative", width:38, height:38, borderRadius:"50%", border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#6366f1", flexShrink:0 }}
-  >
-    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-    {unread > 0 && (
-      <span style={{ position:"absolute", top:2, right:2, width:16, height:16, borderRadius:"50%", background:"#ef4444", color:"white", fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        {unread > 9 ? "9+" : unread}
-      </span>
-    )}
-  </button>
-  <button className="eng-logout-btn" onClick={handleLogout}>
-    <span>Logout</span>
-    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-  </button>
-</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={async () => {
+                setShowNotifs(true);
+                if (unread > 0) {
+                  await fetch("http://localhost:3000/api/engineer/notifications/read", { method: "PATCH", credentials: "include" });
+                  setUnread(0);
+                  setNotifs(p => p.map(n => ({ ...n, isRead: true })));
+                }
+              }}
+              style={{ position: "relative", width: 38, height: 38, borderRadius: "50%", border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.85)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#6366f1", flexShrink: 0 }}
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              {unread > 0 && (
+                <span style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "#ef4444", color: "white", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              )}
+            </button>
+            <button className="eng-logout-btn" onClick={handleLogout}>
+              <span>Logout</span>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -709,132 +748,71 @@ useEffect(() => {
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>There are no {activeTab.replace("-", " ")} tickets at the moment.</div>
               </div>
             ) : (
-  (tickets ?? [])
-    .slice()
-    .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
-    .map(ticket => {
-      const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
-      const ss = getStatusStyle(statusKey);
-      const isPriority = ticket.isPriority;
-      const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
+              (tickets ?? [])
+                .slice()
+                .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
+                .map(ticket => {
+                  const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
+                  const ss = getStatusStyle(statusKey);
+                  const isPriority = ticket.isPriority;
+                  const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
 
-      return (
-        <div
-          key={ticket.id}
-          style={{
-            ...glassCard,
-            marginBottom: 16,
-            outline: isPriority ? "2px solid rgba(239,68,68,0.4)" : "none"
-          }}
-        >
-          {isPriority && (
-            <div
-              style={{
-                padding: "6px 14px",
-                borderBottom: "1px solid rgba(239,68,68,0.1)",
-                background: "rgba(254,242,242,0.7)",
-                borderRadius: "28px 28px 0 0",
-                display: "flex",
-                alignItems: "center",
-                gap: 6
-              }}
-            >
-              <svg width="13" height="13" fill="#dc2626" viewBox="0 0 24 24">
-                <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>
-                PRIORITY TICKET
-              </span>
-            </div>
-          )}
+                  return (
+                    <div key={ticket.id} style={{ ...glassCard, marginBottom: 16, outline: isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
+                      {isPriority && (
+                        <div style={{ padding: "6px 14px", borderBottom: "1px solid rgba(239,68,68,0.1)", background: "rgba(254,242,242,0.7)", borderRadius: "28px 28px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width="13" height="13" fill="#dc2626" viewBox="0 0 24 24">
+                            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626" }}>PRIORITY TICKET</span>
+                        </div>
+                      )}
 
-          <div className="eng-ticket-body">
-            <div className="eng-ticket-header">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <div style={{
-                    width: 42, height: 42, borderRadius: 12,
-                    background: "linear-gradient(135deg,#6366f1,#0ea5e9)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "white"
-                  }}>
-                    {getStatusIcon(ticket.status)}
-                  </div>
-                  <span style={{ fontSize: 11, color: "#9ca3af" }}>
-                    #{ticket.id}
-                  </span>
-                </div>
+                      <div className="eng-ticket-body">
+                        <div className="eng-ticket-header">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                              <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+                                {getStatusIcon(ticket.status)}
+                              </div>
+                              <span style={{ fontSize: 11, color: "#9ca3af" }}>#{ticket.id}</span>
+                            </div>
+                            <div style={{ fontSize: 17, fontWeight: 600 }}>{ticket.subject || "No Subject"}</div>
+                            <div style={{ fontSize: 13, color: "#6b7280" }}>{ticket.body || "No Description"}</div>
+                            <div className="eng-ticket-meta">
+                              <div><div>Department</div><div>{ticket.type}</div></div>
+                              <div><div>Date</div><div>{ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString() : "-"}</div></div>
+                            </div>
+                          </div>
+                          <div style={{ padding: "10px 14px", borderRadius: 14, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>
+                            {getStatusIcon(ticket.status)} {ticket.status}
+                          </div>
+                        </div>
+                      </div>
 
-                <div style={{ fontSize: 17, fontWeight: 600 }}>
-                  {ticket.subject || "No Subject"}
-                </div>
+                      <div className="eng-ticket-footer">
+                        <button onClick={() => setSelectedTicket(ticket)} style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
+                          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          View
+                        </button>
 
-                <div style={{ fontSize: 13, color: "#6b7280" }}>
-                  {ticket.body || "No Description"}
-                </div>
-
-                <div className="eng-ticket-meta">
-                  <div>
-                    <div>Department</div>
-                    <div>{ticket.type}</div>
-                  </div>
-                  <div>
-                    <div>Date</div>
-                    <div>
-                      {ticket.createdAt
-                        ? new Date(ticket.createdAt).toLocaleDateString()
-                        : "-"}
+                        {canPriority && (
+                          <button
+                            onClick={() => handleTogglePriority(ticket)}
+                            disabled={priorityLoading === ticket.id}
+                            style={{ padding: "10px 18px", borderRadius: 18, fontFamily: "inherit", fontSize: 13, fontWeight: 500, cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 7, border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)", background: isPriority ? "rgba(239,68,68,0.12)" : "rgba(254,242,242,0.85)", color: "#dc2626", opacity: priorityLoading === ticket.id ? 0.6 : 1 }}
+                          >
+                            <svg width="14" height="14" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                            {priorityLoading === ticket.id ? "Updating..." : isPriority ? "Unmark Priority" : "Mark Priority"}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                padding: "10px 14px",
-                borderRadius: 14,
-                color: ss.color,
-                background: ss.bg,
-                border: `1px solid ${ss.border}`
-              }}>
-                {getStatusIcon(ticket.status)} {ticket.status}
-              </div>
-            </div>
-          </div>
-
-          <div className="eng-ticket-footer">
-  <button
-    onClick={() => setSelectedTicket(ticket)}
-    style={{ padding: "10px 18px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}
-  >
-    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-    View
-  </button>
-
-  {canPriority && (
-    <button
-      onClick={() => handleTogglePriority(ticket)}
-      disabled={priorityLoading === ticket.id}
-      style={{
-        padding: "10px 18px", borderRadius: 18, fontFamily: "inherit", fontSize: 13, fontWeight: 500,
-        cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
-        display: "flex", alignItems: "center", gap: 7,
-        border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)",
-        background: isPriority ? "rgba(239,68,68,0.12)" : "rgba(254,242,242,0.85)",
-        color: "#dc2626",
-        opacity: priorityLoading === ticket.id ? 0.6 : 1,
-      }}
-    >
-      <svg width="14" height="14" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-      </svg>
-      {priorityLoading === ticket.id ? "Updating..." : isPriority ? "Unmark Priority" : "Mark Priority"}
-    </button>
-  )}
-</div>
-        </div>
-      );
-    })
-)}
+                  );
+                })
+            )}
           </div>
         )}
 
@@ -1006,33 +984,35 @@ useEffect(() => {
           ))}
         </GlassModal>
       )}
-{showNotifs && (
-  <div onClick={() => setShowNotifs(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
-    <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"80vh", display:"flex", flexDirection:"column" }}>
-      <div style={{ padding:"22px 28px", background:"linear-gradient(135deg,#4f69e7,#5a71e4)", position:"relative", flexShrink:0 }}>
-        <div style={{ fontSize:18, fontWeight:600, color:"white" }}>Notifications</div>
-        {/* <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Overdue ticket alerts</div> */}
-        <button onClick={() => setShowNotifs(false)} style={{ position:"absolute", top:14, right:14, width:32, height:32, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={14} /></button>
-      </div>
-      <div style={{ padding:"20px 24px", overflowY:"auto", flex:1 }}>
-        {notifs.length === 0 ? (
-          <div style={{ textAlign:"center", padding:"40px 0", color:"#9ca3af", fontSize:13 }}>No notifications yet</div>
-        ) : notifs.map(n => (
-          <div key={n.id} style={{ padding:"12px 14px", borderRadius:14, background:n.isRead?"rgba(0,0,0,0.02)":"rgba(239,68,68,0.06)", border:n.isRead?"1px solid rgba(0,0,0,0.06)":"1px solid rgba(239,68,68,0.18)", marginBottom:8, display:"flex", gap:10, alignItems:"flex-start" }}>
-            <div style={{ width:32, height:32, borderRadius:9, background:n.isRead?"rgba(0,0,0,0.05)":"rgba(239,68,68,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:n.isRead?"#9ca3af":"#dc2626" }}>
-              <AlertTriangle size={14} />
+
+      {/* NOTIFICATIONS MODAL */}
+      {showNotifs && (
+        <div onClick={() => setShowNotifs(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 500, borderRadius: 32, overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.18)", background: "rgba(255,255,255,0.97)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#4f69e7,#5a71e4)", position: "relative", flexShrink: 0 }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: "white" }}>Notifications</div>
+              <button onClick={() => setShowNotifs(false)} style={{ position: "absolute", top: 14, right: 14, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={14} /></button>
             </div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:n.isRead?400:600, color:"#111827", lineHeight:1.5 }}>{n.message}</div>
-              <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>{new Date(n.createdAt).toLocaleString()}</div>
+            <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+              {notifs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#9ca3af", fontSize: 13 }}>No notifications yet</div>
+              ) : notifs.map(n => (
+                <div key={n.id} style={{ padding: "12px 14px", borderRadius: 14, background: n.isRead ? "rgba(0,0,0,0.02)" : "rgba(239,68,68,0.06)", border: n.isRead ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(239,68,68,0.18)", marginBottom: 8, display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 9, background: n.isRead ? "rgba(0,0,0,0.05)" : "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: n.isRead ? "#9ca3af" : "#dc2626" }}>
+                    <AlertTriangle size={14} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: n.isRead ? 400 : 600, color: "#111827", lineHeight: 1.5 }}>{n.message}</div>
+                    <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 3 }}>{new Date(n.createdAt).toLocaleString()}</div>
+                  </div>
+                  {!n.isRead && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#ef4444", flexShrink: 0, marginTop: 4 }} />}
+                </div>
+              ))}
             </div>
-            {!n.isRead && <span style={{ width:7, height:7, borderRadius:"50%", background:"#ef4444", flexShrink:0, marginTop:4 }} />}
           </div>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
+        </div>
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
