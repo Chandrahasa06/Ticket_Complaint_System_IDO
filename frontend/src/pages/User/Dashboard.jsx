@@ -961,7 +961,7 @@ const UserDashboard = () => {
               <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 16, background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)", display: "flex", alignItems: "center", gap: 10 }}>
                 <svg width="16" height="16" fill="none" stroke="#b45309" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div style={{ fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>
-                  This will <strong>reopen ticket #{followupTicket.id}</strong> and set it back to <strong>Pending</strong>. Your original complaint will be preserved in the description.
+                  This will <strong>reopen ticket #{followupTicket.id}</strong> and update the complaint description.
                 </div>
               </div>
 
