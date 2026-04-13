@@ -404,7 +404,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
 
                 {editingId === c.id ? (
                   <div>
-                    <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={2} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(99,102,241,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                    <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={1} style={{ width: "100%", padding: "10px 12px", borderRadius: 12, border: "1.5px solid rgba(99,102,241,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
                     <div style={{ display: "flex", gap: 8, marginTop: 7 }}>
                       <button onClick={() => { setEditingId(null); setEditBody(""); }} style={{ padding: "7px 14px", borderRadius: 12, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 12, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Cancel</button>
                       <button onClick={() => handleEdit(c.id)} disabled={editSubmitting || !editBody.trim()} style={{ padding: "7px 16px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 12, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", opacity: editSubmitting || !editBody.trim() ? 0.6 : 1 }}>{editSubmitting ? "Saving..." : "Save"}</button>

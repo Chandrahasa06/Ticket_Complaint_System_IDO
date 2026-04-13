@@ -473,7 +473,7 @@ const Comments = ({ ticketId, role, uid }) => {
                   </div>
                   {eid === c.id ? (
                     <div>
-                      <textarea value={eb} onChange={e => setEb(e.target.value)} rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 9, border: "1.5px solid rgba(13,148,136,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 12, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+                      <textarea value={eb} onChange={e => setEb(e.target.value)} rows={1} style={{ width: "100%", padding: "8px 10px", borderRadius: 9, border: "1.5px solid rgba(13,148,136,0.3)", background: "rgba(255,255,255,0.9)", fontSize: 12, fontFamily: "inherit", color: "#111827", outline: "none", resize: "vertical", boxSizing: "border-box" }} />
                       <div style={{ display: "flex", gap: 6, marginTop: 5 }}>
                         <button onClick={() => { setEid(null); setEb(""); }} style={{ padding: "5px 11px", borderRadius: 9, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", fontSize: 11, fontWeight: 500, fontFamily: "inherit", color: "#374151", cursor: "pointer" }}>Cancel</button>
                         <button onClick={() => patch(c.id)} disabled={esub || !eb.trim()} style={{ padding: "5px 13px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#0d9488,#0ea5e9)", color: "white", fontSize: 11, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", opacity: esub || !eb.trim() ? 0.6 : 1 }}>{esub ? "Saving…" : "Save"}</button>
@@ -487,7 +487,7 @@ const Comments = ({ ticketId, role, uid }) => {
           </div>
         )}
       <div className="td-cc">
-        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment…" rows={2}
+        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment…" rows={1}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); post(); } }} />
         <button className="td-cc-send" onClick={post} disabled={sub || !body.trim()}>
           <Send size={13} />{sub ? "…" : "Send"}
