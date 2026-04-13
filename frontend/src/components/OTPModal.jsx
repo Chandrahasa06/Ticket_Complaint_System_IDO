@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import CustomToast from "./CustomToast";
 
 const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -32,7 +33,7 @@ const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess 
     const finalOtp = otp.join("");
 
     if (finalOtp.length !== 6) {
-      alert("Enter complete OTP");
+      CustomToast("Enter complete OTP");
       return;
     }
 
@@ -53,7 +54,7 @@ const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "OTP Verification Failed");
+        CustomToast(data.message || "OTP Verification Failed");
         return;
       }
 
@@ -64,7 +65,7 @@ const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess 
       });
       const data2 = await res2.json();
       if (!res2.ok) { 
-        alert(data2.message || "Registration Failed"); 
+        CustomToast(data2.message || "Registration Failed"); 
         return; 
       }
 
@@ -73,7 +74,7 @@ const OTPModal = ({ isOpen, email, username, password,phone, onClose, onSuccess 
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     } finally {
       setLoading(false);
     }

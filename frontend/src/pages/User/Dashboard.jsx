@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { unsubscribeFromPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
 
 const glassCard = {
   borderRadius: 28,
@@ -118,12 +119,12 @@ const UserDashboard = () => {
       const res = await fetch(url, { credentials: "include" });
       const text = await res.text();
       let data;
-      try { data = JSON.parse(text); } catch { alert("Invalid server response while fetching tickets."); return; }
-      if (!res.ok) { alert(data.message); return; }
+      try { data = JSON.parse(text); } catch { CustomToast("Invalid server response while fetching tickets."); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setTickets(data.tickets);
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     } finally {
       setLoading(false);
     }
@@ -135,12 +136,12 @@ const UserDashboard = () => {
       const res = await fetch(`http://localhost:3000/api/user/tickets/${id}`, { credentials: "include" });
       const text = await res.text();
       let data;
-      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
-      if (!res.ok) { alert(data.message); return; }
+      try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setPrevTicket(data.ticket);
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     } finally {
       setPrevTicketLoading(false);
     }
@@ -152,10 +153,10 @@ const UserDashboard = () => {
 
   const handleSubmitTicket = async () => {
     if (!formData.title || !formData.department || !formData.description || !formData.area || !formData.location) {
-      alert("All fields are required!"); return;
+      CustomToast("All fields are required!"); return;
     }
     if (!ticketPhone || ticketPhone.length < 10) {
-      alert("Please enter a valid 10-digit mobile number!"); return;
+      CustomToast("Please enter a valid 10-digit mobile number!"); return;
     }
     try {
       const fd = new FormData();
@@ -170,15 +171,15 @@ const UserDashboard = () => {
       const res = await fetch("http://localhost:3000/api/user/raise", { method: "POST", credentials: "include", body: fd });
       const text = await res.text();
       let data;
-      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
-      if (!res.ok) { alert(data.message); return; }
-      alert("Ticket raised successfully!");
+      try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
+      CustomToast("Ticket raised successfully!");
       setFormData({ title: "", department: "", description: "", area: "", location: "" });
       setSelectedImage(null);
       setImagePreview(null);
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     }
   };
 
@@ -188,14 +189,14 @@ const UserDashboard = () => {
       const res = await fetch(`http://localhost:3000/api/user/tickets/${id}/cancel`, { method: "DELETE", credentials: "include" });
       const text = await res.text();
       let data;
-      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
-      if (!res.ok) { alert(data.message); return; }
-      alert("Ticket cancelled successfully!");
+      try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
+      CustomToast("Ticket cancelled successfully!");
       closeModal();
       fetchTickets("PENDING");
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     }
   };
 
@@ -209,19 +210,19 @@ const UserDashboard = () => {
       let data;
       try { data = JSON.parse(text); } catch {
         console.error("Non-JSON response from /satisfied endpoint:", text);
-        alert("Server error: unexpected response. Check that the /satisfied route exists on your backend.");
+        CustomToast("Server error: unexpected response. Check that the /satisfied route exists on your backend.");
         return;
       }
-      if (!res.ok) { alert(data.message); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setTickets(prev => prev.map(t => t.id === ticketId ? { ...t, satisfied: true } : t));
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     }
   };
 
   const handleSubmitFollowup = async () => {
-    if (!followupForm.title || !followupForm.description) { alert("All fields are required!"); return; }
+    if (!followupForm.title || !followupForm.description) { CustomToast("All fields are required!"); return; }
     try {
       const response = await fetch(`http://localhost:3000/api/user/followup/${followupTicket.id}`, {
         method: "PATCH",
@@ -234,15 +235,15 @@ const UserDashboard = () => {
       });
       const text = await response.text();
       let data;
-      try { data = JSON.parse(text); } catch { alert("Invalid server response."); return; }
-      if (!response.ok) { alert(data.message); return; }
-      alert("Follow-up submitted! Ticket has been reopened.");
+      try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
+      if (!response.ok) { CustomToast(data.message); return; }
+      CustomToast("Follow-up submitted! Ticket has been reopened.");
       setFollowupTicket(null);
       setFollowupForm({ title: "", description: "" });
       fetchTickets("RESOLVED");
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     }
   };
 
