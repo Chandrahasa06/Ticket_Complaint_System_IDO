@@ -5,6 +5,7 @@ import App from './App';
 import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import reportWebVitals from './reportWebVitals';
+import { ToastContainer } from 'react-toastify';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -24,6 +25,7 @@ root.render(
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <App />
+        <ToastContainer />
       </BrowserRouter>
     </GoogleOAuthProvider>
   </React.StrictMode>

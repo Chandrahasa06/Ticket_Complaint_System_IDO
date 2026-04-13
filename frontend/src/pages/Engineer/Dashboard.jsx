@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Activity, Clock, AlertTriangle, CheckCircle, KeyRound, EyeOff, Eye, Mail, Send, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
 
 /* ─── Responsive style injection ─────────────────────────────────────────── */
 const RESPONSIVE_CSS = `
@@ -525,9 +526,9 @@ useEffect(() => {
       if (status && status !== "technicians") url += `&status=${status.toUpperCase().replace("-", "_")}`;
       const res = await fetch(url, { credentials: "include" });
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setTickets(data.tickets);
-    } catch (e) { console.error(e); alert("Server error"); }
+    } catch (e) { console.error(e); CustomToast("Server error"); }
     finally { setLoading(false); }
   };
 
@@ -553,14 +554,14 @@ useEffect(() => {
     try {
       const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/notify-technician`, { method: "POST", credentials: "include" });
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setNotifiedIds(prev => {
         const updated = [...prev, ticket.id];
         localStorage.setItem("notifiedTicketIds", JSON.stringify(updated));
         return updated;
       });
-      alert(`✅ ${data.message}`);
-    } catch (e) { console.error(e); alert("Server error while notifying"); }
+      CustomToast(`${data.message}`);
+    } catch (e) { console.error(e); CustomToast("Server error while notifying"); }
     finally { setNotifyingId(null); }
   };
   const handleTogglePriority = async (ticket) => {
@@ -570,11 +571,11 @@ useEffect(() => {
       method: "PATCH", credentials: "include"
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.message); return; }
+    if (!res.ok) { CustomToast(data.message); return; }
     setTickets(prev => prev.map(t =>
       t.id === ticket.id ? { ...t, isPriority: data.isPriority } : t
     ));
-  } catch (e) { console.error(e); alert("Server error"); }
+  } catch (e) { console.error(e); CustomToast("Server error"); }
   finally { setPriorityLoading(null); }
 };
 

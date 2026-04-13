@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import CustomToast from "./CustomToast";
 
 const STEP = { EMAIL: 1, OTP: 2, PASSWORD: 3, SUCCESS: 4 };
 
@@ -31,9 +32,9 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   // ── Step 1: send OTP ──────────────────────────────────────────
   const handleSendOtp = async () => {
     if (loading) return;
-    if (!email) { alert("Please enter your email"); return; }
+    if (!email) { CustomToast("Please enter your email"); return; }
     if (!email.endsWith("@iiti.ac.in")) {
-      alert("Only @iiti.ac.in email addresses are allowed!");
+      CustomToast("Only @iiti.ac.in email addresses are allowed!");
       return;
     }
     try {
@@ -44,10 +45,10 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+      if (!res.ok) { CustomToast(data.message); return; }
       setStep(STEP.OTP);
     } catch (e) {
-      console.error(e); alert("Server error");
+      console.error(e); CustomToast("Server error");
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   const handleVerifyOtp = async () => {
     if (loading) return;
     const finalOtp = otp.join("");
-    if (finalOtp.length !== 6) { alert("Enter complete OTP"); return; }
+    if (finalOtp.length !== 6) { CustomToast("Enter complete OTP"); return; }
     try {
       setLoading(true);
       const res  = await fetch("http://localhost:3000/api/user/verify-otp", {
@@ -79,10 +80,10 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
         body: JSON.stringify({ email, otp: finalOtp }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Invalid OTP"); return; }
+      if (!res.ok) { CustomToast(data.message || "Invalid OTP"); return; }
       setStep(STEP.PASSWORD);
     } catch (e) {
-      console.error(e); alert("Server error");
+      console.error(e); CustomToast("Server error");
     } finally {
       setLoading(false);
     }
@@ -91,9 +92,9 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
   // ── Step 3: reset password ────────────────────────────────────
   const handleResetPassword = async () => {
   if (loading) return;
-  if (!newPassword || !confirmPassword) { alert("All fields are required"); return; }
-  if (newPassword.length < 6) { alert("Password must be at least 6 characters"); return; }
-  if (newPassword !== confirmPassword) { alert("Passwords do not match"); return; }
+  if (!newPassword || !confirmPassword) { CustomToast("All fields are required"); return; }
+  if (newPassword.length < 6) { CustomToast("Password must be at least 6 characters"); return; }
+  if (newPassword !== confirmPassword) { CustomToast("Passwords do not match"); return; }
   try {
     setLoading(true);
     const res = await fetch("http://localhost:3000/api/user/forgot-password/reset", {
@@ -102,10 +103,10 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
       body: JSON.stringify({ email, newPassword }),  // ← removed otp
     });
     const data = await res.json();
-    if (!res.ok) { alert(data.message); return; }
+    if (!res.ok) { CustomToast(data.message); return; }
     setStep(STEP.SUCCESS);
   } catch (e) {
-    console.error(e); alert("Server error");
+    console.error(e); CustomToast("Server error");
   } finally {
     setLoading(false);
   }

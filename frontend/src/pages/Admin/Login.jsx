@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
  
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const AdminLogin = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Google login failed");
+        CustomToast(data.message || "Google login failed");
         return;
       }
 
@@ -45,7 +46,7 @@ const AdminLogin = () => {
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);
-      alert("Google login failed");
+      CustomToast("Google login failed");
     }
   };
 
@@ -56,7 +57,7 @@ const AdminLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      if (!email || !password) { alert("All fields are required!"); return; }
+      if (!email || !password) { CustomToast("All fields are required!"); return; }
       const res = await fetch("http://localhost:3000/api/admin/login", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -66,29 +67,29 @@ const AdminLogin = () => {
       if (!res.ok) {        if (data.useGoogle) {
           triggerGoogleLogin();
           return;
-        } alert(data.message || "Invalid credentials"); return; }
+        } CustomToast(data.message || "Invalid credentials"); return; }
          localStorage.setItem("username", data.username);
       localStorage.setItem("email", data.email);
       subscribeToPush();
       navigate("/admin/dashboard");
-    } catch (err) { console.error(err); alert("Server error"); }
+    } catch (err) { console.error(err); CustomToast("Server error"); }
   };
  
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      if (!regUsername || !regEmail || !regPassword) { alert("All fields are required!"); return; }
+      if (!regUsername || !regEmail || !regPassword) { CustomToast("All fields are required!"); return; }
       const res = await fetch("http://localhost:3000/api/admin/register", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: regUsername, email: regEmail, password: regPassword }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Registration failed"); return; }
-      alert("Admin registered successfully! Please login.");
+      if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
+      CustomToast("Admin registered successfully! Please login.");
       setMode("login");
       setRegUsername(""); setRegEmail(""); setRegPassword("");
-    } catch (err) { console.error(err); alert("Server error"); }
+    } catch (err) { console.error(err); CustomToast("Server error"); }
   };
  
   const inputStyle = (focused) => ({
@@ -171,7 +172,7 @@ const AdminLogin = () => {
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => {
-                    alert("Google Sign In Failed");
+                    CustomToast("Google Sign In Failed");
                   }}
                   hosted_domain="iiti.ac.in"
                   width="100%"

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download, Send, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
 
 /* ─── Responsive style injection ─────────────────────────────────────────── */
 const RESPONSIVE_CSS = `
@@ -356,7 +357,7 @@ const loadXLSX = () => {
 };
 
 const exportTickets = async (tickets, format, tabLabel) => {
-  if (!tickets || tickets.length === 0) { alert("No tickets to export."); return; }
+  if (!tickets || tickets.length === 0) { CustomToast("No tickets to export."); return; }
   if (format === "excel") {
     try {
       const XLSX = await loadXLSX();
@@ -374,7 +375,7 @@ const exportTickets = async (tickets, format, tabLabel) => {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, tabLabel.slice(0, 31));
       XLSX.writeFile(wb, `tickets_${tabLabel}_${Date.now()}.xlsx`);
-    } catch (e) { console.error(e); alert("Excel export failed."); }
+    } catch (e) { console.error(e); CustomToast("Excel export failed."); }
     return;
   }
   if (format === "pdf") {
@@ -794,9 +795,9 @@ const AdminDashboard = () => {
 
   const handleAddPeople = async (e) => {
     e.preventDefault();
-    if (!addForm.username||!addForm.email||!addForm.password) { alert("All fields are required!"); return; }
-    if ((addRole==="engineer"||addRole==="technician")&&!addForm.department) { alert("Please select a department!"); return; }
-    if (addRole==="technician"&&addForm.area.length===0) { alert("Please select at least one area!"); return; }
+    if (!addForm.username||!addForm.email||!addForm.password) { CustomToast("All fields are required!"); return; }
+    if ((addRole==="engineer"||addRole==="technician")&&!addForm.department) { CustomToast("Please select a department!"); return; }
+    if (addRole==="technician"&&addForm.area.length===0) { CustomToast("Please select at least one area!"); return; }
     setAddLoading(true);
     try {
       const body = { username: addForm.username, email: addForm.email, password: addForm.password};
@@ -808,11 +809,11 @@ const AdminDashboard = () => {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.message || "Registration failed"); return; }
-      alert(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`);
+      if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
+      CustomToast(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`);
       setAddForm({ username:"", email:"", password:"", department:"", area:[] });
       setShowAddPeople(false);
-    } catch(err) { console.error(err); alert("Server error"); }
+    } catch(err) { console.error(err); CustomToast("Server error"); }
     finally { setAddLoading(false); }
   };
 
@@ -836,11 +837,11 @@ const AdminDashboard = () => {
     try {
       const res = await fetch(`http://localhost:3000/api/admin/${deleteConfirm.role}/${deleteConfirm.id}`, { method:"DELETE", credentials:"include" });
       const data = await res.json();
-      if(!res.ok) { alert(data.message); return; }
+      if(!res.ok) { CustomToast(data.message); return; }
       if(deleteConfirm.role==="engineer") setEngineers(prev=>prev.filter(e=>e.id!==deleteConfirm.id));
       else setTechnicians(prev=>prev.filter(t=>t.id!==deleteConfirm.id));
       setDeleteConfirm(null);
-    } catch(e) { console.error(e); alert("Server error"); }
+    } catch(e) { console.error(e); CustomToast("Server error"); }
   };
 
   const handleEditArea = async () => {
@@ -867,7 +868,7 @@ const AdminDashboard = () => {
         ]);
         const pendingData = await pendingRes.json();
         const overdueData = await overdueRes.json();
-        if(!pendingRes.ok) { alert(pendingData.message); return; }
+        if(!pendingRes.ok) { CustomToast(pendingData.message); return; }
         setTickets(pendingData.tickets||[]);
         setTotalTickets(pendingData.pagination?.totalTickets||0);
         setOverdueTickets(overdueData.tickets||[]);
@@ -876,12 +877,12 @@ const AdminDashboard = () => {
         if(status&&status!=="overview") url+=`&status=${status.toUpperCase().replace("-","_")}`;
         const res=await fetch(url, { credentials:"include" });
         const data=await res.json();
-        if(!res.ok) { alert(data.message); return; }
+        if(!res.ok) { CustomToast(data.message); return; }
         setTickets(data.tickets);
         setOverdueTickets([]);
         setTotalTickets(data.pagination.totalTickets);
       }
-    } catch(e) { console.error(e); alert("Server error"); }
+    } catch(e) { console.error(e); CustomToast("Server error"); }
     finally { setLoading(false); }
   };
 

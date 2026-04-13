@@ -2,7 +2,8 @@ import React, { useRef, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush } from '../../utils/pushNotifications';
- 
+import CustomToast from "../../components/CustomToast";
+
 const EngineerLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -27,7 +28,7 @@ const EngineerLogin = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Google login failed");
+        CustomToast(data.message || "Google login failed");
         return;
       }
 
@@ -37,7 +38,7 @@ const EngineerLogin = () => {
       navigate("/engineer/dashboard");
     } catch (err) {
       console.error(err);
-      alert("Google login failed");
+      CustomToast("Google login failed");
     }
   };
 
@@ -48,7 +49,7 @@ const EngineerLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      if (!email || !password) { alert("All fields are required!"); return; }
+      if (!email || !password) { CustomToast("All fields are required!"); return; }
       const res = await fetch("http://localhost:3000/api/engineer/login", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -58,12 +59,12 @@ const EngineerLogin = () => {
       if (!res.ok) {         if (data.useGoogle) {
           triggerGoogleLogin();
           return;
-        }alert(data.message || "Invalid credentials"); return; }
+        }CustomToast(data.message || "Invalid credentials"); return; }
          localStorage.setItem("username", data.username);
       localStorage.setItem("email", data.email);
       subscribeToPush();
       navigate("/engineer/dashboard");
-    } catch (err) { console.error(err); alert("Server error"); }
+    } catch (err) { console.error(err); CustomToast("Server error"); }
   };
  
   const focus = (key) => setIsFocused(prev => ({ ...prev, [key]: true }));
@@ -144,7 +145,7 @@ const EngineerLogin = () => {
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => {
-                    alert("Google Sign In Failed");
+                    CustomToast("Google Sign In Failed");
                   }}
                   hosted_domain="iiti.ac.in"
                   width="100%"

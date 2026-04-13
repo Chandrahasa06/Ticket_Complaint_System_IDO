@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    GLOBAL RESPONSIVE CSS  (mobile-first, namespaced td-)
@@ -533,13 +534,13 @@ const TechnicianDashboard = () => {
 
   const loadTickets = async () => {
     setLoading(true);
-    try { const r = await fetch("http://localhost:3000/api/technician/tickets", { credentials: "include" }); const d = await r.json(); if (!r.ok) { alert(d.message); return; } setTickets(d.tickets); }
-    catch { alert("Server error"); } finally { setLoading(false); }
+    try { const r = await fetch("http://localhost:3000/api/technician/tickets", { credentials: "include" }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(d.tickets); }
+    catch { CustomToast("Server error"); } finally { setLoading(false); }
   };
   const loadPrev = async (id) => {
     setPrevLoad(true);
-    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}`, { credentials: "include" }); const d = await r.json(); if (!r.ok) { alert(d.message); return; } setPrev(d.ticket); }
-    catch { alert("Server error"); } finally { setPrevLoad(false); }
+    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}`, { credentials: "include" }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setPrev(d.ticket); }
+    catch { CustomToast("Server error"); } finally { setPrevLoad(false); }
   };
 
   useEffect(() => {
@@ -558,14 +559,14 @@ const TechnicianDashboard = () => {
 
   const doResolve = async (id) => {
     if (resolving) return; setResolving(true);
-    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/resolve`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: rRem }) }); const d = await r.json(); if (!r.ok) { alert(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "RESOLVED" } : t)); setRConf(null); setRRem(""); }
-    catch { alert("Server error"); } finally { setResolving(false); }
+    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/resolve`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: rRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "RESOLVED" } : t)); setRConf(null); setRRem(""); }
+    catch { CustomToast("Server error"); } finally { setResolving(false); }
   };
 
   const doClose = async (id) => {
     if (closing) return; setClosing(true);
-    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: cRem }) }); const d = await r.json(); if (!r.ok) { alert(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "CLOSED" } : t)); setCConf(null); setCRem(""); }
-    catch { alert("Server error"); } finally { setClosing(false); }
+    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: cRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "CLOSED" } : t)); setCConf(null); setCRem(""); }
+    catch { CustomToast("Server error"); } finally { setClosing(false); }
   };
 
   const logout = async () => {

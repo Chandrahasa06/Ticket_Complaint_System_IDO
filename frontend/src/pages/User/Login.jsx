@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import OTPModal from "../../components/OTPModal";
 import ForgotPasswordModal from "../../components/ForgotPasswordModal";
 import { subscribeToPush } from '../../utils/pushNotifications';
+import CustomToast from "../../components/CustomToast";
 
 const UserLogin = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const UserLogin = () => {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Google login failed");
+        CustomToast(data.message || "Google login failed");
         return;
       }
 
@@ -51,7 +52,7 @@ const UserLogin = () => {
       subscribeToPush();
     } catch (err) {
       console.error(err);
-      alert("Google login failed");
+      CustomToast("Google login failed");
     }
   };
 
@@ -65,12 +66,12 @@ const UserLogin = () => {
 
     try {
       if (!email || !password) {
-        alert("All fields are required!");
+        CustomToast("All fields are required!");
         return;
       }
 
       if (!email.endsWith("@iiti.ac.in")) {
-        alert("Only @iiti.ac.in email addresses are allowed!");
+        CustomToast("Only @iiti.ac.in email addresses are allowed!");
         return;
       }
 
@@ -91,7 +92,7 @@ const UserLogin = () => {
           return;
         }
 
-        alert(data.message || "Invalid credentials");
+        CustomToast(data.message || "Invalid credentials");
         return;
       }
 
@@ -102,7 +103,7 @@ const UserLogin = () => {
       subscribeToPush();
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     }
   };
 
@@ -112,16 +113,16 @@ const UserLogin = () => {
 
     try {
       if (!regUsername || !regEmail || !regPassword||!regPhone) {
-        alert("All fields are required!");
+        CustomToast("All fields are required!");
         return;
       }
 
       if (!regEmail.endsWith("@iiti.ac.in")) {
-        alert("Only @iiti.ac.in email addresses are allowed!");
+        CustomToast("Only @iiti.ac.in email addresses are allowed!");
         return;
       }
       if (regPhone.length < 10) {
-  alert("Please enter a valid 10-digit mobile number!");
+  CustomToast("Please enter a valid 10-digit mobile number!");
   return;
 }
 
@@ -145,14 +146,14 @@ const UserLogin = () => {
           return;
         }
 
-        alert(data.message || "Failed to send OTP");
+        CustomToast(data.message || "Failed to send OTP");
         return;
       }
 
       setShowOtpModal(true);
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      CustomToast("Server error");
     } finally {
       setLoading(false);
     }
@@ -259,7 +260,7 @@ const UserLogin = () => {
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
                   onError={() => {
-                    alert("Google Sign In Failed");
+                    CustomToast("Google Sign In Failed");
                   }}
                   hosted_domain="iiti.ac.in"
                   width="100%"
@@ -344,7 +345,7 @@ const UserLogin = () => {
                   onSuccess={handleGoogleSuccess}
                   hosted_domain="iiti.ac.in"
                   onError={() => {
-                    alert("Google Sign In Failed");
+                    CustomToast("Google Sign In Failed");
                   }}
                   width="100%"
                   text="signin_with"
@@ -369,7 +370,7 @@ const UserLogin = () => {
           setRegEmail("");
           setRegPassword("");
           setRegPhone("");
-          alert("Account created successfully! Please login.");
+          CustomToast("Account created successfully! Please login.");
         }}
       />
     </div>
