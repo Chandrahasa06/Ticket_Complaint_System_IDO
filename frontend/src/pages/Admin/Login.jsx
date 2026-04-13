@@ -86,7 +86,7 @@ const AdminLogin = () => {
       });
       const data = await res.json();
       if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
-      CustomToast("Admin registered successfully! Please login.");
+      CustomToast("Admin registered successfully! Please login.", "green");
       setMode("login");
       setRegUsername(""); setRegEmail(""); setRegPassword("");
     } catch (err) { console.error(err); CustomToast("Server error"); }

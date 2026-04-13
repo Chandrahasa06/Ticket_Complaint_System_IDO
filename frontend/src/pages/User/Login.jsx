@@ -370,7 +370,7 @@ const UserLogin = () => {
           setRegEmail("");
           setRegPassword("");
           setRegPhone("");
-          CustomToast("Account created successfully! Please login.");
+          CustomToast("Account created successfully! Please login.", "green");
         }}
       />
     </div>
