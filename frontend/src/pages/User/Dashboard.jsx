@@ -50,6 +50,8 @@ const UserDashboard = () => {
   // ── Raise ticket: phone editable copy (auto-filled from profile) ──
   const [ticketPhone, setTicketPhone] = useState("");
 
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
     setTicketPhone(phone);
   }, [phone]);
@@ -152,6 +154,7 @@ const UserDashboard = () => {
   const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmitTicket = async () => {
+    if(submitting) return;
     if (!formData.title || !formData.department || !formData.description || !formData.area || !formData.location) {
       CustomToast("All fields are required!"); return;
     }
@@ -159,6 +162,7 @@ const UserDashboard = () => {
       CustomToast("Please enter a valid 10-digit mobile number!"); return;
     }
     try {
+      setSubmitting(true);
       const fd = new FormData();
       fd.append("type", formData.department);
       fd.append("subject", formData.title);
@@ -180,6 +184,8 @@ const UserDashboard = () => {
     } catch (err) {
       console.error(err);
       CustomToast("Server error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -558,11 +564,45 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            <button onClick={handleSubmitTicket} style={{ width: "100%", padding: "15px", borderRadius: 30, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 15, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", boxShadow: "0 16px 48px rgba(99,102,241,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              Submit Ticket
-              <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
+            <button
+              onClick={handleSubmitTicket}
+              disabled={submitting}
+              style={{
+                width: "100%",
+                padding: "15px",
+                borderRadius: 30,
+                border: "none",
+                background: submitting
+                  ? "linear-gradient(135deg,#94a3b8,#cbd5e1)"
+                  : "linear-gradient(135deg,#6366f1,#0ea5e9)",
+                color: "white",
+                fontSize: 15,
+                fontWeight: 500,
+                fontFamily: "inherit",
+                cursor: submitting ? "not-allowed" : "pointer",
+                boxShadow: submitting
+                  ? "0 10px 30px rgba(148,163,184,0.25)"
+                  : "0 16px 48px rgba(99,102,241,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                opacity: submitting ? 0.85 : 1,
+                transition: "all 0.2s ease",
+              }}
+            >
+              {submitting ? "Submitting..." : "Submit Ticket"}
+
+              {!submitting && (
+                <svg width="17" height="17" fill="none" stroke="white" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              )}
             </button>
           </div>
         )}
