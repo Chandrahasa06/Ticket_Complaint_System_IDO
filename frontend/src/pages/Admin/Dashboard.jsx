@@ -482,9 +482,9 @@ const OverviewTab = ({ stats }) => {
   return (
     <div>
       <div className="critical-alert-box">
-        <div style={{ width:44, height:44, borderRadius:14, background:"rgba(100,116,139,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}><AlertTriangle size={20} /></div>
+        <div style={{ width:44, height:44, borderRadius:14, background:"rgba(250,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#334155", flexShrink:0 }}><AlertTriangle size={20} /></div>
         <div>
-          <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:8 }}>⚠️ Critical Alerts</div>
+          <div style={{ fontSize:15, fontWeight:600, color:"#1e293b", marginBottom:5 }}>Critical Alerts</div>
           <div style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:"#b91c1c" }}>
             <span style={{ width:6, height:6, borderRadius:"50%", background:"#b91c1c", display:"inline-block", flexShrink:0 }} />
             {stats.overdue} ticket(s) overdue — Immediate action required
@@ -686,7 +686,7 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
                     <textarea
                       value={editBody}
                       onChange={e => setEditBody(e.target.value)}
-                      rows={2}
+                      rows={1}
                       style={{ width:"100%", padding:"10px 12px", borderRadius:12, border:"1.5px solid rgba(99,102,241,0.3)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"vertical", boxSizing:"border-box" }}
                     />
                     <div style={{ display:"flex", gap:8, marginTop:7 }}>
