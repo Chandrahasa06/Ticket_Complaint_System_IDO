@@ -623,21 +623,6 @@ engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
         url: `/dashboard`
       };
 
-      // Notify all admins
-      const admins = await prisma.admin.findMany({ select: { id: true } });
-      for (const admin of admins) {
-        await prisma.notification.create({
-          data: {
-            message: `🔴 Ticket #${ticket.id} "${ticket.subject}" marked as priority by engineer`,
-            recipientType: "admin",
-            recipientId: admin.id,
-            ticketId: ticket.id,
-            isRead: false,
-          }
-        });
-        await sendPushToRole(prisma, "admin", admin.id, payload, ticket.id);
-      }
-
       // Notify technicians in same dept + area
       const technicians = await prisma.technician.findMany({
         where: { department: ticket.type },

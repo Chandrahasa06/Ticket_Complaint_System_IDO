@@ -452,7 +452,30 @@ const UserDashboard = () => {
               </div>
 
               <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 500, marginBottom: 8, color: "#374151" }}>
+                  Mobile Number
+                  {phone && (
+                    <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 400, color: "#9ca3af", background: "rgba(99,102,241,0.08)", borderRadius: 20, padding: "2px 8px" }}>auto-filled</span>
+                  )}
+                </label>
                 <div style={{ position: "relative" }}>
+                  <input
+                    type="tel"
+                    value={ticketPhone}
+                    onChange={e => setTicketPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="10-digit mobile number"
+                    maxLength={10}
+                    style={{ ...inputStyle, paddingRight: phone ? 44 : 16 }}
+                    onFocus={focusStyle}
+                    onBlur={blurStyle}
+                  />
+                  {phone && ticketPhone === phone && (
+                    <div style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)" }}>
+                      <svg width="16" height="16" fill="#10b981" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 {!phone && (
                   <div style={{ marginTop: 6, fontSize: 11, color: "#f59e0b", display: "flex", alignItems: "center", gap: 4 }}>
