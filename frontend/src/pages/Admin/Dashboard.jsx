@@ -810,7 +810,7 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
-      CustomToast(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`);
+      CustomToast(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`, "green");
       setAddForm({ username:"", email:"", password:"", department:"", area:[] });
       setShowAddPeople(false);
     } catch(err) { console.error(err); CustomToast("Server error"); }

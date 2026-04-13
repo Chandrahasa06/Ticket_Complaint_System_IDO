@@ -173,7 +173,7 @@ const UserDashboard = () => {
       let data;
       try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
       if (!res.ok) { CustomToast(data.message); return; }
-      CustomToast("Ticket raised successfully!");
+      CustomToast("Ticket raised successfully!", "green");
       setFormData({ title: "", department: "", description: "", area: "", location: "" });
       setSelectedImage(null);
       setImagePreview(null);
@@ -191,7 +191,7 @@ const UserDashboard = () => {
       let data;
       try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
       if (!res.ok) { CustomToast(data.message); return; }
-      CustomToast("Ticket cancelled successfully!");
+      CustomToast("Ticket cancelled successfully!", "green");
       closeModal();
       fetchTickets("PENDING");
     } catch (err) {
@@ -237,7 +237,7 @@ const UserDashboard = () => {
       let data;
       try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
       if (!response.ok) { CustomToast(data.message); return; }
-      CustomToast("Follow-up submitted! Ticket has been reopened.");
+      CustomToast("Follow-up submitted! Ticket has been reopened.", "green");
       setFollowupTicket(null);
       setFollowupForm({ title: "", description: "" });
       fetchTickets("RESOLVED");
