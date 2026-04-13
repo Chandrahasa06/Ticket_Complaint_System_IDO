@@ -50,7 +50,7 @@ export async function createCommentNotifications(
 ) {
   // Same payload shape as "New Ticket Assigned" in user.routes.js
   const payload = {
-    title: "💬 New Comment on Ticket #" + ticketId,
+    title: "New Comment on Ticket #" + ticketId,
     body: `${commenterName} (${commenterRole}): ${ticketSubject}`,
     url: `/dashboard`,
   };

@@ -65,7 +65,7 @@ cron.schedule("0 9 * * *", async () => {
 
       for (const tech of matchingTechs) {
         await sendPushToTechnician(tech.id, {
-          title: "⚠️ Ticket Overdue",
+          title: "Ticket Overdue",
           body: `Ticket #${ticket.id} "${ticket.subject}" is overdue!`,
           url: `/technician/dashboard`
         }, ticket.id);
@@ -88,7 +88,7 @@ cron.schedule("0 9 * * *", async () => {
         // Bell notification (already existed)
         await prisma.notification.create({
           data: {
-            message: `⚠️ Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} is overdue!`,
+            message: `Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} is overdue!`,
             recipientType: "engineer",
             recipientId: eng.id,
             ticketId: ticket.id,
@@ -98,7 +98,7 @@ cron.schedule("0 9 * * *", async () => {
 
         // ← ADD: Push notification for engineer
         await sendPushToRole("engineer", eng.id, {
-          title: "⚠️ Ticket Overdue",
+          title: "Ticket Overdue",
           body: `Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} is overdue!`,
           url: `/engineer/dashboard`
         }, ticket.id);

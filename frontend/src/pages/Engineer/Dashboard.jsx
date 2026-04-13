@@ -1009,9 +1009,9 @@ useEffect(() => {
 {showNotifs && (
   <div onClick={() => setShowNotifs(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
     <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxWidth:500, borderRadius:32, overflow:"hidden", boxShadow:"0 40px 120px rgba(0,0,0,0.18)", background:"rgba(255,255,255,0.97)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", maxHeight:"80vh", display:"flex", flexDirection:"column" }}>
-      <div style={{ padding:"22px 28px", background:"linear-gradient(135deg,#ef4444,#dc2626)", position:"relative", flexShrink:0 }}>
+      <div style={{ padding:"22px 28px", background:"linear-gradient(135deg,#4f69e7,#5a71e4)", position:"relative", flexShrink:0 }}>
         <div style={{ fontSize:18, fontWeight:600, color:"white" }}>Notifications</div>
-        <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Overdue ticket alerts</div>
+        {/* <div style={{ fontSize:12, color:"rgba(255,255,255,0.75)", marginTop:3 }}>Overdue ticket alerts</div> */}
         <button onClick={() => setShowNotifs(false)} style={{ position:"absolute", top:14, right:14, width:32, height:32, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={14} /></button>
       </div>
       <div style={{ padding:"20px 24px", overflowY:"auto", flex:1 }}>

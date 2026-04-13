@@ -618,7 +618,7 @@ engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
     // Only send notifications when marking AS priority (not when unmarking)
     if (updated.isPriority) {
       const payload = {
-        title: "🔴 Priority Ticket #" + ticket.id,
+        title: "Priority Ticket #" + ticket.id,
         body: `"${ticket.subject}" has been marked as priority!`,
         url: `/dashboard`
       };
@@ -634,7 +634,7 @@ engineerRouter.patch("/tickets/:id/priority", async (req, res) => {
       for (const tech of matching) {
         await prisma.notification.create({
           data: {
-            message: `🔴 Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} marked as priority!`,
+            message: `Ticket #${ticket.id} "${ticket.subject}" in ${ticket.area} marked as priority!`,
             recipientType: "technician",
             recipientId: tech.id,
             ticketId: ticket.id,
