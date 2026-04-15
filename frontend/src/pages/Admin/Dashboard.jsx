@@ -456,27 +456,44 @@ const ExportDropdown = ({ tickets, tabLabel }) => {
 const COLORS = {
   total:"#6366f1", PENDING:"#ec4899", OVERDUE:"#ef4444", RESOLVED:"#10b981", CLOSED:"#f59e0b",
 };
-
 const OverviewTab = ({ stats }) => {
   const [range, setRange] = useState("month");
   const [timeData, setTimeData] = useState([]);
   const [timeLoading, setTimeLoading] = useState(false);
   const [tooltip, setTooltip] = useState(null);
   const [pieTooltip, setPieTooltip] = useState(null);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [dateMode, setDateMode] = useState(false); // false = range mode, true = custom date mode
   const svgRef = React.useRef(null);
 
+  const fetchData = async () => {
+    setTimeLoading(true);
+    try {
+      let url = `http://localhost:3000/api/admin/tickets-over-time?range=${range}`;
+      if (dateMode && fromDate) url += `&from=${fromDate}`;
+      if (dateMode && toDate)   url += `&to=${toDate}`;
+      const res = await fetch(url, { credentials: "include" });
+      const data = await res.json();
+      setTimeData(data.data || []);
+    } catch (e) { console.error(e); }
+    finally { setTimeLoading(false); }
+  };
+
   useEffect(() => {
-    const fetch_ = async () => {
-      setTimeLoading(true);
-      try {
-        const res = await fetch(`http://localhost:3000/api/admin/tickets-over-time?range=${range}`, { credentials:"include" });
-        const data = await res.json();
-        setTimeData(data.data || []);
-      } catch (e) { console.error(e); }
-      finally { setTimeLoading(false); }
-    };
-    fetch_();
-  }, [range]);
+    if (!dateMode) fetchData();
+  }, [range, dateMode]);
+
+  const handleApplyDates = () => {
+    if (!fromDate && !toDate) return;
+    fetchData();
+  };
+
+  const handleClearDates = () => {
+    setFromDate("");
+    setToDate("");
+    setDateMode(false);
+  };
 
   const pieData = [
     { label:"Pending",  value:stats.pending,  color:COLORS.PENDING  },
@@ -529,7 +546,9 @@ const OverviewTab = ({ stats }) => {
           </div>
         </div>
       </div>
+
       <div className="overview-grid">
+        {/* ── PIE CHART ── */}
         <div style={{ ...glassCard, padding:"24px 22px" }}>
           <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Status Distribution</div>
           {pieTotal === 0 ? (
@@ -566,17 +585,87 @@ const OverviewTab = ({ stats }) => {
             </div>
           )}
         </div>
+
+        {/* ── LINE CHART ── */}
         <div style={{ ...glassCard, padding:"24px 22px" }}>
           <div className="overview-chart-header">
             <div style={{ fontSize:15, fontWeight:600, color:"#111827" }}>Tickets Over Time</div>
-            <div className="time-range-bar">
-              {["day","month","year"].map(r => (
-                <button key={r} onClick={() => setRange(r)} style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background:range===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:range===r?"white":"#6b7280", boxShadow:range===r?"0 4px 12px rgba(99,102,241,0.3)":"none", transition:"all 0.15s", textTransform:"capitalize" }}>
-                  {r==="day"?"Daily":r==="month"?"Monthly":"Yearly"}
-                </button>
-              ))}
+
+            {/* Controls row */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+
+              {/* Range pills — hidden when date mode is active */}
+              {!dateMode && (
+                <div className="time-range-bar">
+                  {["day","month","year"].map(r => (
+                    <button key={r} onClick={() => setRange(r)} style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background:range===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:range===r?"white":"#6b7280", boxShadow:range===r?"0 4px 12px rgba(99,102,241,0.3)":"none", transition:"all 0.15s", textTransform:"capitalize" }}>
+                      {r==="day"?"Daily":r==="month"?"Monthly":"Yearly"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom date toggle button */}
+              <button
+                onClick={() => { setDateMode(v => !v); if (dateMode) handleClearDates(); }}
+                style={{ padding:"6px 13px", borderRadius:10, border:`1.5px solid ${dateMode?"#6366f1":"rgba(99,102,241,0.25)"}`, background:dateMode?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.05)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}
+              >
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                {dateMode ? "Custom ✓" : "Custom"}
+              </button>
             </div>
           </div>
+
+          {/* Date range inputs — only shown in date mode */}
+          {dateMode && (
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <label style={{ fontSize:11, fontWeight:600, color:"#6b7280", whiteSpace:"nowrap" }}>From</label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  max={toDate || undefined}
+                  onChange={e => setFromDate(e.target.value)}
+                  style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none", cursor:"pointer" }}
+                />
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <label style={{ fontSize:11, fontWeight:600, color:"#6b7280", whiteSpace:"nowrap" }}>To</label>
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || undefined}
+                  onChange={e => setToDate(e.target.value)}
+                  style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none", cursor:"pointer" }}
+                />
+              </div>
+
+              {/* Range pills still visible in date mode so you can switch grouping */}
+              <div className="time-range-bar">
+                {["day","month","year"].map(r => (
+                  <button key={r} onClick={() => setRange(r)} style={{ padding:"5px 11px", borderRadius:9, border:"none", fontSize:11, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background:range===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:range===r?"white":"#6b7280", transition:"all 0.15s" }}>
+                    {r==="day"?"D":r==="month"?"M":"Y"}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleApplyDates}
+                disabled={!fromDate && !toDate}
+                style={{ padding:"6px 14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:(!fromDate && !toDate)?"not-allowed":"pointer", opacity:(!fromDate && !toDate)?0.5:1, boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}
+              >
+                Apply
+              </button>
+
+              <button
+                onClick={handleClearDates}
+                style={{ padding:"6px 12px", borderRadius:10, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", color:"#374151", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer" }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
           {timeLoading ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:"#9ca3af", fontSize:13 }}>Loading...</div>
           ) : timeData.length === 0 ? (
@@ -600,7 +689,6 @@ const OverviewTab = ({ stats }) => {
     </div>
   );
 };
-
 // ─── Comment Section Component ───────────────────────────────────────────────
 const CommentSection = ({ ticketId, currentUserId, role }) => {
   const [comments, setComments] = useState([]);

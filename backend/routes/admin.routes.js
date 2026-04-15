@@ -405,9 +405,19 @@ adminRouter.get("/tickets-over-time", async (req, res) => {
   if (req.user.role !== "admin") return res.status(403).json({ message: "Access denied" });
 
   const range = req.query.range || "month";
+  const from = req.query.from ? new Date(req.query.from) : null;
+  const to = req.query.to ? new Date(req.query.to + "T23:59:59.999Z") : null;
 
   try {
     const tickets = await prisma.ticket.findMany({
+      where: {
+        ...(from || to ? {
+          createdAt: {
+            ...(from ? { gte: from } : {}),
+            ...(to   ? { lte: to   } : {}),
+          }
+        } : {})
+      },
       select: { createdAt: true, status: true }
     });
 
@@ -438,7 +448,6 @@ adminRouter.get("/tickets-over-time", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 // DELETE engineer by ID
 adminRouter.delete("/engineer/:id", async(req, res) => {
     if(req.user.role !== "admin"){
