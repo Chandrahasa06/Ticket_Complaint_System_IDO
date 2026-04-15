@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Eye, X, AlertTriangle, CheckCircle, Clock, XCircle, Download, Send, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
@@ -267,9 +267,13 @@ const RESPONSIVE_CSS = `
   }
 
   /* ── Stat card font ── */
+  .stat-card-box {
+    padding: 22px 20px;
+  }
   @media (max-width: 480px) {
-    .stat-card-value { font-size: 24px !important; }
-    .stat-card-label { font-size: 11px !important; }
+    .stat-card-box { padding: 12px 14px !important; border-radius: 18px !important; }
+    .stat-card-value { font-size: 20px !important; }
+    .stat-card-label { font-size: 10px !important; margin-bottom: 2px !important; }
   }
 
   /* ── Ticket list table ── */
@@ -283,55 +287,93 @@ const RESPONSIVE_CSS = `
     margin-bottom: 16px;
   }
 
-  .ticket-table-header {
-    display: grid;
-    grid-template-columns: 60px 1fr 130px 110px 100px 110px;
-    gap: 0;
-    padding: 11px 20px;
-    background: rgba(99,102,241,0.07);
-    border-bottom: 1px solid rgba(99,102,241,0.1);
+  /* ── Compact Admin Ticket Row ── */
+  .admin-compact-row {
+    display: flex;
     align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    flex-wrap: nowrap;
   }
-  @media (max-width: 860px) {
-    .ticket-table-header { grid-template-columns: 52px 1fr 120px 90px 110px; }
-    .ticket-table-header .th-dept { display: none; }
-  }
-  @media (max-width: 640px) {
-    .ticket-table-header { grid-template-columns: 44px 1fr 80px 110px; }
-    .ticket-table-header .th-dept { display: none; }
-    .ticket-table-header .th-date { display: none; }
-  }
-  @media (max-width: 420px) {
-    .ticket-table-header { grid-template-columns: 38px 1fr 110px; }
-    .ticket-table-header .th-status { display: none; }
-  }
-
-  .ticket-row {
-    display: grid;
-    grid-template-columns: 60px 1fr 130px 110px 100px 110px;
-    gap: 0;
-    padding: 13px 20px;
+  .admin-compact-left {
+    display: flex;
     align-items: center;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
-    transition: background 0.15s;
-    cursor: default;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
   }
-  .ticket-row:last-child { border-bottom: none; }
-  .ticket-row:hover { background: rgba(99,102,241,0.04); }
-
-  @media (max-width: 860px) {
-    .ticket-row { grid-template-columns: 52px 1fr 120px 90px 110px; }
-    .ticket-row .td-dept { display: none; }
+  .admin-compact-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
   }
-  @media (max-width: 640px) {
-    .ticket-row { grid-template-columns: 44px 1fr 80px 110px; }
-    .ticket-row .td-dept { display: none; }
-    .ticket-row .td-date { display: none; }
+  .admin-compact-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
-  @media (max-width: 420px) {
-    .ticket-row { grid-template-columns: 38px 1fr 110px; }
-    .ticket-row .td-status { display: none; }
+  @media (max-width: 600px) {
+    .admin-compact-row {
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      gap: 12px;
+    }
+    .admin-compact-left {
+      width: 100%;
+    }
+    .admin-compact-meta {
+      gap: 10px;
+      width: 100%;
+      justify-content: space-between;
+    }
+    .admin-compact-actions {
+      margin-left: auto;
+    }
   }
+  @media (max-width: 400px) {
+    .admin-compact-meta { gap: 8px; }
+  }
+  .admin-meta-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .admin-meta-pill-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .admin-meta-pill-val {
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+  }
+  @media (max-width: 480px) {
+    .admin-meta-dept { display: none; }
+  }
+  .admin-view-btn {
+    padding: 8px 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .admin-view-btn:hover { opacity: 0.92; }
 
   .ticket-row-overdue-banner {
     padding: 5px 20px;
@@ -467,7 +509,7 @@ const OverviewTab = ({ stats }) => {
   const [dateMode, setDateMode] = useState(false); // false = range mode, true = custom date mode
   const svgRef = React.useRef(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setTimeLoading(true);
     try {
       let url = `http://localhost:3000/api/admin/tickets-over-time?range=${range}`;
@@ -478,11 +520,11 @@ const OverviewTab = ({ stats }) => {
       setTimeData(data.data || []);
     } catch (e) { console.error(e); }
     finally { setTimeLoading(false); }
-  };
+  }, [range, dateMode, fromDate, toDate]);
 
   useEffect(() => {
     if (!dateMode) fetchData();
-  }, [range, dateMode]);
+  }, [fetchData, dateMode]);
 
   const handleApplyDates = () => {
     if (!fromDate && !toDate) return;
@@ -701,7 +743,7 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
 
   const BASE = `http://localhost:3000/api/${role}`;
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${BASE}/tickets/${ticketId}`, { credentials:"include" });
@@ -709,9 +751,9 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
       if (res.ok) setComments(data.ticket?.comments || []);
     } catch(e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [BASE, ticketId]);
 
-  useEffect(() => { fetchComments(); }, [ticketId]);
+  useEffect(() => { fetchComments(); }, [fetchComments]);
 
   const handleSubmit = async () => {
     if (!body.trim()) return;
@@ -893,104 +935,66 @@ const renderDescription = (body = "") => {
 };
 
 // ─── Compact Ticket Row ───────────────────────────────────────────────────────
+const rowCard = {
+  borderRadius: 18,
+  backdropFilter: "blur(30px)",
+  WebkitBackdropFilter: "blur(30px)",
+  background: "rgba(255,255,255,0.65)",
+  boxShadow: "0 4px 18px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+  overflow: "hidden",
+  marginBottom: 10
+};
+
 const TicketRow = ({ t, onView, isOverdue }) => {
   const statusKey = (t.status || "").toLowerCase().replace("_", "-");
   const ss = getStatusStyle(statusKey);
+  const formattedDate = new Date(t.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <div className="ticket-row">
-      {/* ID */}
-      <div style={{ fontSize:12, fontWeight:600, color:"#9ca3af", letterSpacing:"0.04em" }}>
-        #{t.id}
-      </div>
-
-      {/* Title + raised by */}
-      <div style={{ minWidth:0, paddingRight:12 }}>
-        <div style={{
-          fontSize:13,
-          fontWeight:600,
-          color:"#111827",
-          whiteSpace:"nowrap",
-          overflow:"hidden",
-          textOverflow:"ellipsis",
-          marginBottom:2
-        }}>
-          {t.subject}
+    <div style={{ ...rowCard, outline: isOverdue ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
+      <div className="admin-compact-row">
+        <div className="admin-compact-left">
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
+            {getStatusIcon(statusKey)}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {t.subject || "No Subject"}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              #{t.id} {t.user?.username ? `· By ${t.user.username}` : ""}
+            </div>
+          </div>
         </div>
-        <div style={{
-          fontSize:11,
-          color:"#9ca3af",
-          whiteSpace:"nowrap",
-          overflow:"hidden",
-          textOverflow:"ellipsis"
-        }}>
-          {t.user?.username ? `By ${t.user.username}` : "—"}
-          {t.location ? ` · ${t.location}` : ""}
+
+        <div className="admin-compact-meta">
+          <div className="admin-meta-pill admin-meta-dept">
+            <span className="admin-meta-pill-label">Dept</span>
+            <span className="admin-meta-pill-val">{t.type || "—"}</span>
+          </div>
+          <div className="admin-meta-pill">
+            <span className="admin-meta-pill-label">Date</span>
+            <span className="admin-meta-pill-val">{formattedDate}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, color: ss.color, background: ss.background, border: `1px solid ${ss.border}`, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
+            {getStatusIcon(statusKey)}
+            <span>{t.status}</span>
+          </div>
         </div>
-      </div>
 
-      {/* Department */}
-      <div className="td-dept" style={{ fontSize:12, color:"#374151", fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-        {t.type || "—"}
-      </div>
-
-      {/* Date */}
-      <div className="td-date" style={{ fontSize:12, color:"#6b7280" }}>
-        {new Date(t.createdAt).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" })}
-      </div>
-
-      {/* Status badge */}
-      <div className="td-status" style={{ display:"flex", alignItems:"center" }}>
-        <span style={{
-          display:"inline-flex",
-          alignItems:"center",
-          gap:5,
-          padding:"4px 10px",
-          borderRadius:20,
-          fontSize:11,
-          fontWeight:600,
-          color:ss.color,
-          background:ss.background,
-          border:`1px solid ${ss.border}`,
-          whiteSpace:"nowrap"
-        }}>
-          {getStatusIcon(statusKey)}
-          {t.status}
-        </span>
-      </div>
-
-      {/* View button */}
-      <div style={{ display:"flex", justifyContent:"flex-end" }}>
-        <button
-          onClick={() => onView(t)}
-          style={{
-            padding:"7px 14px",
-            borderRadius:14,
-            border:"none",
-            background:"linear-gradient(135deg,#6366f1,#0ea5e9)",
-            color:"white",
-            fontSize:12,
-            fontWeight:600,
-            fontFamily:"inherit",
-            cursor:"pointer",
-            display:"flex",
-            alignItems:"center",
-            gap:5,
-            boxShadow:"0 4px 14px rgba(99,102,241,0.28)",
-            whiteSpace:"nowrap",
-            transition:"opacity 0.15s"
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity="0.88"}
-          onMouseLeave={e => e.currentTarget.style.opacity="1"}
-        >
-          <Eye size={13} /> View
-        </button>
+        <div className="admin-compact-actions">
+          <button className="admin-view-btn" onClick={() => onView(t)}>
+            <Eye size={13} /> View
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-// ─── Ticket List with header ──────────────────────────────────────────────────
+// ─── Ticket List ──────────────────────────────────────────────────────────────
 const TicketTable = ({ tickets, overdueTickets, activeTab, onView }) => {
   const displayList = activeTab === "pending"
     ? [...tickets, ...overdueTickets]
@@ -999,24 +1003,13 @@ const TicketTable = ({ tickets, overdueTickets, activeTab, onView }) => {
   const pendingCount = tickets.length;
 
   return (
-    <div className="ticket-list-wrap">
-      {/* Column headers */}
-      <div className="ticket-table-header">
-        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>ID</div>
-        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Subject</div>
-        <div className="th-dept" style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Dept</div>
-        <div className="th-date" style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Created</div>
-        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Status</div>
-        <div style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase", textAlign:"right" }}>Action</div>
-      </div>
-
-      {/* Rows */}
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {displayList.map((t, idx) => {
         const isOverdueSuffix = activeTab === "pending" && idx >= pendingCount;
         return (
           <React.Fragment key={t.id}>
             {isOverdueSuffix && idx === pendingCount && (
-              <div className="ticket-row-overdue-banner">
+              <div className="ticket-row-overdue-banner" style={{ borderRadius: 12, marginBottom: 10 }}>
                 <AlertTriangle size={12} color="#b91c1c" />
                 <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c" }}>OVERDUE — Past Due Tickets</span>
               </div>
@@ -1295,7 +1288,7 @@ const AdminDashboard = () => {
       <main className="admin-main">
         <div className="admin-stat-grid">
           {statCards.map((c,i) => (
-            <div key={i} style={{ ...glassCard, padding:"22px 20px" }}>
+            <div key={i} className="stat-card-box" style={{ ...glassCard }}>
               <div className="stat-card-label" style={{ fontSize:12, color:"#6b7280", fontWeight:500, marginBottom:4 }}>{c.label}</div>
               <div className="stat-card-value" style={{ fontSize:32, fontWeight:600, background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{c.value}</div>
             </div>
