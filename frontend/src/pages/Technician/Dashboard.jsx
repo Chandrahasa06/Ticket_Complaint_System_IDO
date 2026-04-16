@@ -554,7 +554,7 @@ const TechnicianDashboard = () => {
 
   const loadTickets = async () => {
     setLoading(true);
-    try { const r = await fetch("http://localhost:3000/api/technician/tickets", { credentials: "include" }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(d.tickets); }
+    try { const r = await fetch("http://localhost:3000/api/technician/tickets", { credentials: "include" }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(d.tickets); console.log(d.tickets);}
     catch { CustomToast("Server error"); } finally { setLoading(false); }
   };
   const loadPrev = async (id) => {

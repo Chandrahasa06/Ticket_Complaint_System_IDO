@@ -86,6 +86,7 @@ technicianRouter.post("/login", async(req, res) => {
             username: technician.username,
             role: "technician",
             department: technician.department,
+            specialization: technician.specialization,
             area: technician.area,
         }, JWT_SECRET, { expiresIn: "7d" });
 
@@ -157,6 +158,7 @@ technicianRouter.post("/google-login", async(req, res) => {
         username: technician.username,
         role: "technician",
         department: technician.department,
+        specialization: technician.specialization,
         area: technician.area,
       },
       JWT_SECRET,
