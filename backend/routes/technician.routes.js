@@ -277,7 +277,7 @@ technicianRouter.get("/tickets", async(req, res) => {
             where: {
                 type: technicianDept,
                 ...(status && status !== "ALL" ? { status } : {}),
-                ...(technicianDept==="Civil" ?  { specialization: technicianSpecialization }: {})
+                ...(technicianDept==="Civil" ?  { subject: technicianSpecialization }: {})
             },
             orderBy: { createdAt: "desc" },
             include: { user: { select: { username: true, email: true } } },
