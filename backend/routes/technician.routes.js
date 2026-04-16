@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const technicianRouter = express.Router();
 
 technicianRouter.post("/register", async(req, res) => {
-    const { username, email, password, department, area} = req.body;
+    const { username, email, password, department, specialization, area} = req.body;
 
     if(!username || !email || !password || !department || !area){
         return res.status(400).json({ message: "All fields are required!" });
@@ -42,6 +42,7 @@ technicianRouter.post("/register", async(req, res) => {
         email,
         password: hashedPassword,
         department,
+        specialization: specialization,
         area: Array.isArray(area) ? area.join(",") : area
       }
     });
@@ -269,12 +270,14 @@ technicianRouter.get("/tickets", async(req, res) => {
             ? req.user.area.split(",").map(a => a.trim())
             : [];
         const technicianDept = req.user.department;
+        const technicianSpecialization = req.user.specialization;
         const status = req.query.status;
 
         const allTickets = await prisma.ticket.findMany({
             where: {
                 type: technicianDept,
                 ...(status && status !== "ALL" ? { status } : {}),
+                ...(technicianDept==="Civil" ?  { specialization: technicianSpecialization }: {})
             },
             orderBy: { createdAt: "desc" },
             include: { user: { select: { username: true, email: true } } },

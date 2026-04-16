@@ -1023,7 +1023,7 @@ const AdminDashboard = () => {
 
   const [showAddPeople, setShowAddPeople] = useState(false);
   const [addRole, setAddRole] = useState("engineer");
-  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", area:[] });
+  const [addForm, setAddForm] = useState({ username:"", email:"", password:"", department:"", specialization:"", area:[] });
   const [addLoading, setAddLoading] = useState(false);
 
   const [showManageEngineers, setShowManageEngineers] = useState(false);
@@ -1040,14 +1040,17 @@ const AdminDashboard = () => {
 
   const handleAddPeople = async (e) => {
     e.preventDefault();
+    if (!addForm.email.trim().toLowerCase().endsWith("@iiti.ac.in")) {CustomToast("Email must end with @iiti.ac.in");return;}
     if (!addForm.username||!addForm.email||!addForm.password) { CustomToast("All fields are required!"); return; }
     if ((addRole==="engineer"||addRole==="technician")&&!addForm.department) { CustomToast("Please select a department!"); return; }
     if (addRole==="technician"&&addForm.area.length===0) { CustomToast("Please select at least one area!"); return; }
+    if (addRole==="technician"&&addForm.department==="Civil"&&!addForm.specialization) { CustomToast("Please select a specialization!"); return; }
     setAddLoading(true);
     try {
       const body = { username:addForm.username, email:addForm.email, password:addForm.password };
       if (addRole==="engineer") body.department=addForm.department;
       if (addRole==="technician") { body.department=addForm.department; body.area=addForm.area; }
+      if (addRole==="technician"&&addForm.department==="Civil") {body.specialization=addForm.specialization; }
       const res = await fetch(`http://localhost:3000/api/${addRole}/register`, { method:"POST", credentials:"include", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
@@ -1473,6 +1476,40 @@ const AdminDashboard = () => {
                       <option value="Civil">Civil</option>
                       <option value="Electrical">Electrical</option>
                       <option value="HVAC">HVAC</option>
+                    </select>
+                  </div>
+                )}
+                {addRole === "technician" && addForm.department === "Civil" && (
+                  <div style={{ marginBottom:16 }}>
+                    <label style={{ display:"block", fontSize:13, fontWeight:500, marginBottom:8, color:"#374151" }}>
+                      Specialization
+                    </label>
+                    <select
+                      value={addForm.specialization || ""}
+                      onChange={e =>
+                        setAddForm(prev => ({
+                          ...prev,
+                          specialization: e.target.value
+                        }))
+                      }
+                      style={{
+                        width:"100%",
+                        padding:"13px 16px",
+                        borderRadius:18,
+                        border:"1.5px solid rgba(0,0,0,0.09)",
+                        background:"rgba(255,255,255,0.9)",
+                        fontSize:14,
+                        fontFamily:"inherit",
+                        color:"#111827",
+                        outline:"none",
+                        boxSizing:"border-box",
+                        cursor:"pointer"
+                      }}
+                    >
+                      <option value="">Select Specialization</option>
+                      <option value="Plumbing">Plumbing</option>
+                      <option value="Carpentry">Carpentry</option>
+                      <option value="Mason Work">Mason Work</option>
                     </select>
                   </div>
                 )}
