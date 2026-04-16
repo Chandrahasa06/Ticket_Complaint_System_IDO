@@ -6,6 +6,8 @@ import CustomToast from "../../components/CustomToast";
 
 /* ─── Responsive style injection ─────────────────────────────────────────── */
 const RESPONSIVE_CSS = `
+  *, *::before, *::after { box-sizing: border-box; }
+
   /* ── Stat cards grid ── */
   .admin-stat-grid {
     display: grid;
@@ -73,23 +75,72 @@ const RESPONSIVE_CSS = `
     .admin-header-inner { padding: 0 16px; height: 58px; }
   }
 
-  /* ── Tab bar ── */
+  /* ── Tab bar — technician style, horizontal scroll ── */
   .admin-tab-bar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 26px;
-    padding: 8px;
-    border-radius: 22px;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 16px;
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     background: rgba(255,255,255,0.55);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
-    width: fit-content;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    margin-bottom: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
   }
-  @media (max-width: 600px) {
-    .admin-tab-bar { width: 100%; }
-    .admin-tab-bar button { flex: 1; font-size: 12px; padding: 9px 10px !important; }
+  .admin-tab-bar::-webkit-scrollbar { display: none; }
+  .admin-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 11px;
+    border-radius: 11px;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    background: transparent;
+    color: #6b7280;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.14s;
+  }
+  .admin-tab-btn.active {
+    background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    color: white;
+    box-shadow: 0 5px 15px rgba(99,102,241,0.28);
+  }
+  .admin-tab-btn.active.ov {
+    background: linear-gradient(135deg,#b91c1c,#ef4444);
+    box-shadow: 0 5px 15px rgba(185,28,28,0.26);
+  }
+  .admin-tab-ct {
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    background: rgba(99,102,241,0.1);
+    color: #6366f1;
+  }
+  .admin-tab-btn.active .admin-tab-ct {
+    background: rgba(255,255,255,0.25);
+    color: white;
+  }
+  .admin-tab-ct.ov-pill {
+    background: rgba(185,28,28,0.1);
+    color: #b91c1c;
+  }
+  @media (min-width: 640px) {
+    .admin-tab-btn { padding: 8px 13px; font-size: 13px; border-radius: 12px; }
   }
 
   /* ── Modal ── */
@@ -198,8 +249,8 @@ const RESPONSIVE_CSS = `
     align-items: center;
     justify-content: space-between;
     margin-top: 8px;
-    padding: 16px 22px;
-    border-radius: 22px;
+    padding: 14px 18px;
+    border-radius: 18px;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     background: rgba(255,255,255,0.55);
@@ -266,7 +317,7 @@ const RESPONSIVE_CSS = `
     .people-row-actions button { flex: 1; }
   }
 
-  /* ── Stat card font ── */
+  /* ── Stat card ── */
   .stat-card-box {
     padding: 22px 20px;
   }
@@ -276,129 +327,163 @@ const RESPONSIVE_CSS = `
     .stat-card-label { font-size: 10px !important; margin-bottom: 2px !important; }
   }
 
-  /* ── Ticket list table ── */
-  .ticket-list-wrap {
-    border-radius: 24px;
-    overflow: hidden;
+  /* ── COMPACT TICKET CARD (replaces big box) ── */
+  .atk-card {
+    border-radius: 16px;
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    background: rgba(255,255,255,0.6);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
-    margin-bottom: 16px;
+    background: rgba(255,255,255,0.65);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    overflow: hidden;
+    margin-bottom: 8px;
   }
-
-  /* ── Compact Admin Ticket Row ── */
-  .admin-compact-row {
+  .atk-priority-banner {
+    padding: 4px 14px;
+    border-bottom: 1px solid rgba(239,68,68,0.1);
+    background: rgba(254,242,242,0.8);
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 14px 20px;
-    flex-wrap: nowrap;
+    gap: 6px;
   }
-  .admin-compact-left {
+  .atk-body {
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .atk-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg,#6366f1,#0ea5e9);
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .atk-icon.overdue { background: linear-gradient(135deg,#b91c1c,#ef4444); }
+  .atk-icon.pending  { background: linear-gradient(135deg,#d97706,#f59e0b); }
+  .atk-icon.resolved { background: linear-gradient(135deg,#059669,#10b981); }
+  .atk-icon.closed   { background: linear-gradient(135deg,#6b7280,#9ca3af); }
+  .atk-content { flex: 1; min-width: 0; }
+  .atk-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .atk-subject {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     flex: 1;
     min-width: 0;
   }
-  .admin-compact-meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-shrink: 0;
-  }
-  .admin-compact-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  @media (max-width: 600px) {
-    .admin-compact-row {
-      flex-wrap: wrap;
-      padding: 14px 18px;
-      gap: 12px;
-    }
-    .admin-compact-left {
-      width: 100%;
-    }
-    .admin-compact-meta {
-      gap: 10px;
-      width: 100%;
-      justify-content: space-between;
-    }
-    .admin-compact-actions {
-      margin-left: auto;
-    }
-  }
-  @media (max-width: 400px) {
-    .admin-compact-meta { gap: 8px; }
-  }
-  .admin-meta-pill {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .admin-meta-pill-label {
+  .atk-status-pill {
+    padding: 3px 9px;
+    border-radius: 20px;
     font-size: 10px;
-    font-weight: 700;
-    color: #9ca3af;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .admin-meta-pill-val {
-    font-size: 12px;
-    font-weight: 500;
-    color: #374151;
+    font-weight: 600;
     white-space: nowrap;
+    flex-shrink: 0;
   }
-  @media (max-width: 480px) {
-    .admin-meta-dept { display: none; }
+  .atk-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
-  .admin-view-btn {
-    padding: 8px 16px;
-    border-radius: 14px;
+  .atk-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  .atk-view-btn {
+    padding: 6px 13px;
+    border-radius: 10px;
     border: none;
     background: linear-gradient(135deg,#6366f1,#0ea5e9);
     color: white;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 5px;
-    box-shadow: 0 4px 14px rgba(99,102,241,0.3);
+    gap: 4px;
+    box-shadow: 0 3px 10px rgba(99,102,241,0.28);
     white-space: nowrap;
     flex-shrink: 0;
+    margin-top: 2px;
   }
-  .admin-view-btn:hover { opacity: 0.92; }
+  @media (min-width: 640px) {
+    .atk-card { border-radius: 18px; margin-bottom: 10px; }
+    .atk-body { padding: 14px 18px; gap: 12px; }
+    .atk-icon { width: 38px; height: 38px; border-radius: 11px; }
+    .atk-subject { font-size: 14px; }
+    .atk-meta-item { font-size: 12px; }
+    .atk-view-btn { font-size: 12px; padding: 7px 15px; }
+  }
+  @media (min-width: 1024px) {
+    .atk-body { padding: 16px 22px; }
+  }
 
-  .ticket-row-overdue-banner {
-    padding: 5px 20px;
-    background: rgba(254,242,242,0.7);
-    border-bottom: 1px solid rgba(254,202,202,0.5);
+  /* overdue section divider */
+  .atk-overdue-divider {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    padding: 8px 4px;
+    margin: 6px 0;
+  }
+
+  /* section header */
+  .admin-sec-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .admin-sec-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .admin-sec-sub   { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .admin-ct-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6366f1;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.2);
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 `;
 
 const getStatusStyle = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
   const map = {
-    overdue:       { color:"#b91c1c", background:"rgba(254,242,242,0.92)", border:"rgba(252,165,165,0.35)" },
-    pending:       { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    resolved:      { color:"#059669", background:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
-    closed:        { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
+    overdue:  { color:"#b91c1c", background:"rgba(254,242,242,0.92)", border:"rgba(252,165,165,0.35)" },
+    pending:  { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
+    resolved: { color:"#059669", background:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
+    closed:   { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
   };
   return map[s] || map.closed;
 };
 
 const getStatusIcon = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
-  const props = { size: 13 };
+  const props = { size: 14 };
   switch (s) {
     case "overdue":  return <AlertTriangle {...props} />;
     case "pending":  return <Clock {...props} />;
@@ -475,16 +560,16 @@ const ExportDropdown = ({ tickets, tabLabel }) => {
   const [open, setOpen] = useState(false);
   return (
     <div style={{ position:"relative", display:"inline-block" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ padding:"10px 18px", borderRadius:18, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.08)", color:"#6366f1", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.15)"} onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.08)"}>
-        <Download size={15} /> Export
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+      <button onClick={() => setOpen(o => !o)} style={{ padding:"9px 16px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.08)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+        <Download size={13} /> Export
+        <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
       </button>
       {open && (
         <>
           <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, zIndex:400 }} />
-          <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:500, borderRadius:18, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", boxShadow:"0 16px 48px rgba(0,0,0,0.12)", border:"1px solid rgba(99,102,241,0.12)", overflow:"hidden", minWidth:170 }}>
+          <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:500, borderRadius:16, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", boxShadow:"0 16px 48px rgba(0,0,0,0.12)", border:"1px solid rgba(99,102,241,0.12)", overflow:"hidden", minWidth:165 }}>
             {[{ label:"Export as PDF", fmt:"pdf", icon:"📄" },{ label:"Export as Excel", fmt:"excel", icon:"📊" }].map(({ label, fmt, icon }) => (
-              <button key={fmt} onClick={() => { exportTickets(tickets, fmt, tabLabel); setOpen(false); }} style={{ width:"100%", padding:"12px 18px", border:"none", background:"transparent", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:10, textAlign:"left", transition:"background 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.07)"} onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+              <button key={fmt} onClick={() => { exportTickets(tickets, fmt, tabLabel); setOpen(false); }} style={{ width:"100%", padding:"11px 16px", border:"none", background:"transparent", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:9, textAlign:"left" }}>
                 <span>{icon}</span> {label}
               </button>
             ))}
@@ -498,6 +583,7 @@ const ExportDropdown = ({ tickets, tabLabel }) => {
 const COLORS = {
   total:"#6366f1", PENDING:"#ec4899", OVERDUE:"#ef4444", RESOLVED:"#10b981", CLOSED:"#f59e0b",
 };
+
 const OverviewTab = ({ stats }) => {
   const [range, setRange] = useState("month");
   const [timeData, setTimeData] = useState([]);
@@ -506,7 +592,7 @@ const OverviewTab = ({ stats }) => {
   const [pieTooltip, setPieTooltip] = useState(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [dateMode, setDateMode] = useState(false); // false = range mode, true = custom date mode
+  const [dateMode, setDateMode] = useState(false);
   const svgRef = React.useRef(null);
 
   const fetchData = useCallback(async () => {
@@ -522,20 +608,10 @@ const OverviewTab = ({ stats }) => {
     finally { setTimeLoading(false); }
   }, [range, dateMode, fromDate, toDate]);
 
-  useEffect(() => {
-    if (!dateMode) fetchData();
-  }, [fetchData, dateMode]);
+  useEffect(() => { if (!dateMode) fetchData(); }, [fetchData, dateMode]);
 
-  const handleApplyDates = () => {
-    if (!fromDate && !toDate) return;
-    fetchData();
-  };
-
-  const handleClearDates = () => {
-    setFromDate("");
-    setToDate("");
-    setDateMode(false);
-  };
+  const handleApplyDates = () => { if (!fromDate && !toDate) return; fetchData(); };
+  const handleClearDates = () => { setFromDate(""); setToDate(""); setDateMode(false); };
 
   const pieData = [
     { label:"Pending",  value:stats.pending,  color:COLORS.PENDING  },
@@ -590,7 +666,6 @@ const OverviewTab = ({ stats }) => {
       </div>
 
       <div className="overview-grid">
-        {/* ── PIE CHART ── */}
         <div style={{ ...glassCard, padding:"24px 22px" }}>
           <div style={{ fontSize:15, fontWeight:600, color:"#111827", marginBottom:16 }}>Status Distribution</div>
           {pieTotal === 0 ? (
@@ -628,15 +703,10 @@ const OverviewTab = ({ stats }) => {
           )}
         </div>
 
-        {/* ── LINE CHART ── */}
         <div style={{ ...glassCard, padding:"24px 22px" }}>
           <div className="overview-chart-header">
             <div style={{ fontSize:15, fontWeight:600, color:"#111827" }}>Tickets Over Time</div>
-
-            {/* Controls row */}
             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-
-              {/* Range pills — hidden when date mode is active */}
               {!dateMode && (
                 <div className="time-range-bar">
                   {["day","month","year"].map(r => (
@@ -646,43 +716,23 @@ const OverviewTab = ({ stats }) => {
                   ))}
                 </div>
               )}
-
-              {/* Custom date toggle button */}
-              <button
-                onClick={() => { setDateMode(v => !v); if (dateMode) handleClearDates(); }}
-                style={{ padding:"6px 13px", borderRadius:10, border:`1.5px solid ${dateMode?"#6366f1":"rgba(99,102,241,0.25)"}`, background:dateMode?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.05)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}
-              >
+              <button onClick={() => { setDateMode(v => !v); if (dateMode) handleClearDates(); }} style={{ padding:"6px 13px", borderRadius:10, border:`1.5px solid ${dateMode?"#6366f1":"rgba(99,102,241,0.25)"}`, background:dateMode?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.05)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:5 }}>
                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                 {dateMode ? "Custom ✓" : "Custom"}
               </button>
             </div>
           </div>
 
-          {/* Date range inputs — only shown in date mode */}
           {dateMode && (
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                 <label style={{ fontSize:11, fontWeight:600, color:"#6b7280", whiteSpace:"nowrap" }}>From</label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  max={toDate || undefined}
-                  onChange={e => setFromDate(e.target.value)}
-                  style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none", cursor:"pointer" }}
-                />
+                <input type="date" value={fromDate} max={toDate || undefined} onChange={e => setFromDate(e.target.value)} style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none" }} />
               </div>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                 <label style={{ fontSize:11, fontWeight:600, color:"#6b7280", whiteSpace:"nowrap" }}>To</label>
-                <input
-                  type="date"
-                  value={toDate}
-                  min={fromDate || undefined}
-                  onChange={e => setToDate(e.target.value)}
-                  style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none", cursor:"pointer" }}
-                />
+                <input type="date" value={toDate} min={fromDate || undefined} onChange={e => setToDate(e.target.value)} style={{ padding:"6px 10px", borderRadius:10, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:12, fontFamily:"inherit", color:"#111827", outline:"none" }} />
               </div>
-
-              {/* Range pills still visible in date mode so you can switch grouping */}
               <div className="time-range-bar">
                 {["day","month","year"].map(r => (
                   <button key={r} onClick={() => setRange(r)} style={{ padding:"5px 11px", borderRadius:9, border:"none", fontSize:11, fontWeight:600, fontFamily:"inherit", cursor:"pointer", background:range===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:range===r?"white":"#6b7280", transition:"all 0.15s" }}>
@@ -690,21 +740,8 @@ const OverviewTab = ({ stats }) => {
                   </button>
                 ))}
               </div>
-
-              <button
-                onClick={handleApplyDates}
-                disabled={!fromDate && !toDate}
-                style={{ padding:"6px 14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:(!fromDate && !toDate)?"not-allowed":"pointer", opacity:(!fromDate && !toDate)?0.5:1, boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}
-              >
-                Apply
-              </button>
-
-              <button
-                onClick={handleClearDates}
-                style={{ padding:"6px 12px", borderRadius:10, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", color:"#374151", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer" }}
-              >
-                Clear
-              </button>
+              <button onClick={handleApplyDates} disabled={!fromDate && !toDate} style={{ padding:"6px 14px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:(!fromDate&&!toDate)?"not-allowed":"pointer", opacity:(!fromDate&&!toDate)?0.5:1 }}>Apply</button>
+              <button onClick={handleClearDates} style={{ padding:"6px 12px", borderRadius:10, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", color:"#374151", fontSize:12, fontWeight:500, fontFamily:"inherit", cursor:"pointer" }}>Clear</button>
             </div>
           )}
 
@@ -731,7 +768,8 @@ const OverviewTab = ({ stats }) => {
     </div>
   );
 };
-// ─── Comment Section Component ───────────────────────────────────────────────
+
+/* ─── Comment Section ──────────────────────────────────────────────────────── */
 const CommentSection = ({ ticketId, currentUserId, role }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -759,11 +797,7 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
     if (!body.trim()) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`${BASE}/tickets/${ticketId}/comments`, {
-        method:"POST", credentials:"include",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ body }),
-      });
+      const res = await fetch(`${BASE}/tickets/${ticketId}/comments`, { method:"POST", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ body }) });
       const data = await res.json();
       if (res.ok) { setComments(prev => [...prev, data.comment]); setBody(""); }
     } catch(e) { console.error(e); }
@@ -774,26 +808,16 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
     if (!editBody.trim()) return;
     setEditSubmitting(true);
     try {
-      const res = await fetch(`${BASE}/tickets/${ticketId}/comments/${commentId}`, {
-        method:"PATCH", credentials:"include",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ body: editBody }),
-      });
+      const res = await fetch(`${BASE}/tickets/${ticketId}/comments/${commentId}`, { method:"PATCH", credentials:"include", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ body: editBody }) });
       const data = await res.json();
-      if (res.ok) {
-        setComments(prev => prev.map(c => c.id === commentId ? data.comment : c));
-        setEditingId(null);
-        setEditBody("");
-      }
+      if (res.ok) { setComments(prev => prev.map(c => c.id === commentId ? data.comment : c)); setEditingId(null); setEditBody(""); }
     } catch(e) { console.error(e); }
     finally { setEditSubmitting(false); }
   };
 
   const handleDelete = async (commentId) => {
     try {
-      const res = await fetch(`${BASE}/tickets/${ticketId}/comments/${commentId}`, {
-        method:"DELETE", credentials:"include",
-      });
+      const res = await fetch(`${BASE}/tickets/${ticketId}/comments/${commentId}`, { method:"DELETE", credentials:"include" });
       if (res.ok) setComments(prev => prev.filter(c => c.id !== commentId));
     } catch(e) { console.error(e); }
   };
@@ -810,64 +834,48 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
         <span style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.08em", textTransform:"uppercase" }}>Comments</span>
         <div style={{ flex:1, height:1, background:"rgba(99,102,241,0.15)" }} />
       </div>
-
       {loading ? (
         <div style={{ textAlign:"center", padding:"20px 0", color:"#9ca3af", fontSize:13 }}>Loading comments...</div>
       ) : comments.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"18px 0", color:"#9ca3af", fontSize:13 }}>No comments yet. Be the first to add one.</div>
+        <div style={{ textAlign:"center", padding:"18px 0", color:"#9ca3af", fontSize:13 }}>No comments yet.</div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
           {comments.map(c => {
-            const isAdmin   = c.authorRole === "admin";
-            const isOwn     = c.authorRole === role;
+            const isAdmin = c.authorRole === "admin";
+            const isOwn   = c.authorRole === role;
             return (
               <div key={c.id} style={{ padding:"13px 15px", borderRadius:18, background: isAdmin ? "rgba(99,102,241,0.07)" : "rgba(14,165,233,0.06)", border: isAdmin ? "1px solid rgba(99,102,241,0.15)" : "1px solid rgba(14,165,233,0.15)" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6, flexWrap:"wrap", gap:6 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:7, flexWrap:"wrap" }}>
                     {isAdmin ? (
-                      <span style={{ fontSize:11, fontWeight:800, color:"#6366f1", background:"rgba(99,102,241,0.12)", padding:"2px 9px", borderRadius:20, letterSpacing:"0.04em" }}>ADMIN</span>
+                      <span style={{ fontSize:11, fontWeight:800, color:"#6366f1", background:"rgba(99,102,241,0.12)", padding:"2px 9px", borderRadius:20 }}>ADMIN</span>
                     ) : (
-                      <span style={{ fontSize:11, fontWeight:700, color:"#0ea5e9", background:"rgba(14,165,233,0.1)", padding:"2px 9px", borderRadius:20, letterSpacing:"0.04em" }}>ENGINEER</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:"#0ea5e9", background:"rgba(14,165,233,0.1)", padding:"2px 9px", borderRadius:20 }}>ENGINEER</span>
                     )}
                     <span style={{ fontSize:13, fontWeight:600, color:"#111827" }}>{c.authorName}</span>
-                    {c.authorDepartment && (
-                      <span style={{ fontSize:11, color:"#9ca3af" }}>· {c.authorDepartment}</span>
-                    )}
+                    {c.authorDepartment && <span style={{ fontSize:11, color:"#9ca3af" }}>· {c.authorDepartment}</span>}
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     <span style={{ fontSize:11, color:"#9ca3af" }}>{formatDate(c.createdAt)}</span>
                     {isOwn && (
                       <div style={{ display:"flex", gap:6 }}>
-                        <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} style={{ width:26, height:26, borderRadius:8, border:"none", background:"rgba(99,102,241,0.1)", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <Pencil size={12} />
-                        </button>
-                        <button onClick={() => handleDelete(c.id)} style={{ width:26, height:26, borderRadius:8, border:"none", background:"rgba(239,68,68,0.08)", color:"#ef4444", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <Trash2 size={12} />
-                        </button>
+                        <button onClick={() => { setEditingId(c.id); setEditBody(c.body); }} style={{ width:26, height:26, borderRadius:8, border:"none", background:"rgba(99,102,241,0.1)", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Pencil size={12} /></button>
+                        <button onClick={() => handleDelete(c.id)} style={{ width:26, height:26, borderRadius:8, border:"none", background:"rgba(239,68,68,0.08)", color:"#ef4444", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}><Trash2 size={12} /></button>
                       </div>
                     )}
                   </div>
                 </div>
-
                 {editingId === c.id ? (
                   <div>
-                    <textarea
-                      value={editBody}
-                      onChange={e => setEditBody(e.target.value)}
-                      rows={1}
-                      style={{ width:"100%", padding:"10px 12px", borderRadius:12, border:"1.5px solid rgba(99,102,241,0.3)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"vertical", boxSizing:"border-box" }}
-                    />
+                    <textarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={1} style={{ width:"100%", padding:"10px 12px", borderRadius:12, border:"1.5px solid rgba(99,102,241,0.3)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"vertical", boxSizing:"border-box" }} />
                     <div style={{ display:"flex", gap:8, marginTop:7 }}>
                       <button onClick={() => { setEditingId(null); setEditBody(""); }} style={{ padding:"7px 14px", borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Cancel</button>
-                      <button onClick={() => handleEdit(c.id)} disabled={editSubmitting||!editBody.trim()} style={{ padding:"7px 16px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", opacity: editSubmitting||!editBody.trim()?0.6:1 }}>
-                        {editSubmitting ? "Saving..." : "Save"}
-                      </button>
+                      <button onClick={() => handleEdit(c.id)} disabled={editSubmitting||!editBody.trim()} style={{ padding:"7px 16px", borderRadius:12, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", opacity:editSubmitting||!editBody.trim()?0.6:1 }}>{editSubmitting ? "Saving..." : "Save"}</button>
                     </div>
                   </div>
                 ) : (
                   <div style={{ fontSize:13, color:"#374151", lineHeight:1.6 }}>{c.body}</div>
                 )}
-
                 {c.updatedAt !== c.createdAt && editingId !== c.id && (
                   <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>edited {formatDate(c.updatedAt)}</div>
                 )}
@@ -876,16 +884,8 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
           })}
         </div>
       )}
-
       <div className="comment-input-row">
-        <textarea
-          value={body}
-          onChange={e => setBody(e.target.value)}
-          placeholder="Write a comment..."
-          rows={1}
-          onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleSubmit(); } }}
-          style={{ flex:1, padding:"11px 14px", borderRadius:16, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"none", boxSizing:"border-box" }}
-        />
+        <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write a comment..." rows={1} onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); handleSubmit(); } }} style={{ flex:1, padding:"11px 14px", borderRadius:16, border:"1.5px solid rgba(99,102,241,0.2)", background:"rgba(255,255,255,0.9)", fontSize:13, fontFamily:"inherit", color:"#111827", outline:"none", resize:"none", boxSizing:"border-box" }} />
         <button onClick={handleSubmit} disabled={submitting||!body.trim()} style={{ padding:"11px 18px", borderRadius:16, border:"none", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", color:"white", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:7, boxShadow:"0 6px 18px rgba(99,102,241,0.3)", opacity:submitting||!body.trim()?0.6:1, flexShrink:0 }}>
           <Send size={14} />{submitting ? "..." : "Send"}
         </button>
@@ -894,127 +894,109 @@ const CommentSection = ({ ticketId, currentUserId, role }) => {
   );
 };
 
-// ─── Smart description renderer ──────────────────────────────────────────────
+/* ─── Description renderer ── */
 const renderDescription = (body = "") => {
   const separatorRegex = /\n\n--- Original complaint \(raised on (.+?)\) ---\n([\s\S]*)/;
   const match = body.match(separatorRegex);
-
   if (match) {
     const followupText = body.replace(separatorRegex, "").replace(/^\[Follow-up\]\s*/, "").trim();
     const originalDate = match[1];
     const originalText = match[2].trim();
-
     return (
       <div>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", display: "inline-block", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1", letterSpacing: "0.06em", textTransform: "uppercase" }}>Follow-up complaint</span>
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:"#6366f1", display:"inline-block", flexShrink:0 }} />
+            <span style={{ fontSize:11, fontWeight:700, color:"#6366f1", letterSpacing:"0.06em", textTransform:"uppercase" }}>Follow-up complaint</span>
           </div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", lineHeight: 1.65, padding: "12px 16px", borderRadius: 12, background: "rgba(99,102,241,0.08)", border: "1.5px solid rgba(99,102,241,0.22)" }}>
-            {followupText}
-          </div>
+          <div style={{ fontSize:14, fontWeight:700, color:"#111827", lineHeight:1.65, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1.5px solid rgba(99,102,241,0.22)" }}>{followupText}</div>
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
-          <span style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", fontStyle: "italic" }}>
-            Original complaint · {originalDate}
-          </span>
-          <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+          <div style={{ flex:1, height:1, background:"rgba(0,0,0,0.08)" }} />
+          <span style={{ fontSize:11, color:"#9ca3af", whiteSpace:"nowrap", fontStyle:"italic" }}>Original complaint · {originalDate}</span>
+          <div style={{ flex:1, height:1, background:"rgba(0,0,0,0.08)" }} />
         </div>
-
-        <div style={{ fontSize: 13, color: "#9ca3af", lineHeight: 1.65, padding: "10px 14px", borderRadius: 12, background: "rgba(0,0,0,0.025)", border: "1px solid rgba(0,0,0,0.06)", fontStyle: "italic" }}>
-          {originalText}
-        </div>
+        <div style={{ fontSize:13, color:"#9ca3af", lineHeight:1.65, padding:"10px 14px", borderRadius:12, background:"rgba(0,0,0,0.025)", border:"1px solid rgba(0,0,0,0.06)", fontStyle:"italic" }}>{originalText}</div>
       </div>
     );
   }
-
-  return <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{body}</div>;
+  return <div style={{ fontSize:14, color:"#374151", lineHeight:1.6 }}>{body}</div>;
 };
 
-// ─── Compact Ticket Row ───────────────────────────────────────────────────────
-const rowCard = {
-  borderRadius: 18,
-  backdropFilter: "blur(30px)",
-  WebkitBackdropFilter: "blur(30px)",
-  background: "rgba(255,255,255,0.65)",
-  boxShadow: "0 4px 18px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
-  overflow: "hidden",
-  marginBottom: 10
-};
-
-const TicketRow = ({ t, onView, isOverdue }) => {
+/* ─── Compact Ticket Card ── */
+const TicketCard = ({ t, onView, isOverdue }) => {
   const statusKey = (t.status || "").toLowerCase().replace("_", "-");
   const ss = getStatusStyle(statusKey);
-  const formattedDate = new Date(t.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const formattedDate = new Date(t.createdAt).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" });
 
   return (
-    <div style={{ ...rowCard, outline: isOverdue ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
-      <div className="admin-compact-row">
-        <div className="admin-compact-left">
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
-            {getStatusIcon(statusKey)}
-          </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {t.subject || "No Subject"}
+    <div className="atk-card" style={{ outline: isOverdue ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
+      <div className="atk-body">
+        <div className={`atk-icon ${statusKey}`}>
+          {getStatusIcon(statusKey)}
+        </div>
+        <div className="atk-content">
+          <div className="atk-top">
+            <div style={{ flex:1, minWidth:0 }}>
+              <div className="atk-subject">{t.subject || "No Subject"}</div>
+              <div className="atk-meta" style={{ marginTop:3 }}>
+                <span className="atk-meta-item">
+                  <span style={{ fontSize:10, color:"#c4b5fd" }}>#{t.id}</span>
+                </span>
+                {t.user?.username && (
+                  <span className="atk-meta-item">
+                    <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    {t.user.username}
+                  </span>
+                )}
+                {t.type && (
+                  <span className="atk-meta-item">
+                    <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    {t.type}
+                  </span>
+                )}
+                <span className="atk-meta-item">
+                  <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  {formattedDate}
+                </span>
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
+              <span className="atk-status-pill" style={{ color:ss.color, background:ss.background, border:`1px solid ${ss.border}` }}>
+                {t.status}
               </span>
+              <button className="atk-view-btn" onClick={() => onView(t)}>
+                <Eye size={11} /> View
+              </button>
             </div>
-            <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              #{t.id} {t.user?.username ? `· By ${t.user.username}` : ""}
-            </div>
           </div>
-        </div>
-
-        <div className="admin-compact-meta">
-          <div className="admin-meta-pill admin-meta-dept">
-            <span className="admin-meta-pill-label">Dept</span>
-            <span className="admin-meta-pill-val">{t.type || "—"}</span>
-          </div>
-          <div className="admin-meta-pill">
-            <span className="admin-meta-pill-label">Date</span>
-            <span className="admin-meta-pill-val">{formattedDate}</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, color: ss.color, background: ss.background, border: `1px solid ${ss.border}`, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
-            {getStatusIcon(statusKey)}
-            <span>{t.status}</span>
-          </div>
-        </div>
-
-        <div className="admin-compact-actions">
-          <button className="admin-view-btn" onClick={() => onView(t)}>
-            <Eye size={13} /> View
-          </button>
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Ticket List ──────────────────────────────────────────────────────────────
-const TicketTable = ({ tickets, overdueTickets, activeTab, onView }) => {
-  const displayList = activeTab === "pending"
-    ? [...tickets, ...overdueTickets]
-    : tickets;
-
+/* ─── Ticket List ── */
+const TicketList = ({ tickets, overdueTickets, activeTab, onView }) => {
   const pendingCount = tickets.length;
+  const displayList = activeTab === "pending" ? [...tickets, ...overdueTickets] : tickets;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <div>
       {displayList.map((t, idx) => {
         const isOverdueSuffix = activeTab === "pending" && idx >= pendingCount;
         return (
           <React.Fragment key={t.id}>
             {isOverdueSuffix && idx === pendingCount && (
-              <div className="ticket-row-overdue-banner" style={{ borderRadius: 12, marginBottom: 10 }}>
-                <AlertTriangle size={12} color="#b91c1c" />
-                <span style={{ fontSize:11, fontWeight:600, color:"#b91c1c" }}>OVERDUE — Past Due Tickets</span>
+              <div className="atk-overdue-divider">
+                <div style={{ flex:1, height:1, background:"rgba(185,28,28,0.2)" }} />
+                <span style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, fontWeight:700, color:"#b91c1c", background:"rgba(254,242,242,0.9)", border:"1px solid rgba(185,28,28,0.2)", padding:"3px 10px", borderRadius:20 }}>
+                  <AlertTriangle size={10} /> OVERDUE TICKETS
+                </span>
+                <div style={{ flex:1, height:1, background:"rgba(185,28,28,0.2)" }} />
               </div>
             )}
-            <TicketRow t={t} onView={onView} isOverdue={isOverdueSuffix} />
+            <TicketCard t={t} onView={onView} isOverdue={isOverdueSuffix} />
           </React.Fragment>
         );
       })}
@@ -1022,6 +1004,9 @@ const TicketTable = ({ tickets, overdueTickets, activeTab, onView }) => {
   );
 };
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────────────────── */
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -1048,6 +1033,7 @@ const AdminDashboard = () => {
   const [editTech, setEditTech] = useState(null);
   const [editAreaLoading, setEditAreaLoading] = useState(false);
   const [editAreaError, setEditAreaError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleAddPeople = async (e) => {
     e.preventDefault();
@@ -1056,17 +1042,13 @@ const AdminDashboard = () => {
     if (addRole==="technician"&&addForm.area.length===0) { CustomToast("Please select at least one area!"); return; }
     setAddLoading(true);
     try {
-      const body = { username: addForm.username, email: addForm.email, password: addForm.password};
-      if (addRole === "engineer") body.department = addForm.department;
-      if (addRole === "technician") { body.department = addForm.department; body.area = addForm.area; }
-      const res = await fetch(`http://localhost:3000/api/${addRole}/register`, {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const body = { username:addForm.username, email:addForm.email, password:addForm.password };
+      if (addRole==="engineer") body.department=addForm.department;
+      if (addRole==="technician") { body.department=addForm.department; body.area=addForm.area; }
+      const res = await fetch(`http://localhost:3000/api/${addRole}/register`, { method:"POST", credentials:"include", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) { CustomToast(data.message || "Registration failed"); return; }
-      CustomToast(`${addRole.charAt(0).toUpperCase() + addRole.slice(1)} added successfully!`, "green");
+      CustomToast(`${addRole.charAt(0).toUpperCase()+addRole.slice(1)} added successfully!`, "green");
       setAddForm({ username:"", email:"", password:"", department:"", area:[] });
       setShowAddPeople(false);
     } catch(err) { console.error(err); CustomToast("Server error"); }
@@ -1114,7 +1096,7 @@ const AdminDashboard = () => {
     finally { setEditAreaLoading(false); }
   };
 
-  const fetchTickets = async (status, page=1) => {
+  const fetchTickets = useCallback(async (status, page=1) => {
     setLoading(true);
     try {
       if (status==="pending") {
@@ -1129,51 +1111,62 @@ const AdminDashboard = () => {
         setTotalTickets(pendingData.pagination?.totalTickets||0);
         setOverdueTickets(overdueData.tickets||[]);
       } else {
-        let url=`http://localhost:3000/api/admin/tickets?pg=${page}`;
-        if(status&&status!=="overview") url+=`&status=${status.toUpperCase().replace("-","_")}`;
-        const res=await fetch(url, { credentials:"include" });
-        const data=await res.json();
+        let url = `http://localhost:3000/api/admin/tickets?pg=${page}`;
+        if(status&&status!=="overview") url += `&status=${status.toUpperCase().replace("-","_")}`;
+        const res = await fetch(url, { credentials:"include" });
+        const data = await res.json();
         if(!res.ok) { CustomToast(data.message); return; }
-        setTickets(data.tickets);
+        setTickets(data.tickets||[]);
         setOverdueTickets([]);
-        setTotalTickets(data.pagination.totalTickets);
+        setTotalTickets(data.pagination?.totalTickets||0);
       }
     } catch(e) { console.error(e); CustomToast("Server error"); }
     finally { setLoading(false); }
-  };
+  }, []);
 
   const fetchStats = async () => {
     try {
-      const statuses=["PENDING","IN_PROGRESS","OVERDUE","RESOLVED","CLOSED"];
-      const [allRes,...statusRes]=await Promise.all([
+      const statuses = ["PENDING","IN_PROGRESS","OVERDUE","RESOLVED","CLOSED"];
+      const [allRes,...statusRes] = await Promise.all([
         fetch("http://localhost:3000/api/admin/tickets?pg=1", { credentials:"include" }),
         ...statuses.map(s=>fetch(`http://localhost:3000/api/admin/tickets?pg=1&status=${s}`, { credentials:"include" }))
       ]);
-      const allData=await allRes.json();
-      const statusData=await Promise.all(statusRes.map(r=>r.json()));
-      const pending=statusData[0].pagination?.totalTickets||0;
-      const overdue=statusData[2].pagination?.totalTickets||0;
+      const allData = await allRes.json();
+      const statusData = await Promise.all(statusRes.map(r=>r.json()));
+      const pending = statusData[0].pagination?.totalTickets||0;
+      const overdue = statusData[2].pagination?.totalTickets||0;
       setStats({ total:allData.pagination?.totalTickets||0, pending, inProgress:statusData[1].pagination?.totalTickets||0, overdue, resolved:statusData[3].pagination?.totalTickets||0, closed:statusData[4].pagination?.totalTickets||0, totalPending:pending+overdue });
     } catch(e) { console.error(e); }
   };
 
   useEffect(() => {
     if(activeTab==="overview") fetchStats();
-    else { setCurrentPage(1); fetchTickets(activeTab, 1); }
+    else fetchTickets(activeTab, 1);
   }, [activeTab]);
 
+  useEffect(() => { subscribeToPush(); }, []);
+
+  /* ── Pagination: re-fetch when page changes (but not on tab change — tab change resets page to 1 above) ── */
   useEffect(() => {
-    subscribeToPush();
-  }, []);
+    if(activeTab!=="overview" && currentPage > 1) fetchTickets(activeTab, currentPage);
+  }, [currentPage]);
 
-  useEffect(() => {
-    if(activeTab!=="overview") fetchTickets(activeTab, currentPage);
-  }, [currentPage, activeTab]);
+  const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
 
-  const totalPages=Math.ceil(totalTickets/TICKETS_PER_PAGE);
-  const handleTabChange=(tab)=>{ setActiveTab(tab); setCurrentPage(1); };
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setTickets([]);
+    setOverdueTickets([]);
+  };
 
-  const handleLogout=async()=>{
+  const handlePageChange = (page) => {
+    if(page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogout = async () => {
     await unsubscribeFromPush();
     try {
       await fetch("http://localhost:3000/logout", { method:"POST", credentials:"include" });
@@ -1183,26 +1176,40 @@ const AdminDashboard = () => {
     } catch(error) { console.error("Logout error:", error); }
   };
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const tabs=[
-    { id:"overview", label:"Overview"  },
-    { id:"pending",  label:"Pending"   },
-    { id:"overdue",  label:"Overdue"   },
-    { id:"resolved", label:"Resolved"  },
-    { id:"closed",   label:"Closed"    },
+  const TABS = [
+    { id:"overview", label:"Overview", ct: null },
+    { id:"pending",  label:"Pending",  ct: stats.pending   },
+    { id:"overdue",  label:"Overdue",  ct: stats.overdue   },
+    { id:"resolved", label:"Resolved", ct: stats.resolved  },
+    { id:"closed",   label:"Closed",   ct: stats.closed    },
   ];
 
-  const statCards=[
-    { label:"Total Pending Tickets", value:stats.totalPending??(stats.pending+stats.overdue) },
-    { label:"Pending",               value:stats.pending   },
-    { label:"Overdue",               value:stats.overdue   },
-    { label:"Resolved",              value:stats.resolved  },
-    { label:"Closed",                value:stats.closed    },
+  const statCards = [
+    { label:"Total Pending", value: stats.totalPending ?? (stats.pending + stats.overdue) },
+    { label:"Pending",       value: stats.pending   },
+    { label:"Overdue",       value: stats.overdue   },
+    { label:"Resolved",      value: stats.resolved  },
+    { label:"Closed",        value: stats.closed    },
   ];
 
-  const pendingCombinedTickets=activeTab==="pending"?[...tickets,...overdueTickets]:tickets;
-  const activeTabLabel=tabs.find(t=>t.id===activeTab)?.label||activeTab;
-  const exportableTickets=activeTab==="pending"?pendingCombinedTickets:tickets;
+  const pendingCombinedTickets = activeTab==="pending" ? [...tickets,...overdueTickets] : tickets;
+  const activeTabLabel = TABS.find(t=>t.id===activeTab)?.label || activeTab;
+  const exportableTickets = activeTab==="pending" ? pendingCombinedTickets : tickets;
+  const displayTickets = activeTab==="pending" ? pendingCombinedTickets : tickets;
+
+  /* Build pagination page numbers — show up to 5 pages around current */
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const start = Math.max(2, currentPage - 1);
+    const end   = Math.min(totalPages - 1, currentPage + 1);
+    pages.push(1);
+    if (start > 2) pages.push("...");
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
 
   return (
     <div style={{ minHeight:"100vh", background:"#eef2ff", fontFamily:"'Inter','Segoe UI',sans-serif", color:"#111827", position:"relative", overflowX:"hidden" }}>
@@ -1211,10 +1218,10 @@ const AdminDashboard = () => {
       <div style={{ position:"fixed", width:560, height:560, borderRadius:"50%", background:"#6366f1", filter:"blur(130px)", opacity:0.45, top:-130, left:-130, pointerEvents:"none", zIndex:0 }} />
       <div style={{ position:"fixed", width:460, height:460, borderRadius:"50%", background:"#0ea5e9", filter:"blur(130px)", opacity:0.45, bottom:-140, right:-110, pointerEvents:"none", zIndex:0 }} />
 
-      {sidebarOpen&&(<div onClick={()=>setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.2)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", zIndex:150 }} />)}
+      {sidebarOpen && (<div onClick={()=>setSidebarOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.2)", backdropFilter:"blur(4px)", WebkitBackdropFilter:"blur(4px)", zIndex:150 }} />)}
 
-      {/* SIDEBAR DRAWER */}
-      <div className="admin-sidebar" style={{ position:"fixed", top:0, left:0, height:"100vh", width:280, background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", boxShadow: sidebarOpen ? "8px 0 48px rgba(0,0,0,0.12)" : "none", borderRight:"1px solid rgba(255,255,255,0.7)", transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex:160, display:"flex", flexDirection:"column" }}>
+      {/* SIDEBAR */}
+      <div className="admin-sidebar" style={{ position:"fixed", top:0, left:0, height:"100vh", width:280, background:"rgba(255,255,255,0.92)", backdropFilter:"blur(40px)", WebkitBackdropFilter:"blur(40px)", boxShadow:sidebarOpen?"8px 0 48px rgba(0,0,0,0.12)":"none", borderRight:"1px solid rgba(255,255,255,0.7)", transform:sidebarOpen?"translateX(0)":"translateX(-100%)", transition:"transform 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex:160, display:"flex", flexDirection:"column" }}>
         <div style={{ padding:"24px 24px 20px", background:"linear-gradient(135deg,#6366f1,#0ea5e9)", position:"relative", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:42, height:42, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative", overflow:"hidden" }}>
@@ -1229,39 +1236,27 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} style={{ position:"absolute", top:12, right:12, width:30, height:30, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
-            <X size={14} />
-          </button>
+          <button onClick={() => setSidebarOpen(false)} style={{ position:"absolute", top:12, right:12, width:30, height:30, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={14} /></button>
         </div>
 
         <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", gap:6, overflowY:"auto" }}>
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>People</div>
 
-          <button onClick={() => { setSidebarOpen(false); setShowAddPeople(true); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#6366f1", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.2),rgba(14,165,233,0.14))"} onMouseLeave={e => e.currentTarget.style.background="linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))"}>
-            <div style={{ width:34, height:34, borderRadius:10, background:"linear-gradient(135deg,#6366f1,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, boxShadow:"0 4px 12px rgba(99,102,241,0.3)" }}>
-              <svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-            </div>
-            Add People
-          </button>
-
-          <button onClick={() => { setSidebarOpen(false); setShowManageEngineers(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
-            <div style={{ width:34, height:34, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </div>
-            Manage Engineers
-          </button>
-
-          <button onClick={() => { setSidebarOpen(false); setShowManageTechnicians(true); fetchPeople(); }} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(99,102,241,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(99,102,241,0.06)"}>
-            <div style={{ width:34, height:34, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </div>
-            Manage Technicians
-          </button>
+          {[
+            { label:"Add People", icon:<svg width="15" height="15" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>, grad:true, action:() => { setSidebarOpen(false); setShowAddPeople(true); } },
+            { label:"Manage Engineers", icon:<svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, grad:false, action:() => { setSidebarOpen(false); setShowManageEngineers(true); fetchPeople(); } },
+            { label:"Manage Technicians", icon:<svg width="15" height="15" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>, grad:false, action:() => { setSidebarOpen(false); setShowManageTechnicians(true); fetchPeople(); } },
+          ].map(({ label, icon, grad, action }) => (
+            <button key={label} onClick={action} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:grad?"linear-gradient(135deg,rgba(99,102,241,0.12),rgba(14,165,233,0.08))":"rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:grad?"#6366f1":"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
+              <div style={{ width:34, height:34, borderRadius:10, background:grad?"linear-gradient(135deg,#6366f1,#0ea5e9)":"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{icon}</div>
+              {label}
+            </button>
+          ))}
 
           <div style={{ height:1, background:"rgba(0,0,0,0.06)", margin:"10px 8px" }} />
           <div style={{ fontSize:10, fontWeight:700, color:"#9ca3af", letterSpacing:"0.1em", textTransform:"uppercase", padding:"0 8px", marginBottom:4 }}>Account</div>
 
-          <button onClick={handleLogout} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(100,116,139,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left", transition:"all 0.15s" }} onMouseEnter={e => e.currentTarget.style.background="rgba(100,116,139,0.12)"} onMouseLeave={e => e.currentTarget.style.background="rgba(100,116,139,0.06)"}>
+          <button onClick={handleLogout} style={{ width:"100%", padding:"13px 16px", borderRadius:16, border:"none", background:"rgba(100,116,139,0.06)", fontSize:13, fontWeight:600, fontFamily:"inherit", color:"#1e293b", cursor:"pointer", display:"flex", alignItems:"center", gap:12, textAlign:"left" }}>
             <div style={{ width:34, height:34, borderRadius:10, background:"rgba(100,116,139,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <svg width="15" height="15" fill="none" stroke="#1e293b" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             </div>
@@ -1274,7 +1269,7 @@ const AdminDashboard = () => {
       <header style={{ position:"sticky", top:0, zIndex:100, backdropFilter:"blur(25px)", WebkitBackdropFilter:"blur(25px)", background:"rgba(255,255,255,0.55)", boxShadow:"0 4px 24px rgba(0,0,0,0.06)", borderBottom:"1px solid rgba(255,255,255,0.6)" }}>
         <div className="admin-header-inner">
           <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            <button onClick={()=>setSidebarOpen(true)} style={{ width:42, height:42, borderRadius:14, border:"none", background:"rgba(99,102,241,0.08)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, flexShrink:0, transition:"background 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(99,102,241,0.16)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(99,102,241,0.08)"}>
+            <button onClick={()=>setSidebarOpen(true)} style={{ width:42, height:42, borderRadius:14, border:"none", background:"rgba(99,102,241,0.08)", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5, flexShrink:0 }}>
               <span style={{ width:18, height:2, borderRadius:2, background:"#6366f1", display:"block" }} />
               <span style={{ width:14, height:2, borderRadius:2, background:"#6366f1", display:"block" }} />
               <span style={{ width:18, height:2, borderRadius:2, background:"#6366f1", display:"block" }} />
@@ -1286,8 +1281,9 @@ const AdminDashboard = () => {
       </header>
 
       <main className="admin-main">
+        {/* STAT CARDS */}
         <div className="admin-stat-grid">
-          {statCards.map((c,i) => (
+          {statCards.map((c, i) => (
             <div key={i} className="stat-card-box" style={{ ...glassCard }}>
               <div className="stat-card-label" style={{ fontSize:12, color:"#6b7280", fontWeight:500, marginBottom:4 }}>{c.label}</div>
               <div className="stat-card-value" style={{ fontSize:32, fontWeight:600, background:"linear-gradient(90deg,#111827,#4f46e5)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>{c.value}</div>
@@ -1295,54 +1291,104 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* TAB BAR — technician style */}
         <div className="admin-tab-bar">
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={()=>handleTabChange(tab.id)} style={{ padding:"10px 18px", borderRadius:15, border:"none", fontSize:13, fontWeight:500, fontFamily:"inherit", cursor:"pointer", background:activeTab===tab.id?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:activeTab===tab.id?"white":"#6b7280", boxShadow:activeTab===tab.id?"0 8px 24px rgba(99,102,241,0.3)":"none" }}>
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const act = activeTab === tab.id;
+            const ov  = tab.id === "overdue";
+            return (
+              <button
+                key={tab.id}
+                className={`admin-tab-btn${act ? ` active${ov ? " ov" : ""}` : ""}`}
+                onClick={() => handleTabChange(tab.id)}
+              >
+                {tab.label}
+                {tab.ct !== null && (
+                  <span className={`admin-tab-ct${!act && ov && tab.ct > 0 ? " ov-pill" : ""}`}>
+                    {tab.ct}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {activeTab==="overview" && <OverviewTab stats={stats} />}
+        {/* OVERVIEW */}
+        {activeTab === "overview" && <OverviewTab stats={stats} />}
 
-        {activeTab!=="overview" && (
+        {/* TICKET LISTS */}
+        {activeTab !== "overview" && (
           <div>
             {loading ? (
-              <div style={{ ...glassCard, padding:"60px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:16, color:"#6b7280" }}>Loading tickets...</div>
+              <div style={{ ...glassCard, padding:"52px 32px", textAlign:"center" }}>
+                <div style={{ fontSize:14, color:"#6b7280" }}>Loading tickets...</div>
               </div>
-            ) : (activeTab==="pending" ? pendingCombinedTickets : tickets).length === 0 ? (
-              <div style={{ ...glassCard, padding:"72px 32px", textAlign:"center" }}>
-                <div style={{ fontSize:18, fontWeight:600, color:"#111827", marginBottom:6 }}>No Tickets Found</div>
-                <div style={{ fontSize:14, color:"#6b7280" }}>There are no {activeTab.replace("-"," ")} tickets at the moment.</div>
+            ) : displayTickets.length === 0 ? (
+              <div style={{ ...glassCard, padding:"64px 32px", textAlign:"center" }}>
+                <div style={{ fontSize:17, fontWeight:600, color:"#111827", marginBottom:6 }}>No Tickets Found</div>
+                <div style={{ fontSize:13, color:"#6b7280" }}>There are no {activeTab} tickets at the moment.</div>
               </div>
             ) : (
               <>
-                <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}>
-                  <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
+                {/* Section header */}
+                <div className="admin-sec-hd">
+                  <div>
+                    <div className="admin-sec-title">{activeTabLabel} Tickets</div>
+                    <div className="admin-sec-sub">Showing {activeTabLabel.toLowerCase()} tickets · Page {currentPage} of {totalPages || 1}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span className="admin-ct-pill">{totalTickets} Total</span>
+                    <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
+                  </div>
                 </div>
 
-                <TicketTable
+                <TicketList
                   tickets={tickets}
                   overdueTickets={overdueTickets}
                   activeTab={activeTab}
                   onView={setSelectedTicket}
                 />
 
+                {/* PAGINATION — fixed & always rendered when needed */}
                 {totalPages > 1 && (
                   <div className="admin-pagination">
-                    <div className="admin-pagination-label" style={{ fontSize:13, color:"#6b7280" }}>
-                      Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span> — <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> total tickets
+                    <div className="admin-pagination-label" style={{ fontSize:12, color:"#6b7280" }}>
+                      Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of{" "}
+                      <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span>
+                      {" "}— <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> tickets
                     </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <button onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage===1} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                    <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                      {/* Prev */}
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
-                      {Array.from({ length:Math.min(totalPages,5) },(_,i)=>i+1).map(page => (
-                        <button key={page} onClick={()=>setCurrentPage(page)} style={{ width:36, height:36, borderRadius:12, border:currentPage===page?"none":"1px solid rgba(0,0,0,0.08)", background:currentPage===page?"linear-gradient(135deg,#6366f1,#0ea5e9)":"rgba(255,255,255,0.8)", color:currentPage===page?"white":"#374151", fontSize:13, fontWeight:currentPage===page?700:500, cursor:"pointer", fontFamily:"inherit", boxShadow:currentPage===page?"0 4px 14px rgba(99,102,241,0.35)":"none" }}>{page}</button>
-                      ))}
-                      <button onClick={()=>setCurrentPage(p=>Math.min(totalPages,p+1))} disabled={currentPage===totalPages} style={{ width:36, height:36, borderRadius:12, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===totalPages?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===totalPages?"#d1d5db":"#374151", cursor:currentPage===totalPages?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+
+                      {/* Page numbers */}
+                      {getPageNumbers().map((page, idx) =>
+                        page === "..." ? (
+                          <span key={`ellipsis-${idx}`} style={{ width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#9ca3af" }}>…</span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            style={{ width:34, height:34, borderRadius:11, border:currentPage===page?"none":"1px solid rgba(0,0,0,0.08)", background:currentPage===page?"linear-gradient(135deg,#6366f1,#0ea5e9)":"rgba(255,255,255,0.8)", color:currentPage===page?"white":"#374151", fontSize:12, fontWeight:currentPage===page?700:500, cursor:"pointer", fontFamily:"inherit", boxShadow:currentPage===page?"0 4px 14px rgba(99,102,241,0.35)":"none" }}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+
+                      {/* Next */}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===totalPages?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===totalPages?"#d1d5db":"#374151", cursor:currentPage===totalPages?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                       </button>
                     </div>
                   </div>
@@ -1353,7 +1399,7 @@ const AdminDashboard = () => {
         )}
       </main>
 
-      {/* ── TICKET DETAIL MODAL with Comments ── */}
+      {/* TICKET DETAIL MODAL */}
       {selectedTicket && (
         <div onClick={()=>setSelectedTicket(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.25)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:20 }}>
           <div onClick={e=>e.stopPropagation()} className="admin-modal-box">
@@ -1365,14 +1411,14 @@ const AdminDashboard = () => {
             <div className="admin-modal-body">
               <div className="ticket-meta-grid">
                 {[
-                  { label:"TICKET ID",  val:selectedTicket.id },
-                  { label:"SUBJECT",    val:selectedTicket.subject },
-                  { label:"DEPARTMENT", val:selectedTicket.type },
-                  { label:"LOCATION",   val:selectedTicket.location||"—" },
-                  { label:"RAISED BY",  val:selectedTicket.user?.username||"—" },
+                  { label:"TICKET ID",      val:selectedTicket.id },
+                  { label:"SUBJECT",        val:selectedTicket.subject },
+                  { label:"DEPARTMENT",     val:selectedTicket.type },
+                  { label:"LOCATION",       val:selectedTicket.location||"—" },
+                  { label:"RAISED BY",      val:selectedTicket.user?.username||"—" },
                   { label:"CONTACT NUMBER", val:selectedTicket.phone||"—" },
-                  { label:"STATUS",     val:selectedTicket.status },
-                  { label:"DATE",       val:new Date(selectedTicket.createdAt).toLocaleDateString() },
+                  { label:"STATUS",         val:selectedTicket.status },
+                  { label:"DATE",           val:new Date(selectedTicket.createdAt).toLocaleDateString() },
                 ].map((f,i) => (
                   <div key={i} style={{ padding:"13px 15px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                     <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:5 }}>{f.label}</div>
@@ -1380,14 +1426,11 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
-
               <div style={{ marginTop:12, padding:"15px 17px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:10 }}>DESCRIPTION</div>
                 {renderDescription(selectedTicket.body)}
               </div>
-
               <CommentSection ticketId={selectedTicket.id} role="admin" />
-
               <button onClick={()=>setSelectedTicket(null)} style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
             </div>
           </div>
@@ -1405,7 +1448,7 @@ const AdminDashboard = () => {
             <div className="admin-modal-add-body">
               <div style={{ display:"flex", gap:6, padding:6, borderRadius:20, background:"rgba(99,102,241,0.08)", marginBottom:24 }}>
                 {["engineer","technician"].map(r => (
-                  <button key={r} onClick={()=>{ setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[], phone:"", employeeId:"" }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background:addRole===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:addRole===r?"white":"#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", textTransform:"capitalize" }}>{r}</button>
+                  <button key={r} onClick={()=>{ setAddRole(r); setAddForm({ username:"", email:"", password:"", department:"", area:[] }); }} style={{ flex:1, padding:"10px", borderRadius:14, border:"none", background:addRole===r?"linear-gradient(135deg,#6366f1,#0ea5e9)":"transparent", color:addRole===r?"white":"#6b7280", fontSize:13, fontWeight:600, fontFamily:"inherit", cursor:"pointer", textTransform:"capitalize" }}>{r}</button>
                 ))}
               </div>
               <form onSubmit={handleAddPeople}>
@@ -1457,19 +1500,17 @@ const AdminDashboard = () => {
               <button onClick={()=>setShowManageEngineers(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
-              {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : (
-                engineers.map(eng => (
-                  <div key={eng.id} className="people-row">
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{eng.username}</div>
-                      <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{eng.email} · {eng.department}</div>
-                    </div>
-                    <div className="people-row-actions">
-                      <button onClick={()=>setDeleteConfirm({ role:"engineer", id:eng.id, name:eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
-                    </div>
+              {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : engineers.map(eng => (
+                <div key={eng.id} className="people-row">
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{eng.username}</div>
+                    <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{eng.email} · {eng.department}</div>
                   </div>
-                ))
-              )}
+                  <div className="people-row-actions">
+                    <button onClick={()=>setDeleteConfirm({ role:"engineer", id:eng.id, name:eng.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -1484,21 +1525,19 @@ const AdminDashboard = () => {
               <button onClick={()=>setShowManageTechnicians(false)} style={{ position:"absolute", top:14, right:14, width:34, height:34, borderRadius:"50%", border:"none", background:"rgba(255,255,255,0.2)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}><X size={15} /></button>
             </div>
             <div style={{ padding:"24px 28px", overflowY:"auto", flex:1 }}>
-              {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : (
-                technicians.map(tech => (
-                  <div key={tech.id} className="people-row">
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{tech.username}</div>
-                      <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{tech.email} · {tech.department}</div>
-                      <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>Areas: {tech.area||"—"}</div>
-                    </div>
-                    <div className="people-row-actions" style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
-                      <button onClick={()=>{ const currentAreas=tech.area?tech.area.split(",").map(a=>a.trim()):[]; setEditTech({ id:tech.id, name:tech.username, area:currentAreas }); setEditAreaError(""); }} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.07)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Edit Area</button>
-                      <button onClick={()=>setDeleteConfirm({ role:"technician", id:tech.id, name:tech.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
-                    </div>
+              {peopleLoading ? <div style={{ textAlign:"center", padding:"40px 0", color:"#6b7280" }}>Loading...</div> : technicians.map(tech => (
+                <div key={tech.id} className="people-row">
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#111827" }}>{tech.username}</div>
+                    <div style={{ fontSize:12, color:"#6b7280", marginTop:2 }}>{tech.email} · {tech.department}</div>
+                    <div style={{ fontSize:11, color:"#9ca3af", marginTop:3 }}>Areas: {tech.area||"—"}</div>
                   </div>
-                ))
-              )}
+                  <div className="people-row-actions" style={{ display:"flex", gap:8, flexShrink:0, marginLeft:12 }}>
+                    <button onClick={()=>{ const currentAreas=tech.area?tech.area.split(",").map(a=>a.trim()):[]; setEditTech({ id:tech.id, name:tech.username, area:currentAreas }); setEditAreaError(""); }} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.07)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Edit Area</button>
+                    <button onClick={()=>setDeleteConfirm({ role:"technician", id:tech.id, name:tech.username })} style={{ padding:"7px 14px", borderRadius:14, border:"1px solid rgba(100,116,139,0.25)", background:"rgba(100,116,139,0.07)", color:"#1e293b", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer" }}>Remove</button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -1541,6 +1580,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
