@@ -22,7 +22,8 @@ useEffect(() => {
       })
         .then((res) => {
           if (res.status === 401) {
-            navigate("/");
+            setLoading(false);
+            setUser(null);
             return;
           }
           return res.json();
