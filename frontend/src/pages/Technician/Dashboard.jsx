@@ -708,17 +708,7 @@ const TechnicianDashboard = () => {
       )}
 
       {/* ══ MAIN CONTENT ══ */}
-      <div className="td-content">
-
-        {/* STATS */}
-        <div className="td-stats">
-          {STATS.map((s, i) => (
-            <div key={i} className="td-stat">
-              <div className="td-stat-lbl">{s.label}</div>
-              <div className={`td-stat-val${s.warn ? " warn" : ""}`}>{s.val}</div>
-            </div>
-          ))}
-        </div>
+      <div className="td-content"> 
 
         {/* TABS */}
         <div className="td-tabs">

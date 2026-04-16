@@ -385,6 +385,27 @@ const UserDashboard = () => {
     "Admin Block","Cafeteria"
   ];
 
+  const complaintOptions = {
+    Civil: [
+      "Carpentry",
+      "Plumbing",
+      "Mason Work"
+    ],
+    Electrical: [
+      "Switch & Socket",
+      "Tubelight",
+      "Power Board",
+      "Hot Water",
+      "Fan",
+      "Street Light",
+      "Lift"
+    ],
+    HVAC: [
+      "Split AC",
+      "Central AC"
+    ]
+  };
+
   const displayedTicket = prevTicket ?? selectedTicket;
   const initials = username ? username.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "?";
 
@@ -553,18 +574,58 @@ const UserDashboard = () => {
               </div>
             </div>
 
-            {/* Title */}
-            <div style={{ marginBottom:18 }}>
-              <label style={{ display:"block",fontSize:13,fontWeight:500,marginBottom:8,color:"#374151" }}>Complaint Title</label>
-              <input name="title" value={formData.title} onChange={handleInputChange} placeholder="e.g., Fan not working in Room 101" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
-            </div>
-
             {/* Department */}
             <div style={{ marginBottom:18 }}>
               <label style={{ display:"block",fontSize:13,fontWeight:500,marginBottom:8,color:"#374151" }}>Department</label>
-              <select name="department" value={formData.department} onChange={e => setFormData({ ...formData,department:e.target.value })} style={{ ...inputStyle,cursor:"pointer" }}>
+              <select name="department" value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value, title: "" }) } style={{ ...inputStyle,cursor:"pointer" }}>
                 <option value="">Select Department</option>
                 <option>Civil</option><option>Electrical</option><option>HVAC</option>
+              </select>
+            </div>
+
+            {/* Complaint Title */}
+            <div style={{ marginBottom: 18 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  marginBottom: 8,
+                  color: "#374151"
+                }}
+              >
+                Subject
+              </label>
+
+              <select
+                name="title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    title: e.target.value
+                  })
+                }
+                disabled={!formData.department}
+                style={{
+                  ...inputStyle,
+                  cursor: formData.department ? "pointer" : "not-allowed",
+                  background: formData.department ? "#fff" : "#f3f4f6",
+                  color: formData.department ? "#111827" : "#9ca3af"
+                }}
+              >
+                {!formData.department ? (
+                  <option value="">Select a department first</option>
+                ) : (
+                  <>
+                    <option value="">Select Subject</option>
+                    {complaintOptions[formData.department].map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
             </div>
 
