@@ -52,109 +52,90 @@ const RESPONSIVE_CSS = `
     .eng-logout-btn span { display: none; }
   }
 
-  /* ── Tab bar strip ── */
-  .eng-tab-strip {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 14px 32px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+  /* ── Tab bar — horizontal scroll ── */
+  .eng-tab-bar {
+    display: flex; gap: 4px; padding: 5px; border-radius: 16px;
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    margin-bottom: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; width: 100%;
   }
-  @media (max-width: 768px) {
-    .eng-tab-strip { padding: 10px 16px; gap: 7px; }
+  .eng-tab-bar::-webkit-scrollbar { display: none; }
+  .eng-tab-btn {
+    display: flex; align-items: center; gap: 5px; padding: 7px 11px;
+    border-radius: 11px; border: none; font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer; background: transparent;
+    color: #6b7280; white-space: nowrap; flex-shrink: 0; transition: all 0.14s;
   }
-  @media (max-width: 480px) {
-    .eng-tab-strip { padding: 8px 10px; gap: 5px; }
-    .eng-tab-strip button { font-size: 12px !important; padding: 8px 12px !important; }
+  .eng-tab-btn.active {
+    background: linear-gradient(135deg,#6366f1,#0ea5e9); color: white;
+    box-shadow: 0 5px 15px rgba(99,102,241,0.28);
+  }
+  .eng-tab-btn.active.ov {
+    background: linear-gradient(135deg,#b91c1c,#ef4444);
+    box-shadow: 0 5px 15px rgba(185,28,28,0.26);
+  }
+  .eng-tab-ct {
+    min-width: 16px; height: 16px; border-radius: 8px; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; padding: 0 3px;
+    background: rgba(99,102,241,0.1); color: #6366f1;
+  }
+  .eng-tab-btn.active .eng-tab-ct { background: rgba(255,255,255,0.25); color: white; }
+  .eng-tab-ct.ov-pill { background: rgba(185,28,28,0.1); color: #b91c1c; }
+  @media (min-width: 640px) {
+    .eng-tab-btn { padding: 8px 13px; font-size: 13px; border-radius: 12px; }
   }
 
   /* ── Main content area ── */
-  .eng-main {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 28px 32px;
-    position: relative;
-    z-index: 1;
-  }
-  @media (max-width: 768px) {
-    .eng-main { padding: 18px 16px; }
-  }
-  @media (max-width: 480px) {
-    .eng-main { padding: 12px 10px; }
-  }
+  .eng-main { max-width: 1280px; margin: 0 auto; padding: 28px 32px; position: relative; z-index: 1; }
+  @media (max-width: 768px) { .eng-main { padding: 18px 16px; } }
+  @media (max-width: 480px) { .eng-main { padding: 12px 10px; } }
 
-  /* ── Compact ticket row ── */
-  .eng-ticket-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 20px;
-    flex-wrap: nowrap;
-  }
-  .eng-ticket-row-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-  }
-  .eng-ticket-row-meta {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-shrink: 0;
-  }
-  .eng-ticket-row-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-  /* On mobile, stack the row */
-  @media (max-width: 600px) {
-    .eng-ticket-row {
-      flex-wrap: wrap;
-      padding: 12px 14px;
-      gap: 10px;
-    }
-    .eng-ticket-row-left {
-      width: 100%;
-    }
-    .eng-ticket-row-meta {
-      gap: 10px;
-    }
-    .eng-ticket-row-actions {
-      margin-left: auto;
-    }
-  }
-  @media (max-width: 400px) {
-    .eng-ticket-row-meta { gap: 8px; }
-  }
+  /* ── Section Header ── */
+  .eng-sec-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .eng-sec-title { font-size: 15px; font-weight: 600; color: #111827; }
+  .eng-sec-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
 
-  /* ── Meta pill labels ── */
-  .eng-meta-pill {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+  /* ── COMPACT TICKET CARD ── */
+  .atk-card {
+    border-radius: 16px; backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.65); box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    overflow: hidden; margin-bottom: 8px;
   }
-  .eng-meta-pill-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: #9ca3af;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  .atk-priority-banner {
+    padding: 4px 14px; border-bottom: 1px solid rgba(239,68,68,0.1);
+    background: rgba(254,242,242,0.8); display: flex; align-items: center; gap: 6px;
   }
-  .eng-meta-pill-val {
-    font-size: 12px;
-    font-weight: 500;
-    color: #374151;
-    white-space: nowrap;
+  .atk-body { padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .atk-icon {
+    width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; margin-top: 1px;
   }
-  /* Hide department on very small screens */
-  @media (max-width: 480px) {
-    .eng-meta-dept { display: none; }
+  .atk-icon.overdue { background: linear-gradient(135deg,#b91c1c,#ef4444); }
+  .atk-icon.pending  { background: linear-gradient(135deg,#d97706,#f59e0b); }
+  .atk-icon.resolved { background: linear-gradient(135deg,#059669,#10b981); }
+  .atk-icon.closed   { background: linear-gradient(135deg,#6b7280,#9ca3af); }
+  .atk-content { flex: 1; min-width: 0; }
+  .atk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .atk-subject { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .atk-status-pill { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .atk-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .atk-meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #9ca3af; }
+  .atk-view-btn {
+    padding: 6px 13px; border-radius: 10px; border: none; background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    color: white; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 3px 10px rgba(99,102,241,0.28); white-space: nowrap; flex-shrink: 0; margin-top: 2px;
   }
+  @media (min-width: 640px) {
+    .atk-card { border-radius: 18px; margin-bottom: 10px; }
+    .atk-body { padding: 14px 18px; gap: 12px; }
+    .atk-icon { width: 38px; height: 38px; border-radius: 11px; }
+    .atk-subject { font-size: 14px; }
+    .atk-meta-item { font-size: 12px; }
+    .atk-view-btn { font-size: 12px; padding: 7px 15px; }
+  }
+  @media (min-width: 1024px) { .atk-body { padding: 16px 22px; } }
 
   /* ── Ticket card ── */
   .eng-ticket-body { padding: 24px 26px; }
@@ -213,6 +194,9 @@ const RESPONSIVE_CSS = `
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
   }
   .eng-modal-md {
     width: 100%;
@@ -223,6 +207,9 @@ const RESPONSIVE_CSS = `
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
   }
   .eng-modal-lg {
     width: 100%;
@@ -233,34 +220,38 @@ const RESPONSIVE_CSS = `
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
   }
   @media (max-width: 680px) {
     .eng-modal-sm, .eng-modal-md, .eng-modal-lg {
       border-radius: 20px;
-      max-width: 98vw;
+      max-width: 92vw;
+      max-height: 72vh;
     }
   }
 
   /* ── Modal scroll bodies ── */
   .eng-modal-body-sm {
     padding: 24px 28px;
-    max-height: 80vh;
+    flex: 1;
     overflow-y: auto;
   }
   .eng-modal-body-md {
     padding: 24px 28px;
-    max-height: 76vh;
+    flex: 1;
     overflow-y: auto;
   }
   .eng-modal-body-lg {
     padding: 24px 28px;
-    max-height: 68vh;
+    flex: 1;
     overflow-y: auto;
   }
-  @media (max-width: 480px) {
+  @media (max-width: 680px) {
     .eng-modal-body-sm,
     .eng-modal-body-md,
-    .eng-modal-body-lg { padding: 16px 14px; }
+    .eng-modal-body-lg { padding: 12px 12px 16px; }
   }
 
   /* ── Ticket detail grid (8 fields) ── */
@@ -590,98 +581,77 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
   );
 };
 
-/* ─── Compact Ticket Row ───────────────────────────────────────────────────── */
-const TicketRow = ({ ticket, onView, onTogglePriority, priorityLoading }) => {
+/* ─── Compact Ticket Card ─────────────────────────────────────────────────── */
+const TicketCard = ({ ticket, onView, onTogglePriority, priorityLoading }) => {
   const statusKey = (ticket.status || "").toLowerCase().replace(/_/g, "-");
-  const ss = getStatusStyle(statusKey);
   const isPriority = ticket.isPriority;
   const canPriority = ticket.status === "PENDING" || ticket.status === "OVERDUE";
-
-  const formattedDate = ticket.createdAt
-    ? new Date(ticket.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
-    : "—";
+  const formattedDate = ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—";
 
   return (
-    <div style={{ ...rowCard, outline: isPriority ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
-      {/* Priority strip */}
+    <div className="atk-card" style={{ outline: isPriority ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
       {isPriority && (
-        <div style={{ padding: "4px 16px", background: "rgba(254,242,242,0.8)", borderBottom: "1px solid rgba(239,68,68,0.1)", display: "flex", alignItems: "center", gap: 5 }}>
+        <div className="atk-priority-banner">
           <svg width="11" height="11" fill="#dc2626" viewBox="0 0 24 24">
             <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
           </svg>
           <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY</span>
         </div>
       )}
-
-      <div className="eng-ticket-row">
-        {/* LEFT: icon + title + id */}
-        <div className="eng-ticket-row-left">
-          {/* Status icon bubble */}
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", flexShrink: 0 }}>
-            {getStatusIcon(ticket.status)}
-          </div>
-
-          {/* Title + id */}
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {ticket.subject || "No Subject"}
-              </span>
+      <div className="atk-body">
+        <div className={`atk-icon ${statusKey}`}>
+          {getStatusIcon(statusKey)}
+        </div>
+        <div className="atk-content">
+          <div className="atk-top">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="atk-subject">{ticket.subject || "No Subject"}</div>
+              <div className="atk-meta" style={{ marginTop: 3 }}>
+                <span className="atk-meta-item"><span>#{ticket.id}</span></span>
+                {ticket.type && (
+                  <span className="atk-meta-item">
+                    <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    {ticket.type}
+                  </span>
+                )}
+                <span className="atk-meta-item">
+                  <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  {formattedDate}
+                </span>
+              </div>
             </div>
-            <span style={{ fontSize: 11, color: "#9ca3af" }}>#{ticket.id}</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+              {canPriority && (
+                <button
+                  className="eng-priority-btn"
+                  onClick={() => onTogglePriority(ticket)}
+                  disabled={priorityLoading === ticket.id}
+                  style={{
+                    border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)",
+                    background: isPriority ? "rgba(239,68,68,0.1)" : "rgba(254,242,242,0.85)",
+                    color: "#dc2626",
+                    opacity: priorityLoading === ticket.id ? 0.6 : 1,
+                    cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
+                    padding: "4px 8px", fontSize: 10, borderRadius: 8,
+                  }}
+                >
+                  <svg width="10" height="10" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0, marginRight: 2 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                  {priorityLoading === ticket.id ? "..." : isPriority ? "Unmark" : "Priority"}
+                </button>
+              )}
+              <button className="atk-view-btn" onClick={() => onView(ticket)}>
+                <Eye size={11} /> View
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* MIDDLE: meta chips */}
-        <div className="eng-ticket-row-meta">
-          <div className="eng-meta-pill eng-meta-dept">
-            <span className="eng-meta-pill-label">Dept</span>
-            <span className="eng-meta-pill-val">{ticket.type || "—"}</span>
-          </div>
-          <div className="eng-meta-pill">
-            <span className="eng-meta-pill-label">Date</span>
-            <span className="eng-meta-pill-val">{formattedDate}</span>
-          </div>
-          {/* Status badge */}
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 20, color: ss.color, background: ss.bg, border: `1px solid ${ss.border}`, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
-            {getStatusIcon(ticket.status)}
-            <span>{ticket.status}</span>
-          </div>
-        </div>
-
-        {/* RIGHT: actions */}
-        <div className="eng-ticket-row-actions">
-          {canPriority && (
-            <button
-              className="eng-priority-btn"
-              onClick={() => onTogglePriority(ticket)}
-              disabled={priorityLoading === ticket.id}
-              style={{
-                border: isPriority ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(239,68,68,0.2)",
-                background: isPriority ? "rgba(239,68,68,0.1)" : "rgba(254,242,242,0.85)",
-                color: "#dc2626",
-                opacity: priorityLoading === ticket.id ? 0.6 : 1,
-                cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
-              }}
-            >
-              <svg width="12" height="12" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-              <span className="eng-priority-label">{priorityLoading === ticket.id ? "..." : isPriority ? "Unmark" : "Priority"}</span>
-            </button>
-          )}
-          <button className="eng-view-btn" onClick={() => onView(ticket)}>
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            View
-          </button>
         </div>
       </div>
     </div>
   );
 };
+
 
 /* ─── Main Dashboard ───────────────────────────────────────────────────────── */
 const EngineerDashboard = () => {
@@ -754,7 +724,7 @@ const EngineerDashboard = () => {
           setNotifs(data.notifications);
           setUnread(data.notifications.filter(n => !n.isRead).length);
         }
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error(e); }
     };
     fetchEngineerInfo();
     fetchProfile();
@@ -933,17 +903,27 @@ const EngineerDashboard = () => {
 
       {/* TAB STRIP */}
       <div style={{ position: "sticky", top: 68, zIndex: 90, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", background: "rgba(255,255,255,0.45)", borderBottom: "1px solid rgba(255,255,255,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.04)" }}>
-        <div className="eng-tab-strip">
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.key;
-            const badge = tabBadgeStyle(tab.key, isActive);
-            return (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ padding: "9px 18px", borderRadius: 20, border: "none", background: isActive ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.7)", color: isActive ? "white" : "#374151", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: isActive ? "0 8px 24px rgba(99,102,241,0.3)" : "0 2px 8px rgba(0,0,0,0.05)", transition: "all 0.2s" }}>
-                <span>{tab.label}</span>
-                {tab.count > 0 && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: badge.bg, color: badge.color, minWidth: 20, textAlign: "center" }}>{tab.count}</span>}
-              </button>
-            );
-          })}
+        <div style={{ padding: "0 16px", maxWidth: 1280, margin: "0 auto", marginTop: 16 }}>
+          <div className="eng-tab-bar">
+            {tabs.map(tab => {
+              const act = activeTab === tab.key;
+              const ov = tab.key === "overdue";
+              return (
+                <button
+                  key={tab.key}
+                  className={`eng-tab-btn${act ? ` active${ov ? " ov" : ""}` : ""}`}
+                  onClick={() => setActiveTab(tab.key)}
+                >
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`eng-tab-ct${!act && ov && tab.count > 0 ? " ov-pill" : ""}`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -959,20 +939,28 @@ const EngineerDashboard = () => {
                 <div style={{ fontSize: 13, color: "#9ca3af" }}>There are no {activeTab.replace("-", " ")} tickets at the moment.</div>
               </div>
             ) : (
-              <div className="eng-ticket-list">
-                {(tickets ?? [])
-                  .slice()
-                  .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
-                  .map(ticket => (
-                    <TicketRow
-                      key={ticket.id}
-                      ticket={ticket}
-                      onView={setSelectedTicket}
-                      onTogglePriority={handleTogglePriority}
-                      priorityLoading={priorityLoading}
-                    />
-                  ))
-                }
+              <div>
+                <div className="eng-sec-hd">
+                  <div>
+                    <div className="eng-sec-title">{tabs.find(t=>t.key===activeTab)?.label} Tickets</div>
+                    <div className="eng-sec-sub">Showing {tabs.find(t=>t.key===activeTab)?.label?.toLowerCase()} tickets · {tickets.length} Total</div>
+                  </div>
+                </div>
+                <div className="eng-ticket-list">
+                  {(tickets ?? [])
+                    .slice()
+                    .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0))
+                    .map(ticket => (
+                      <TicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        onView={setSelectedTicket}
+                        onTogglePriority={handleTogglePriority}
+                        priorityLoading={priorityLoading}
+                      />
+                    ))
+                  }
+                </div>
               </div>
             )}
           </div>
@@ -1088,7 +1076,7 @@ const EngineerDashboard = () => {
       {selectedTicket && (
         <div onClick={() => setSelectedTicket(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
           <div onClick={e => e.stopPropagation()} className="eng-modal-md">
-            <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative" }}>
+            <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative", flexShrink: 0 }}>
               <div style={{ fontSize: 18, fontWeight: 600, color: "white" }}>Ticket Details</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>#{selectedTicket.id} · {selectedTicket.subject}</div>
               <button onClick={() => setSelectedTicket(null)} style={{ position: "absolute", top: 14, right: 14, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={15} /></button>
@@ -1183,7 +1171,7 @@ const EngineerDashboard = () => {
 const GlassModal = ({ children, onClose, title }) => (
   <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
     <div onClick={e => e.stopPropagation()} className="eng-modal-lg">
-      <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "22px 28px", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div><div style={{ fontSize: 18, fontWeight: 600, color: "white" }}>{title}</div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>View and manage information</div></div>
         <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}><X size={15} /></button>
       </div>

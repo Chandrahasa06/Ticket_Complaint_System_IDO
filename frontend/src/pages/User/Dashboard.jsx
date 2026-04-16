@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
 import { unsubscribeFromPush } from '../../utils/pushNotifications';
 import CustomToast from "../../components/CustomToast";
+import { Clock, Activity, CheckCircle, Calendar, Eye } from "lucide-react";
 
 /* ─── inject responsive CSS once ─── */
 const RESPONSIVE_CSS = `
@@ -54,6 +54,41 @@ const RESPONSIVE_CSS = `
   @media(min-width:480px){.ud-raise-card{padding:28px 24px;}}
   @media(min-width:768px){.ud-raise-card{padding:36px 40px;max-width:780px;}}
 
+  /* ── COMPACT TICKET CARD ── */
+  .atk-card {
+    border-radius: 16px; backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.65); box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    overflow: hidden; margin-bottom: 12px; border: 1.5px solid transparent;
+  }
+  .atk-body { padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .atk-icon {
+    width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; margin-top: 1px;
+  }
+  .atk-icon.overdue { background: linear-gradient(135deg,#b91c1c,#ef4444); }
+  .atk-icon.pending  { background: linear-gradient(135deg,#d97706,#f59e0b); }
+  .atk-icon.resolved { background: linear-gradient(135deg,#059669,#10b981); }
+  .atk-icon.closed   { background: linear-gradient(135deg,#6b7280,#9ca3af); }
+  .atk-content { flex: 1; min-width: 0; }
+  .atk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .atk-subject { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .atk-status-pill { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .atk-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .atk-meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #9ca3af; }
+  .ud-fu-tag { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; color: #7c3aed; background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.18); margin-left: 6px; }
+
+  @media(min-width:640px){
+    .atk-card { border-radius: 18px; margin-bottom: 14px; }
+    .atk-body { padding: 14px 18px; gap: 12px; }
+    .atk-icon { width: 38px; height: 38px; border-radius: 11px; }
+    .atk-subject { font-size: 14px; }
+    .atk-meta-item { font-size: 12px; }
+  }
+  @media(min-width:1024px){
+    .atk-body { padding: 16px 22px; }
+    .atk-subject { font-size: 15px; }
+  }
+
   /* NAME + PHONE GRID */
   .ud-name-phone-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:18px;}
   @media(min-width:540px){.ud-name-phone-grid{grid-template-columns:1fr 1fr;}}
@@ -64,17 +99,16 @@ const RESPONSIVE_CSS = `
 
   /* RESOLVED BUTTONS */
   .ud-resolved-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
-  .ud-resolved-btns button{flex:1 1 calc(33% - 8px);min-width:100px;}
+  .ud-resolved-btns button{flex:1 1 calc(33% - 8px);min-width:100px;display:flex;align-items:center;justify-content:center;gap:6px;}
   @media(max-width:400px){.ud-resolved-btns button{flex:1 1 100%;}}
 
   /* MODAL */
-  .ud-modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0;}
-  @media(min-width:600px){.ud-modal-wrap{align-items:center;padding:20px;}}
+  .ud-modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,0.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
   .ud-modal-box{
-    width:100%;max-width:100%;border-radius:28px 28px 0 0;
-    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+    width:100%;max-width:92vw;border-radius:20px;
+    overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.18);
     background:rgba(255,255,255,0.97);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-    max-height:92vh;display:flex;flex-direction:column;
+    max-height:72vh;display:flex;flex-direction:column;
   }
   @media(min-width:600px){
     .ud-modal-box{border-radius:32px;max-width:660px;max-height:88vh;}
@@ -84,10 +118,10 @@ const RESPONSIVE_CSS = `
 
   /* Profile modal slightly smaller */
   .ud-profile-modal-box{
-    width:100%;max-width:100%;border-radius:28px 28px 0 0;
-    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+    width:100%;max-width:92vw;border-radius:20px;
+    overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.18);
     background:rgba(255,255,255,0.97);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-    max-height:92vh;display:flex;flex-direction:column;
+    max-height:72vh;display:flex;flex-direction:column;
   }
   @media(min-width:600px){
     .ud-profile-modal-box{border-radius:32px;max-width:480px;max-height:88vh;}
@@ -97,10 +131,10 @@ const RESPONSIVE_CSS = `
 
   /* Followup modal */
   .ud-followup-modal-box{
-    width:100%;max-width:100%;border-radius:28px 28px 0 0;
-    overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,0.18);
+    width:100%;max-width:92vw;border-radius:20px;
+    overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.18);
     background:rgba(255,255,255,0.97);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-    max-height:92vh;display:flex;flex-direction:column;
+    max-height:72vh;display:flex;flex-direction:column;
   }
   @media(min-width:600px){
     .ud-followup-modal-box{border-radius:32px;max-width:580px;max-height:88vh;}
@@ -386,7 +420,7 @@ const UserDashboard = () => {
   const modalBackdrop = {
     position:"fixed",inset:0,background:"rgba(0,0,0,0.25)",
     backdropFilter:"blur(10px)",WebkitBackdropFilter:"blur(10px)",
-    display:"flex",zIndex:200,
+    display:"flex",alignItems:"center",justifyContent:"center",padding:20,zIndex:200,
   };
 
   return (
@@ -616,36 +650,38 @@ const UserDashboard = () => {
               </div>
             )}
             {!loading && tickets.map((ticket) => (
-              <div key={ticket.id} style={{ ...glassCard,marginBottom:14 }}>
-                <div style={{ padding:"18px 18px" }}>
-                  <div className="ud-ticket-head">
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <div className="ud-ticket-subject">
-                        {ticket.subject}
-                        {ticket.prevId && (
-                          <span style={{ marginLeft:8,padding:"2px 8px",borderRadius:20,fontSize:10,fontWeight:600,color:"#7c3aed",background:"rgba(124,58,237,0.10)",border:"1px solid rgba(124,58,237,0.18)",verticalAlign:"middle",display:"inline-block" }}>Follow-up</span>
-                        )}
-                      </div>
-                      <div style={{ display:"flex",flexWrap:"wrap",gap:10,fontSize:12,color:"#6b7280" }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:5 }}>
-                          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                          {ticket.type}
-                        </div>
-                        <div style={{ display:"flex",alignItems:"center",gap:5 }}>
-                          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          {new Date(ticket.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ display:"flex",alignItems:"center",gap:5,flexShrink:0 }}>
-                      <span style={{ width:7,height:7,borderRadius:"50%",background:"#fbbf24",display:"inline-block" }} />
-                      <span style={{ fontSize:12,fontWeight:600,color:"#d97706" }}>Pending</span>
-                    </div>
+              <div key={ticket.id} className="atk-card">
+                <div className="atk-body">
+                  <div className="atk-icon pending">
+                    <Clock size={16} />
                   </div>
-                  <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ width:"100%",padding:"11px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#6366f1,#0ea5e9)",color:"white",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:"0 8px 24px rgba(99,102,241,0.3)",marginTop:4 }}>
-                    View Details
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
+                  <div className="atk-content">
+                    <div className="atk-top">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="atk-subject">
+                           {ticket.subject}
+                           {ticket.prevId && <span className="ud-fu-tag">Follow-up</span>}
+                        </div>
+                        <div className="atk-meta" style={{ marginTop: 4 }}>
+                          <span className="atk-meta-item">
+                            <Activity size={12} color="#9ca3af" />
+                            {ticket.type}
+                          </span>
+                          <span className="atk-meta-item">
+                            <Calendar size={12} color="#9ca3af" />
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="atk-status-pill" style={{ color: "#d97706", background: "rgba(254,243,199,0.85)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                        Pending
+                      </div>
+                    </div>
+                    <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ width:"100%",padding:"11px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6366f1,#0ea5e9)",color:"white",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:"0 8px 24px rgba(99,102,241,0.3)",marginTop:10 }}>
+                      <Eye size={14} />
+                      View Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -670,54 +706,61 @@ const UserDashboard = () => {
                 <div style={{ fontSize:13,color:"#9ca3af" }}>You have no resolved service requests yet.</div>
               </div>
             )}
-            {!loading && tickets.map((ticket) => (
-              <div key={ticket.id} style={{ ...glassCard,marginBottom:14,background:ticket.satisfied?"rgba(236,253,245,0.75)":"rgba(255,255,255,0.6)",border:ticket.satisfied?"1.5px solid rgba(16,185,129,0.28)":"none" }}>
-                <div style={{ padding:"18px 18px" }}>
-                  <div className="ud-ticket-head">
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <div className="ud-ticket-subject">{ticket.subject}</div>
-                      <div style={{ display:"flex",flexWrap:"wrap",gap:10,fontSize:12,color:"#6b7280" }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:5 }}>
-                          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                          {ticket.type}
+            {!loading && tickets.map((ticket) => {
+              const bg = ticket.satisfied ? "rgba(236,253,245,0.75)" : "rgba(255,255,255,0.65)";
+              const bcolor = ticket.satisfied ? "rgba(16,185,129,0.4)" : "transparent";
+              return (
+              <div key={ticket.id} className="atk-card" style={{ background: bg, borderColor: bcolor }}>
+                <div className="atk-body">
+                  <div className="atk-icon resolved" style={{ background: ticket.satisfied ? "linear-gradient(135deg,#10b981,#34d399)" : "" }}>
+                    <CheckCircle size={16} />
+                  </div>
+                  <div className="atk-content">
+                    <div className="atk-top">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="atk-subject">
+                           {ticket.subject}
+                           {ticket.prevId && <span className="ud-fu-tag">Follow-up</span>}
                         </div>
-                        <div style={{ display:"flex",alignItems:"center",gap:5 }}>
-                          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          {new Date(ticket.createdAt).toLocaleDateString()}
+                        <div className="atk-meta" style={{ marginTop: 4 }}>
+                          <span className="atk-meta-item">
+                            <Activity size={12} color="#9ca3af" />
+                            {ticket.type}
+                          </span>
+                          <span className="atk-meta-item">
+                            <Calendar size={12} color="#9ca3af" />
+                            {new Date(ticket.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
+                      <div className="atk-status-pill" style={{ color: "#059669", background: "rgba(236,253,245,0.88)", border: "1px solid rgba(16,185,129,0.22)" }}>
+                        {ticket.satisfied ? "Satisfied ✓" : "Resolved"}
+                      </div>
                     </div>
-                    <div style={{ display:"flex",alignItems:"center",gap:5,flexShrink:0 }}>
-                      <svg width="15" height="15" fill="#10b981" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                      <span style={{ fontSize:12,fontWeight:600,color:"#059669" }}>{ticket.satisfied?"Satisfied ✓":"Resolved"}</span>
+                    {/* BUTTONS */}
+                    <div style={{ marginTop: 10 }}>
+                      {!ticket.satisfied ? (
+                        <div className="ud-resolved-btns">
+                           <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ padding:"10px 8px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6366f1,#0ea5e9)",color:"white",fontSize:12,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
+                             <Eye size={13} /> Details
+                           </button>
+                           <button onClick={() => handleSatisfied(ticket.id)} style={{ padding:"10px 8px",borderRadius:14,border:"1px solid rgba(16,185,129,0.18)",background:"rgba(16,185,129,0.10)",color:"#059669",fontSize:12,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                             <CheckCircle size={13} /> Satisfied
+                           </button>
+                           <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"",description:"" }); }} style={{ padding:"10px 8px",borderRadius:14,border:"1px solid rgba(100,116,139,0.2)",background:"rgba(100,116,139,0.08)",color:"#1e293b",fontSize:12,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
+                             <Activity size={13} /> Follow-up
+                           </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ width:"100%",padding:"10px 14px",borderRadius:14,border:"1px solid rgba(16,185,129,0.2)",background:"rgba(16,185,129,0.07)",color:"#059669",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7 }}>
+                          <Eye size={13} /> View Details
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {!ticket.satisfied && (
-                    <div className="ud-resolved-btns">
-                      <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ padding:"11px 10px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#6366f1,#0ea5e9)",color:"white",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:"0 8px 24px rgba(99,102,241,0.3)" }}>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        Details
-                      </button>
-                      <button onClick={() => handleSatisfied(ticket.id)} style={{ padding:"11px 10px",borderRadius:18,border:"1px solid rgba(16,185,129,0.18)",background:"rgba(16,185,129,0.10)",color:"#059669",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        Satisfied
-                      </button>
-                      <button onClick={() => { setFollowupTicket(ticket); setFollowupForm({ title:"",description:"" }); }} style={{ padding:"11px 10px",borderRadius:18,border:"1px solid rgba(100,116,139,0.2)",background:"rgba(100,116,139,0.08)",color:"#1e293b",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6 }}>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        Follow-up
-                      </button>
-                    </div>
-                  )}
-                  {ticket.satisfied && (
-                    <button onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }} style={{ padding:"10px 18px",borderRadius:18,border:"1px solid rgba(16,185,129,0.2)",background:"rgba(16,185,129,0.07)",color:"#059669",fontSize:13,fontWeight:500,fontFamily:"inherit",cursor:"pointer",display:"flex",alignItems:"center",gap:7,marginTop:4 }}>
-                      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                      View Details
-                    </button>
-                  )}
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         )}
       </main>
@@ -727,9 +770,8 @@ const UserDashboard = () => {
         <div
           onClick={() => { setShowProfileModal(false); setEditingPhone(false); setPhoneUpdateMsg(null); }}
           className="ud-modal-wrap"
-          style={{ ...modalBackdrop,alignItems:"flex-end" }}
+          style={modalBackdrop}
         >
-          <style>{`@media(min-width:600px){.ud-profile-modal-align{align-items:center!important;}}`}</style>
           <div
             onClick={e => e.stopPropagation()}
             className="ud-profile-modal-box"

@@ -153,9 +153,12 @@ const RESPONSIVE_CSS = `
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
   }
   @media (max-width: 680px) {
-    .admin-modal-box { border-radius: 20px; max-width: 98vw; }
+    .admin-modal-box { border-radius: 20px; max-width: 92vw; max-height: 72vh; }
   }
 
   .admin-modal-add {
@@ -170,8 +173,8 @@ const RESPONSIVE_CSS = `
     flex-direction: column;
     max-height: 90vh;
   }
-  @media (max-width: 540px) {
-    .admin-modal-add { border-radius: 18px; max-width: 98vw; }
+  @media (max-width: 680px) {
+    .admin-modal-add { border-radius: 20px; max-width: 92vw; max-height: 72vh; }
   }
 
   .admin-modal-people {
@@ -187,8 +190,8 @@ const RESPONSIVE_CSS = `
     display: flex;
     flex-direction: column;
   }
-  @media (max-width: 660px) {
-    .admin-modal-people { border-radius: 18px; max-width: 98vw; }
+  @media (max-width: 680px) {
+    .admin-modal-people { border-radius: 20px; max-width: 92vw; max-height: 72vh; }
   }
 
   /* ── Modal scroll body ── */
@@ -470,16 +473,6 @@ const RESPONSIVE_CSS = `
   }
 `;
 
-const getStatusStyle = (status) => {
-  const s = (status || "").toLowerCase().replace("_","-");
-  const map = {
-    overdue:  { color:"#b91c1c", background:"rgba(254,242,242,0.92)", border:"rgba(252,165,165,0.35)" },
-    pending:  { color:"#d97706", background:"rgba(254,243,199,0.85)", border:"rgba(245,158,11,0.25)" },
-    resolved: { color:"#059669", background:"rgba(236,253,245,0.88)", border:"rgba(16,185,129,0.22)" },
-    closed:   { color:"#6b7280", background:"rgba(243,244,246,0.85)", border:"rgba(156,163,175,0.25)" },
-  };
-  return map[s] || map.closed;
-};
 
 const getStatusIcon = (status) => {
   const s = (status || "").toLowerCase().replace("_","-");
@@ -926,8 +919,6 @@ const renderDescription = (body = "") => {
 /* ─── Compact Ticket Card ── */
 const TicketCard = ({ t, onView, isOverdue }) => {
   const statusKey = (t.status || "").toLowerCase().replace("_", "-");
-  const ss = getStatusStyle(statusKey);
-  const formattedDate = new Date(t.createdAt).toLocaleDateString(undefined, { day:"numeric", month:"short", year:"numeric" });
 
   return (
     <div className="atk-card" style={{ outline: isOverdue ? "2px solid rgba(239,68,68,0.35)" : "none" }}>
@@ -1145,6 +1136,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     if(activeTab==="overview") fetchStats();
     else fetchTickets(activeTab, 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   useEffect(() => { subscribeToPush(); }, []);
@@ -1152,6 +1144,7 @@ const AdminDashboard = () => {
   /* ── Pagination: re-fetch when page changes (but not on tab change — tab change resets page to 1 above) ── */
   useEffect(() => {
     if(activeTab!=="overview" && currentPage > 1) fetchTickets(activeTab, currentPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);

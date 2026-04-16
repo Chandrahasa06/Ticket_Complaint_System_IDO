@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Eye, CheckCircle, X, MapPin, Calendar, Wrench,
   AlertTriangle, KeyRound, EyeOff, Eye as EyeIcon,
-  Send, Pencil, Trash2,
+  Send, Pencil, Trash2, Clock, Activity
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/pushNotifications';
@@ -167,27 +167,33 @@ const CSS = `
     flex-shrink: 0; white-space: nowrap;
   }
 
-  /* ── TICKET CARD ── */
-  .td-card {
-    border-radius: 20px;
-    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-    background: rgba(255,255,255,0.62);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
-    margin-bottom: 12px; overflow: hidden;
+  /* ── COMPACT TICKET CARD ── */
+  .atk-card {
+    border-radius: 16px; backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.65); box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    overflow: hidden; margin-bottom: 12px;
   }
-  .td-card-bd { padding: 14px 14px 12px; }
-  .td-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
-  .td-card-left { flex: 1; min-width: 0; }
-  .td-id-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
-  .td-tid { font-size: 10px; font-weight: 600; color: #9ca3af; letter-spacing: 0.05em; }
-  .td-fu-tag { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; color: #7c3aed; background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.18); }
-  .td-subj { font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 3px; line-height: 1.4; }
-  .td-prev { font-size: 12px; color: #6b7280; margin-bottom: 10px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .td-status { padding: 6px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; align-self: flex-start; }
-  .td-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
-  .td-mi { display: flex; align-items: flex-start; gap: 5px; }
-  .td-ml { font-size: 10px; color: #9ca3af; margin-bottom: 1px; }
-  .td-mv { font-size: 11px; font-weight: 500; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .atk-priority-banner {
+    padding: 4px 14px; border-bottom: 1px solid rgba(239,68,68,0.1);
+    background: rgba(254,242,242,0.8); display: flex; align-items: center; gap: 6px;
+  }
+  .atk-body { padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
+  .atk-icon {
+    width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg,#6366f1,#0ea5e9);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; margin-top: 1px;
+  }
+  .atk-icon.overdue { background: linear-gradient(135deg,#b91c1c,#ef4444); }
+  .atk-icon.pending  { background: linear-gradient(135deg,#d97706,#f59e0b); }
+  .atk-icon.resolved { background: linear-gradient(135deg,#059669,#10b981); }
+  .atk-icon.closed   { background: linear-gradient(135deg,#6b7280,#9ca3af); }
+  .atk-content { flex: 1; min-width: 0; }
+  .atk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .atk-subject { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .atk-status-pill { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .atk-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .atk-meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #9ca3af; }
+  .td-fu-tag { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; color: #7c3aed; background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.18); margin-left: 6px; }
+
 
   /* ── TICKET ACTION BUTTONS ── */
   .td-acts {
@@ -218,16 +224,16 @@ const CSS = `
   .td-bk {
     position: fixed; inset: 0; background: rgba(0,0,0,0.32);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
   }
   .td-sheet {
-    width: 100%; max-height: 93vh;
-    border-radius: 22px 22px 0 0; overflow: hidden;
+    width: 100%; max-width: 92vw; max-height: 72vh;
+    border-radius: 20px; overflow: hidden;
     display: flex; flex-direction: column;
     background: rgba(255,255,255,0.97);
-    box-shadow: 0 -18px 55px rgba(0,0,0,0.18);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.18);
   }
-  .td-handle { width: 34px; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.15); margin: 9px auto 0; flex-shrink: 0; }
+  .td-handle { display: none; }
   .td-sh-hd { padding: 13px 16px 15px; position: relative; flex-shrink: 0; }
   .td-sh-hd-title { font-size: 17px; font-weight: 600; color: white; }
   .td-sh-hd-sub { font-size: 12px; color: rgba(255,255,255,0.72); margin-top: 2px; }
@@ -287,9 +293,11 @@ const CSS = `
 
     .td-tab { padding: 8px 13px; font-size: 13px; border-radius: 12px; }
 
-    .td-card-bd { padding: 20px 20px 14px; }
-    .td-subj { font-size: 15px; }
-    .td-mv { font-size: 12px; }
+    .atk-card { border-radius: 18px; }
+    .atk-body { padding: 14px 18px; gap: 12px; }
+    .atk-icon { width: 38px; height: 38px; border-radius: 11px; }
+    .atk-subject { font-size: 14px; }
+    .atk-meta-item { font-size: 12px; }
     .td-acts { padding: 12px 20px; gap: 8px; }
     .td-act { font-size: 12px; padding: 9px 14px; flex: 0 1 auto; }
 
@@ -327,8 +335,8 @@ const CSS = `
     .td-stat { padding: 24px 22px; }
     .td-stat-val { font-size: 40px; }
 
-    .td-card-bd { padding: 24px 24px 16px; }
-    .td-subj { font-size: 16px; }
+    .atk-body { padding: 16px 22px; }
+    .atk-subject { font-size: 15px; }
     .td-acts { padding: 14px 24px; gap: 10px; }
     .td-act { font-size: 13px; padding: 10px 18px; }
     .td-meta { gap: 12px; }
@@ -355,6 +363,18 @@ const statusStyle = (s) => {
     overdue:  { color: "#b91c1c", bg: "rgba(254,242,242,0.88)", border: "rgba(185,28,28,0.25)" },
   };
   return m[(s || "").toLowerCase().replace("_", "-")] || m.closed;
+};
+
+const getStatusIcon = (status) => {
+  const s = (status || "").toLowerCase().replace("_", "-");
+  switch (s) {
+    case "pending": return <Clock size={13} />;
+    case "in-progress": return <Activity size={13} />;
+    case "overdue": return <AlertTriangle size={13} />;
+    case "resolved": return <CheckCircle size={13} />;
+    case "closed": return <X size={13} />;
+    default: return null;
+  }
 };
 
 const ROLE_STYLE = {
@@ -732,42 +752,46 @@ const TechnicianDashboard = () => {
   const isDone = t.status === "RESOLVED" || t.status === "CLOSED";
   const isRes  = t.status === "RESOLVED";
   const isCls  = t.status === "CLOSED";
+  const statusKey = (t.status || "").toLowerCase().replace(/_/g, "-");
   return (
-    <div key={t.id} className="td-card" style={{ outline: t.isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
+    <div key={t.id} className="atk-card" style={{ outline: t.isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
       {t.isPriority && (
-        <div style={{ padding: "5px 14px", borderBottom: "1px solid rgba(239,68,68,0.1)", background: "rgba(254,242,242,0.8)", display: "flex", alignItems: "center", gap: 6 }}>
-          <svg width="12" height="12" fill="#dc2626" viewBox="0 0 24 24">
+        <div className="atk-priority-banner">
+          <svg width="11" height="11" fill="#dc2626" viewBox="0 0 24 24">
             <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
           </svg>
           <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY TICKET</span>
         </div>
       )}
-      <div className="td-card-bd">
-        <div className="td-card-top">
-          <div className="td-card-left">
-            <div className="td-id-row">
-              <span className="td-tid">#{t.id}</span>
-              {t.prevId && <span className="td-fu-tag">Follow-up</span>}
+      <div className="atk-body">
+        <div className={`atk-icon ${statusKey}`}>
+          {getStatusIcon(statusKey)}
+        </div>
+        <div className="atk-content">
+          <div className="atk-top">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="atk-subject">{t.subject || "No Subject"}</div>
+              <div className="atk-meta" style={{ marginTop: 3 }}>
+                <span className="atk-meta-item">
+                  <span>#{t.id}</span>
+                  {t.prevId && <span className="td-fu-tag">Follow-up</span>}
+                </span>
+                {t.area && (
+                  <span className="atk-meta-item">
+                    <MapPin size={10} color="#9ca3af" />
+                    {t.area}
+                  </span>
+                )}
+                <span className="atk-meta-item">
+                  <Calendar size={10} color="#9ca3af" />
+                  {new Date(t.createdAt).toLocaleDateString()}
+                </span>
+              </div>
             </div>
-            <div className="td-subj">{t.subject}</div>
-            <div className="td-prev">{t.body}</div>
-            <div className="td-meta">
-              {[
-                { icon: <MapPin size={12} color="#9ca3af" />, label: "Area",     val: t.area },
-                { icon: <MapPin size={12} color="#9ca3af" />, label: "Location", val: t.location || "—" },
-                { icon: <Calendar size={12} color="#9ca3af" />, label: "Raised", val: new Date(t.createdAt).toLocaleDateString() },
-              ].map((m, i) => (
-                <div key={i} className="td-mi">
-                  <div style={{ flexShrink: 0, marginTop: 1 }}>{m.icon}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div className="td-ml">{m.label}</div>
-                    <div className="td-mv">{m.val}</div>
-                  </div>
-                </div>
-              ))}
+            <div className="atk-status-pill" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>
+              {t.status}
             </div>
           </div>
-          <div className="td-status" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>{t.status}</div>
         </div>
       </div>
       <div className="td-acts">
