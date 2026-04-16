@@ -1020,6 +1020,13 @@ const UserDashboard = () => {
                 {renderDescription(displayedTicket.body)}
               </div>
 
+              {displayedTicket.imageUrl && (
+                <div style={{ padding:"13px 14px",borderRadius:14,background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.1)",marginBottom:18 }}>
+                  <div style={{ fontSize:10,fontWeight:600,color:"#6366f1",letterSpacing:"0.05em",marginBottom:8 }}>ATTACHED IMAGE</div>
+                  <img src={`http://localhost:3000${displayedTicket.imageUrl}`} alt="ticket" style={{ width:"100%",borderRadius:12,maxHeight:250,objectFit:"cover" }} />
+                </div>
+              )}
+
               <div className="ud-modal-actions">
                 <button onClick={closeModal} style={{ padding:"12px",borderRadius:18,border:"1px solid rgba(0,0,0,0.08)",background:"rgba(255,255,255,0.8)",fontSize:13,fontWeight:500,fontFamily:"inherit",color:"#374151",cursor:"pointer" }}>Close</button>
                 {!prevTicket && displayedTicket.status==="PENDING" && (

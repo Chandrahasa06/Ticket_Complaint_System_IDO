@@ -348,26 +348,7 @@ const glassCard = {
   boxShadow: "0 16px 48px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.8)",
 };
 
-/* Compact row card — slightly tighter than glassCard */
-const rowCard = {
-  borderRadius: 18,
-  backdropFilter: "blur(30px)",
-  WebkitBackdropFilter: "blur(30px)",
-  background: "rgba(255,255,255,0.65)",
-  boxShadow: "0 4px 18px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
-  overflow: "hidden",
-};
 
-const getStatusStyle = (status) => {
-  const s = (status || "").toLowerCase().replace("_", "-");
-  const map = {
-    pending: { color: "#d97706", bg: "rgba(254,243,199,0.85)", border: "rgba(245,158,11,0.25)" },
-    overdue: { color: "#dc2626", bg: "rgba(254,226,226,0.85)", border: "rgba(239,68,68,0.25)" },
-    resolved: { color: "#059669", bg: "rgba(236,253,245,0.88)", border: "rgba(16,185,129,0.22)" },
-    closed: { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" },
-  };
-  return map[s] || { color: "#6b7280", bg: "rgba(243,244,246,0.85)", border: "rgba(156,163,175,0.25)" };
-};
 
 const COMMENT_ROLE_STYLE = {
   admin: {
@@ -463,6 +444,7 @@ const CommentSection = ({ ticketId, role, loggedInUserId }) => {
     finally { setLoading(false); }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchComments(); }, [ticketId]);
   useEffect(() => { subscribeToPush(); }, []);
 
@@ -681,13 +663,7 @@ const EngineerDashboard = () => {
   const [unread, setUnread] = useState(0);
   const [priorityLoading, setPriorityLoading] = useState(null);
 
-  const [notifyingId, setNotifyingId] = useState(null);
-  const [notifiedIds, setNotifiedIds] = useState(() => {
-    try {
-      const stored = localStorage.getItem("notifiedTicketIds");
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
+
 
   useEffect(() => {
     const fetchEngineerInfo = async () => {
@@ -759,21 +735,7 @@ const EngineerDashboard = () => {
     else fetchTickets(activeTab);
   }, [activeTab]);
 
-  const handleNotifyTechnician = async (ticket) => {
-    setNotifyingId(ticket.id);
-    try {
-      const res = await fetch(`http://localhost:3000/api/engineer/tickets/${ticket.id}/notify-technician`, { method: "POST", credentials: "include" });
-      const data = await res.json();
-      if (!res.ok) { CustomToast(data.message); return; }
-      setNotifiedIds(prev => {
-        const updated = [...prev, ticket.id];
-        localStorage.setItem("notifiedTicketIds", JSON.stringify(updated));
-        return updated;
-      });
-      CustomToast(`${data.message}`);
-    } catch (e) { console.error(e); CustomToast("Server error while notifying"); }
-    finally { setNotifyingId(null); }
-  };
+
 
   const handleTogglePriority = async (ticket) => {
     setPriorityLoading(ticket.id);
@@ -829,17 +791,7 @@ const EngineerDashboard = () => {
   const pwStrengthColors = ["#334155", "#475569", "#eab308", "#10b981"];
   const pwStrengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
 
-  const tabBadgeStyle = (tabKey, isActive) => {
-    const colorMap = {
-      pending: { color: "#d97706", bg: "rgba(254,243,199,0.9)" },
-      overdue: { color: "#dc2626", bg: "rgba(254,226,226,0.9)" },
-      resolved: { color: "#16a34a", bg: "rgba(220,252,231,0.9)" },
-      closed: { color: "#6b7280", bg: "rgba(243,244,246,0.9)" },
-      technicians: { color: "#6366f1", bg: "rgba(224,231,255,0.9)" }
-    };
-    if (isActive) return { color: "rgba(255,255,255,0.95)", bg: "rgba(255,255,255,0.25)" };
-    return colorMap[tabKey] || { color: "#6b7280", bg: "rgba(243,244,246,0.9)" };
-  };
+
 
   const tabs = [
     { key: "pending", label: "Pending", count: tabCounts.pending },
@@ -1104,6 +1056,13 @@ const EngineerDashboard = () => {
                 <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>DESCRIPTION</div>
                 {renderDescription(selectedTicket.body)}
               </div>
+
+              {selectedTicket.imageUrl && (
+                <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginTop: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>ATTACHED IMAGE</div>
+                  <img src={`http://localhost:3000${selectedTicket.imageUrl}`} alt="ticket" style={{ width:"100%", borderRadius:12, maxHeight:250, objectFit:"cover" }} />
+                </div>
+              )}
 
               <CommentSection
                 ticketId={selectedTicket.id}

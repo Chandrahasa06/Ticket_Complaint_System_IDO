@@ -1429,6 +1429,13 @@ const AdminDashboard = () => {
                 <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:10 }}>DESCRIPTION</div>
                 {renderDescription(selectedTicket.body)}
               </div>
+
+              {selectedTicket.imageUrl && (
+                <div style={{ marginTop:12, padding:"15px 17px", borderRadius:16, background:"rgba(99,102,241,0.06)", border:"1px solid rgba(99,102,241,0.1)" }}>
+                  <div style={{ fontSize:11, fontWeight:600, color:"#6366f1", letterSpacing:"0.05em", marginBottom:10 }}>ATTACHED IMAGE</div>
+                  <img src={`http://localhost:3000${selectedTicket.imageUrl}`} alt="ticket" style={{ width:"100%", borderRadius:12, maxHeight:250, objectFit:"cover" }} />
+                </div>
+              )}
               <CommentSection ticketId={selectedTicket.id} role="admin" />
               <button onClick={()=>setSelectedTicket(null)} style={{ width:"100%", marginTop:16, padding:"12px", borderRadius:18, border:"1px solid rgba(0,0,0,0.08)", background:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer" }}>Close</button>
             </div>
