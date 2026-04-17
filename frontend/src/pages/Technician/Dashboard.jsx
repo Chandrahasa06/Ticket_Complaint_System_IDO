@@ -389,7 +389,7 @@ const fmtDt = (iso) => {
     + " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 };
 
-const TAB_MAP = { pending: ["PENDING"], overdue: ["OVERDUE"], resolved: ["RESOLVED"], closed: ["CLOSED"] };
+
 
 /* ─────────────────────────────────────────────────────────────────────────────
    DESCRIPTION RENDERER
