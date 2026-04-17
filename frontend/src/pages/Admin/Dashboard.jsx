@@ -1136,19 +1136,19 @@ const AdminDashboard = () => {
     } catch(e) { console.error(e); }
   };
 
+  /* ── Load overview stats on mount + when switching back to overview ── */
   useEffect(() => {
-    if(activeTab==="overview") fetchStats();
-    else fetchTickets(activeTab, 1);
+    if (activeTab === "overview") fetchStats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   useEffect(() => { subscribeToPush(); }, []);
 
-  /* ── Pagination: re-fetch when page changes (but not on tab change — tab change resets page to 1 above) ── */
+  /* ── Fetch tickets whenever tab or page changes ── */
   useEffect(() => {
-    if(activeTab!=="overview" && currentPage > 1) fetchTickets(activeTab, currentPage);
+    if (activeTab !== "overview") fetchTickets(activeTab, currentPage);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [activeTab, currentPage]);
 
   const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
 
@@ -1160,7 +1160,7 @@ const AdminDashboard = () => {
   };
 
   const handlePageChange = (page) => {
-    if(page < 1 || page > totalPages) return;
+    if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

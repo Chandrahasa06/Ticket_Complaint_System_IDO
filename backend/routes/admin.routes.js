@@ -182,7 +182,7 @@ adminRouter.get("/tickets", async(req, res) => {
     try {
         const status = req.query.status;
         const pg = parseInt(req.query.pg) || 1;
-        const take = 50;
+        const take = 10;
         const skip = (pg - 1) * take;
         const tickets = await prisma.ticket.findMany({
             where: (status && status !== "ALL") ? { status } : undefined,
