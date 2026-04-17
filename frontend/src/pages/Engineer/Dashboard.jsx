@@ -929,21 +929,37 @@ const EngineerDashboard = () => {
                 <div style={{ fontSize: 18, fontWeight: 600, color: "#374151", marginBottom: 6 }}>No Technicians Found</div>
               </div>
             ) : (
-              <div className="eng-tech-grid">
+              <div className="eng-ticket-list">
                 {technicians.map(tech => (
-                  <div key={tech.id} style={{ ...glassCard, overflow: "hidden" }}>
-                    <div style={{ height: 60, background: "linear-gradient(135deg,#6366f1,#0ea5e9)" }} />
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 24px 24px" }}>
-                      <div style={{ width: 72, height: 72, borderRadius: 20, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, color: "white", boxShadow: "0 8px 24px rgba(99,102,241,0.35)" }}>{(tech.username || "T").charAt(0).toUpperCase()}</div>
-                      <div style={{ textAlign: "center", marginTop: 12, marginBottom: 14 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "#111827", marginBottom: 3 }}>{tech.username || "—"}</div>
-                        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 2 }}>{tech.department}</div>
-                        <div style={{ fontSize: 12, color: "#9ca3af" }}>{tech.area}</div>
+                  <div key={tech.id} className="atk-card">
+                    <div className="atk-body">
+                      <div className="atk-icon" style={{ background: "linear-gradient(135deg,#0d9488,#14b8a6)" }}>
+                        <span style={{ fontSize: 16, fontWeight: 700 }}>{(tech.username || "T").charAt(0).toUpperCase()}</span>
                       </div>
-                      <button onClick={() => setViewTechnician(tech)} style={{ width: "100%", padding: "11px", borderRadius: 18, border: "none", background: "linear-gradient(135deg,#6366f1,#0ea5e9)", color: "white", fontSize: 13, fontWeight: 500, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, boxShadow: "0 8px 24px rgba(99,102,241,0.3)" }}>
-                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        View Details
-                      </button>
+                      <div className="atk-content">
+                        <div className="atk-top">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="atk-subject">{tech.username || "—"}</div>
+                            <div className="atk-meta" style={{ marginTop: 3 }}>
+                              <span className="atk-meta-item">
+                                <Activity size={10} style={{ marginRight: 2 }} />
+                                {tech.department}
+                              </span>
+                              {tech.area && (
+                                <span className="atk-meta-item">
+                                  <svg width="10" height="10" fill="none" stroke="#9ca3af" viewBox="0 0 24 24" style={{ marginRight: 2 }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                  {tech.area}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                            <button className="atk-view-btn" onClick={() => setViewTechnician(tech)}>
+                              <Eye size={11} /> View
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
