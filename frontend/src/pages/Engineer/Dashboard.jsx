@@ -662,6 +662,9 @@ const EngineerDashboard = () => {
   const [showNotifs, setShowNotifs] = useState(false);
   const [unread, setUnread] = useState(0);
   const [priorityLoading, setPriorityLoading] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
+  const TICKETS_PER_PAGE = 10;
 
 
 
@@ -689,7 +692,7 @@ const EngineerDashboard = () => {
         const results = await Promise.all(statuses.map(s =>
           fetch(`http://localhost:3000/api/engineer/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())
         ));
-        setTabCounts({ pending: results[0].tickets?.length || 0, overdue: results[1].tickets?.length || 0, resolved: results[2].tickets?.length || 0, closed: results[3].tickets?.length || 0 });
+        setTabCounts({ pending: results[0].pagination?.totalTickets || 0, overdue: results[1].pagination?.totalTickets || 0, resolved: results[2].pagination?.totalTickets || 0, closed: results[3].pagination?.totalTickets || 0 });
       } catch (e) { console.error(e); }
     };
     const fetchNotifs = async () => {
@@ -717,23 +720,37 @@ const EngineerDashboard = () => {
     } catch (e) { console.error(e); }
   };
 
-  const fetchTickets = async (status) => {
+  const fetchTickets = async (status, page = 1) => {
     setLoading(true);
     try {
-      let url = "http://localhost:3000/api/engineer/tickets?pg=1";
+      let url = `http://localhost:3000/api/engineer/tickets?pg=${page}`;
       if (status && status !== "technicians") url += `&status=${status.toUpperCase().replace("-", "_")}`;
       const res = await fetch(url, { credentials: "include" });
       const data = await res.json();
       if (!res.ok) { CustomToast(data.message); return; }
       setTickets(data.tickets);
+      setTotalTickets(data.pagination?.totalTickets || 0);
     } catch (e) { console.error(e); CustomToast("Server error"); }
     finally { setLoading(false); }
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setTickets([]);
+  };
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
     if (activeTab === "technicians") fetchTechnicians();
-    else fetchTickets(activeTab);
-  }, [activeTab]);
+    else fetchTickets(activeTab, currentPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentPage]);
 
 
 
@@ -790,6 +807,20 @@ const EngineerDashboard = () => {
   const pwScore = (() => { const v = pwForm.newPw; return [v.length >= 6, v.length >= 10, /[A-Z]/.test(v) || /[0-9]/.test(v), /[^a-zA-Z0-9]/.test(v)].filter(Boolean).length; })();
   const pwStrengthColors = ["#334155", "#475569", "#eab308", "#10b981"];
   const pwStrengthLabels = ["", "Weak", "Fair", "Good", "Strong"];
+  const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const start = Math.max(2, currentPage - 1);
+    const end   = Math.min(totalPages - 1, currentPage + 1);
+    pages.push(1);
+    if (start > 2) pages.push("...");
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
 
 
 
@@ -864,7 +895,7 @@ const EngineerDashboard = () => {
                 <button
                   key={tab.key}
                   className={`eng-tab-btn${act ? ` active${ov ? " ov" : ""}` : ""}`}
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                 >
                   {tab.label}
                   {tab.count > 0 && (
@@ -895,7 +926,7 @@ const EngineerDashboard = () => {
                 <div className="eng-sec-hd">
                   <div>
                     <div className="eng-sec-title">{tabs.find(t=>t.key===activeTab)?.label} Tickets</div>
-                    <div className="eng-sec-sub">Showing {tabs.find(t=>t.key===activeTab)?.label?.toLowerCase()} tickets · {tickets.length} Total</div>
+                    <div className="eng-sec-sub">Page {currentPage} of {totalPages || 1} · {totalTickets} Total</div>
                   </div>
                 </div>
                 <div className="eng-ticket-list">
@@ -913,6 +944,37 @@ const EngineerDashboard = () => {
                     ))
                   }
                 </div>
+
+                {/* PAGINATION */}
+                {totalPages > 1 && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginTop: 16, padding: "14px 18px", borderRadius: 18, background: "rgba(255,255,255,0.65)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
+                    <div style={{ fontSize: 12, color: "#6b7280" }}>
+                      Page <span style={{ fontWeight: 600, color: "#111827" }}>{currentPage}</span> of{" "}
+                      <span style={{ fontWeight: 600, color: "#111827" }}>{totalPages}</span>
+                      {" "}— <span style={{ fontWeight: 600, color: "#111827" }}>{totalTickets}</span> tickets
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
+                        style={{ width: 34, height: 34, borderRadius: 11, border: "1px solid rgba(0,0,0,0.08)", background: currentPage === 1 ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === 1 ? "#d1d5db" : "#374151", cursor: currentPage === 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                      {getPageNumbers().map((page, idx) =>
+                        page === "..." ? (
+                          <span key={`e-${idx}`} style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>…</span>
+                        ) : (
+                          <button key={page} onClick={() => handlePageChange(page)}
+                            style={{ width: 34, height: 34, borderRadius: 11, border: currentPage === page ? "none" : "1px solid rgba(0,0,0,0.08)", background: currentPage === page ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.8)", color: currentPage === page ? "white" : "#374151", fontSize: 12, fontWeight: currentPage === page ? 700 : 500, cursor: "pointer", fontFamily: "inherit", boxShadow: currentPage === page ? "0 4px 14px rgba(99,102,241,0.35)" : "none" }}>
+                            {page}
+                          </button>
+                        )
+                      )}
+                      <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                        style={{ width: 34, height: 34, borderRadius: 11, border: "1px solid rgba(0,0,0,0.08)", background: currentPage === totalPages ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === totalPages ? "#d1d5db" : "#374151", cursor: currentPage === totalPages ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

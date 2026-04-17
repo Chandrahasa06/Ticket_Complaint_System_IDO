@@ -292,6 +292,8 @@ technicianRouter.get("/tickets", async(req, res) => {
         const technicianDept = req.user.department;
         const technicianSpecialization = req.user.specialization;
         const status = req.query.status;
+        const pg = parseInt(req.query.pg) || 1;
+        const take = 10;
 
         const allTickets = await prisma.ticket.findMany({
             where: {
@@ -303,11 +305,14 @@ technicianRouter.get("/tickets", async(req, res) => {
             include: { user: { select: { username: true, email: true } } },
         });
 
-        const tickets = allTickets.filter(ticket =>
+        const filtered = allTickets.filter(ticket =>
             technicianAreas.some(a => ticket.area === a)
         );
 
-        res.json({ tickets, total: tickets.length });
+        const totalTickets = filtered.length;
+        const tickets = filtered.slice((pg - 1) * take, pg * take);
+
+        res.json({ tickets, pagination: { pg, totalTickets } });
     }
     catch(e) {
         console.log(e);
