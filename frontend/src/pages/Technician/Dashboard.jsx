@@ -526,6 +526,9 @@ const TechnicianDashboard = () => {
   const [tickets, setTickets]     = useState([]);
   const [loading, setLoading]     = useState(false);
   const [activeTab, setTab]       = useState("pending");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
+  const TICKETS_PER_PAGE = 10;
   const [sel, setSel]             = useState(null);
   const [prev, setPrev]           = useState(null);
   const [prevLoad, setPrevLoad]   = useState(false);
@@ -552,9 +555,16 @@ const TechnicianDashboard = () => {
   const [showN, setShowN]         = useState(false);
   const [unread, setUnread]       = useState(0);
 
-  const loadTickets = async () => {
+  const loadTickets = async (status = "pending", page = 1) => {
     setLoading(true);
-    try { const r = await fetch("http://localhost:3000/api/technician/tickets", { credentials: "include" }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(d.tickets); console.log(d.tickets);}
+    try {
+      let url = `http://localhost:3000/api/technician/tickets?pg=${page}&status=${status.toUpperCase()}`;
+      const r = await fetch(url, { credentials: "include" });
+      const d = await r.json();
+      if (!r.ok) { CustomToast(d.message); return; }
+      setTickets(d.tickets);
+      setTotalTickets(d.pagination?.totalTickets || 0);
+    }
     catch { CustomToast("Server error"); } finally { setLoading(false); }
   };
   const loadPrev = async (id) => {
@@ -567,9 +577,14 @@ const TechnicianDashboard = () => {
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/dashboard", { credentials: "include" }); const d = await r.json(); if (r.ok) { setInfo({ username: d.user?.username || "Technician", department: d.user?.department || "", area: d.user?.area || "" }); setUid(d.user?.id ?? null); } } catch (e) { console.error(e); } })();
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/profile", { credentials: "include" }); const d = await r.json(); if (r.ok) setProfile(d.technician); } catch (e) { console.error(e); } })();
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/notifications", { credentials: "include" }); const d = await r.json(); if (r.ok) { setNotifs(d.notifications); setUnread(d.notifications.filter(n => !n.isRead).length); } } catch (e) { console.error(e); } })();
-    loadTickets();
     subscribeToPush();
   }, []);
+
+  // Fetch tickets on tab or page change
+  useEffect(() => {
+    loadTickets(activeTab, currentPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, currentPage]);
 
   const openN = async () => {
     setShowN(true);
@@ -579,14 +594,22 @@ const TechnicianDashboard = () => {
 
   const doResolve = async (id) => {
     if (resolving) return; setResolving(true);
-    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/resolve`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: rRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "RESOLVED" } : t)); setRConf(null); setRRem(""); }
+    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/resolve`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: rRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } loadTickets(activeTab, currentPage); setRConf(null); setRRem(""); }
     catch { CustomToast("Server error"); } finally { setResolving(false); }
   };
 
   const doClose = async (id) => {
     if (closing) return; setClosing(true);
-    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: cRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } setTickets(p => p.map(t => t.id === id ? { ...t, status: "CLOSED" } : t)); setCConf(null); setCRem(""); }
+    try { const r = await fetch(`http://localhost:3000/api/technician/tickets/${id}/close`, { method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ remark: cRem }) }); const d = await r.json(); if (!r.ok) { CustomToast(d.message); return; } loadTickets(activeTab, currentPage); setCConf(null); setCRem(""); }
     catch { CustomToast("Server error"); } finally { setClosing(false); }
+  };
+
+  const handleTabChange = (tab) => { setTab(tab); setCurrentPage(1); setTickets([]); };
+  const handlePageChange = (page) => {
+    const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const logout = async () => {
@@ -609,20 +632,29 @@ const TechnicianDashboard = () => {
     catch { setPwErr("Server error. Please try again."); } finally { setPwLoad(false); }
   };
 
-  const closed   = tickets.filter(t => t.status === "CLOSED").length;
-  const resolved = tickets.filter(t => t.status === "RESOLVED").length;
-  const overdue  = tickets.filter(t => t.status === "OVERDUE").length;
-  const pending  = tickets.filter(t => t.status === "PENDING").length;
 
+  const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const start = Math.max(2, currentPage - 1);
+    const end   = Math.min(totalPages - 1, currentPage + 1);
+    pages.push(1);
+    if (start > 2) pages.push("...");
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
 
   const TABS = [
-    { id: "pending",  label: "Pending",  ct: pending  },
-    { id: "overdue",  label: "Overdue",  ct: overdue  },
-    { id: "resolved", label: "Resolved", ct: resolved },
-    { id: "closed",   label: "Closed",   ct: closed   },
-  ];  const filtered = tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status))
-  .slice()
-  .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
+    { id: "pending",  label: "Pending"  },
+    { id: "overdue",  label: "Overdue"  },
+    { id: "resolved", label: "Resolved" },
+    { id: "closed",   label: "Closed"   },
+  ];
+  const filtered = tickets.slice().sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
   const disp = prev ?? sel;
 
   const pwScore = [pwF.newPw.length >= 6, pwF.newPw.length >= 10, /[A-Z]/.test(pwF.newPw) || /[0-9]/.test(pwF.newPw), /[^a-zA-Z0-9]/.test(pwF.newPw)].filter(Boolean).length;
@@ -710,9 +742,8 @@ const TechnicianDashboard = () => {
             const act = activeTab === tab.id;
             const ov  = tab.id === "overdue";
             return (
-              <button key={tab.id} className={`td-tab${act ? ` active${ov ? " ov" : ""}` : ""}`} onClick={() => setTab(tab.id)}>
+              <button key={tab.id} className={`td-tab${act ? ` active${ov ? " ov" : ""}` : ""}`} onClick={() => handleTabChange(tab.id)}>
                 {tab.label}
-                <span className={`td-tab-ct${!act && ov && tab.ct > 0 ? " ov-pill" : ""}`}>{tab.ct}</span>
               </button>
             );
           })}
@@ -786,6 +817,37 @@ const TechnicianDashboard = () => {
     </div>
   );
 })}
+
+        {/* PAGINATION */}
+        {!loading && totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginTop: 16, padding: "14px 18px", borderRadius: 18, background: "rgba(255,255,255,0.65)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>
+              Page <span style={{ fontWeight: 600, color: "#111827" }}>{currentPage}</span> of{" "}
+              <span style={{ fontWeight: 600, color: "#111827" }}>{totalPages}</span>
+              {" "}— <span style={{ fontWeight: 600, color: "#111827" }}>{totalTickets}</span> tickets
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}
+                style={{ width: 34, height: 34, borderRadius: 11, border: "1px solid rgba(0,0,0,0.08)", background: currentPage === 1 ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === 1 ? "#d1d5db" : "#374151", cursor: currentPage === 1 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              {getPageNumbers().map((page, idx) =>
+                page === "..." ? (
+                  <span key={`t-${idx}`} style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#9ca3af" }}>…</span>
+                ) : (
+                  <button key={page} onClick={() => handlePageChange(page)}
+                    style={{ width: 34, height: 34, borderRadius: 11, border: currentPage === page ? "none" : "1px solid rgba(0,0,0,0.08)", background: currentPage === page ? "linear-gradient(135deg,#6366f1,#0ea5e9)" : "rgba(255,255,255,0.8)", color: currentPage === page ? "white" : "#374151", fontSize: 12, fontWeight: currentPage === page ? 700 : 500, cursor: "pointer", fontFamily: "inherit", boxShadow: currentPage === page ? "0 4px 14px rgba(99,102,241,0.35)" : "none" }}>
+                    {page}
+                  </button>
+                )
+              )}
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}
+                style={{ width: 34, height: 34, borderRadius: 11, border: "1px solid rgba(0,0,0,0.08)", background: currentPage === totalPages ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.8)", color: currentPage === totalPages ? "#d1d5db" : "#374151", cursor: currentPage === totalPages ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══ VIEW DETAILS MODAL ══ */}
