@@ -281,7 +281,37 @@ const CSS = `
     color: #0d9488; background: rgba(13,148,136,0.09); border: 1px solid rgba(13,148,136,0.2);
     margin-top: 4px;
   }
-
+/* ── Engineer-style tab bar ── */
+  .eng-tab-bar {
+    display: flex; gap: 4px; padding: 5px; border-radius: 16px;
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    margin-bottom: 0; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; width: 100%;
+  }
+  .eng-tab-bar::-webkit-scrollbar { display: none; }
+  .eng-tab-btn {
+    display: flex; align-items: center; gap: 5px; padding: 7px 11px;
+    border-radius: 11px; border: none; font-size: 12px; font-weight: 500;
+    font-family: inherit; cursor: pointer; background: transparent;
+    color: #6b7280; white-space: nowrap; flex-shrink: 0; transition: all 0.14s;
+  }
+  .eng-tab-btn.active {
+    background: linear-gradient(135deg,#6366f1,#0ea5e9); color: white;
+    box-shadow: 0 5px 15px rgba(99,102,241,0.28);
+  }
+  .eng-tab-btn.active.ov {
+    background: linear-gradient(135deg,#b91c1c,#ef4444);
+    box-shadow: 0 5px 15px rgba(185,28,28,0.26);
+  }
+  .eng-tab-ct {
+    min-width: 16px; height: 16px; border-radius: 8px; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; padding: 0 3px;
+    background: rgba(99,102,241,0.1); color: #6366f1;
+  }
+  .eng-tab-btn.active .eng-tab-ct { background: rgba(255,255,255,0.25); color: white; }
+  .eng-tab-ct.ov-pill { background: rgba(185,28,28,0.1); color: #b91c1c; }
   /* ─── TABLET 640px+ ─── */
   @media (min-width: 640px) {
     .td-header-inner { padding: 0 24px; height: 64px; }
@@ -558,7 +588,7 @@ const TechnicianDashboard = () => {
   const [rConf, setRConf]         = useState(null);
   const [rRem, setRRem]           = useState("");
   const [resolving, setResolving] = useState(false);
-
+const [tabCounts, setTabCounts] = useState({ pending: 0, overdue: 0, resolved: 0, closed: 0 });
   const [notifs, setNotifs]       = useState([]);
   const [showN, setShowN]         = useState(false);
   const [unread, setUnread]       = useState(0);
@@ -585,6 +615,20 @@ const TechnicianDashboard = () => {
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/dashboard", { credentials: "include" }); const d = await r.json(); if (r.ok) { setInfo({ username: d.user?.username || "Technician", department: d.user?.department || "", area: d.user?.area || "" }); setUid(d.user?.id ?? null); } } catch (e) { console.error(e); } })();
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/profile", { credentials: "include" }); const d = await r.json(); if (r.ok) setProfile(d.technician); } catch (e) { console.error(e); } })();
     (async () => { try { const r = await fetch("http://localhost:3000/api/technician/notifications", { credentials: "include" }); const d = await r.json(); if (r.ok) { setNotifs(d.notifications); setUnread(d.notifications.filter(n => !n.isRead).length); } } catch (e) { console.error(e); } })();
+    (async () => {
+  try {
+    const statuses = ["pending", "overdue", "resolved", "closed"];
+    const results = await Promise.all(statuses.map(s =>
+      fetch(`http://localhost:3000/api/technician/tickets?pg=1&status=${s.toUpperCase()}`, { credentials: "include" }).then(r => r.json())
+    ));
+    setTabCounts({
+      pending:  results[0].pagination?.totalTickets || 0,
+      overdue:  results[1].pagination?.totalTickets || 0,
+      resolved: results[2].pagination?.totalTickets || 0,
+      closed:   results[3].pagination?.totalTickets || 0,
+    });
+  } catch (e) { console.error(e); }
+})();
     subscribeToPush();
   }, []);
 
@@ -656,12 +700,12 @@ const TechnicianDashboard = () => {
     return pages;
   };
 
-  const TABS = [
-    { id: "pending",  label: "Pending"  },
-    { id: "overdue",  label: "Overdue"  },
-    { id: "resolved", label: "Resolved" },
-    { id: "closed",   label: "Closed"   },
-  ];
+const TABS = [
+  { id: "pending",  label: "Pending",  count: tabCounts.pending  },
+  { id: "overdue",  label: "Overdue",  count: tabCounts.overdue  },
+  { id: "resolved", label: "Resolved", count: tabCounts.resolved },
+  { id: "closed",   label: "Closed",   count: tabCounts.closed   },
+];
   const filtered = tickets.slice().sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
   const disp = prev ?? sel;
 
@@ -748,16 +792,27 @@ const TechnicianDashboard = () => {
       <div className="td-content">
 
         {/* TABS */}
-        <div className="td-tabs">
-          {TABS.map(tab => {
-            const act = activeTab === tab.id;
-            const ov  = tab.id === "overdue";
-            return (
-              <button key={tab.id} className={`td-tab${act ? ` active${ov ? " ov" : ""}` : ""}`} onClick={() => handleTabChange(tab.id)}>
-                {tab.label}
-              </button>
-            );
-          })}
+        <div style={{ padding: "10px 12px", maxWidth: 1280, margin: "0 auto" }}>
+          <div className="eng-tab-bar">
+            {TABS.map(tab => {
+              const act = activeTab === tab.id;
+              const ov  = tab.id === "overdue";
+              return (
+                <button
+                  key={tab.id}
+                  className={`eng-tab-btn${act ? ` active${ov ? " ov" : ""}` : ""}`}
+                  onClick={() => handleTabChange(tab.id)}
+                >
+                  {tab.label}
+                  {tab.count > 0 && (
+                    <span className={`eng-tab-ct${!act && ov && tab.count > 0 ? " ov-pill" : ""}`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* SECTION HEADER */}
@@ -766,7 +821,6 @@ const TechnicianDashboard = () => {
             <div className="td-sec-title">{TABS.find(t => t.id === activeTab)?.label} Tickets</div>
             <div className="td-sec-sub">Showing {activeTab} tickets</div>
           </div>
-          <span className="td-ct-pill">{filtered.length} {filtered.length === 1 ? "Ticket" : "Tickets"}</span>
         </div>
 
         {/* LOADING */}
