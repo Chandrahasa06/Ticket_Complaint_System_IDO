@@ -274,6 +274,14 @@ const CSS = `
   .td-pw-ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #6366f1; display: flex; pointer-events: none; }
   .td-pw-eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6366f1; display: flex; padding: 4px; }
 
+  /* specialization pill inside profile */
+  .td-spec-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    color: #0d9488; background: rgba(13,148,136,0.09); border: 1px solid rgba(13,148,136,0.2);
+    margin-top: 4px;
+  }
+
   /* ─── TABLET 640px+ ─── */
   @media (min-width: 640px) {
     .td-header-inner { padding: 0 24px; height: 64px; }
@@ -441,8 +449,8 @@ const Comments = ({ ticketId, role, uid }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { reload(); }, [ticketId]);
   useEffect(() => {
-  subscribeToPush();
-}, []);
+    subscribeToPush();
+  }, []);
 
   const post = async () => {
     if (!body.trim()) return; setSub(true);
@@ -614,21 +622,25 @@ const TechnicianDashboard = () => {
   const overdue  = tickets.filter(t => t.status === "OVERDUE").length;
   const pending  = tickets.filter(t => t.status === "PENDING").length;
 
-
   const TABS = [
     { id: "pending",  label: "Pending",  ct: pending  },
     { id: "overdue",  label: "Overdue",  ct: overdue  },
     { id: "resolved", label: "Resolved", ct: resolved },
     { id: "closed",   label: "Closed",   ct: closed   },
-  ];  const filtered = tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status))
-  .slice()
-  .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
+  ];
+
+  const filtered = tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status))
+    .slice()
+    .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
   const disp = prev ?? sel;
 
   const pwScore = [pwF.newPw.length >= 6, pwF.newPw.length >= 10, /[A-Z]/.test(pwF.newPw) || /[0-9]/.test(pwF.newPw), /[^a-zA-Z0-9]/.test(pwF.newPw)].filter(Boolean).length;
   const pwColors = ["#334155", "#475569", "#eab308", "#10b981"];
   const pwLbls   = ["", "Weak", "Fair", "Good", "Strong"];
   const pwInp    = { width: "100%", padding: "10px 10px 10px 36px", paddingRight: 36, borderRadius: 11, border: "1.5px solid rgba(99,102,241,0.2)", background: "rgba(255,255,255,0.9)", fontSize: 13, fontFamily: "inherit", color: "#111827", outline: "none", boxSizing: "border-box" };
+
+  // Normalise specialization for display: empty string → "General"
+  const displaySpecialization = profile?.specialization?.trim() || "General";
 
   return (
     <div className="td-page">
@@ -702,7 +714,7 @@ const TechnicianDashboard = () => {
       )}
 
       {/* ══ MAIN CONTENT ══ */}
-      <div className="td-content"> 
+      <div className="td-content">
 
         {/* TABS */}
         <div className="td-tabs">
@@ -730,62 +742,62 @@ const TechnicianDashboard = () => {
         {/* LOADING */}
         {loading && <div className="td-empty"><div style={{ fontSize: 14, color: "#6b7280" }}>Loading tickets…</div></div>}
 
-        {/* EMPTY */}
-     {!loading && filtered.map(t => {
-  const ss = statusStyle(t.status);
-  const isDone = t.status === "RESOLVED" || t.status === "CLOSED";
-  const isRes  = t.status === "RESOLVED";
-  const isCls  = t.status === "CLOSED";
-  const statusKey = (t.status || "").toLowerCase().replace(/_/g, "-");
-  return (
-    <div key={t.id} className="atk-card" style={{ outline: t.isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
-      {t.isPriority && (
-        <div className="atk-priority-banner">
-          <svg width="11" height="11" fill="#dc2626" viewBox="0 0 24 24">
-            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-          </svg>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY TICKET</span>
-        </div>
-      )}
-      <div className="atk-body">
-        <div className={`atk-icon ${statusKey}`}>
-          {getStatusIcon(statusKey)}
-        </div>
-        <div className="atk-content">
-          <div className="atk-top">
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="atk-subject">{t.subject || "No Subject"}</div>
-              <div className="atk-meta" style={{ marginTop: 3 }}>
-                <span className="atk-meta-item">
-                  <span>#{t.id}</span>
-                  {t.prevId && <span className="td-fu-tag">Follow-up</span>}
-                </span>
-                {t.area && (
-                  <span className="atk-meta-item">
-                    <MapPin size={10} color="#9ca3af" />
-                    {t.area}
-                  </span>
-                )}
-                <span className="atk-meta-item">
-                  <Calendar size={10} color="#9ca3af" />
-                  {new Date(t.createdAt).toLocaleDateString()}
-                </span>
+        {/* TICKET CARDS */}
+        {!loading && filtered.map(t => {
+          const ss = statusStyle(t.status);
+          const isDone = t.status === "RESOLVED" || t.status === "CLOSED";
+          const isRes  = t.status === "RESOLVED";
+          const isCls  = t.status === "CLOSED";
+          const statusKey = (t.status || "").toLowerCase().replace(/_/g, "-");
+          return (
+            <div key={t.id} className="atk-card" style={{ outline: t.isPriority ? "2px solid rgba(239,68,68,0.4)" : "none" }}>
+              {t.isPriority && (
+                <div className="atk-priority-banner">
+                  <svg width="11" height="11" fill="#dc2626" viewBox="0 0 24 24">
+                    <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em" }}>PRIORITY TICKET</span>
+                </div>
+              )}
+              <div className="atk-body">
+                <div className={`atk-icon ${statusKey}`}>
+                  {getStatusIcon(statusKey)}
+                </div>
+                <div className="atk-content">
+                  <div className="atk-top">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="atk-subject">{t.subject || "No Subject"}</div>
+                      <div className="atk-meta" style={{ marginTop: 3 }}>
+                        <span className="atk-meta-item">
+                          <span>#{t.id}</span>
+                          {t.prevId && <span className="td-fu-tag">Follow-up</span>}
+                        </span>
+                        {t.area && (
+                          <span className="atk-meta-item">
+                            <MapPin size={10} color="#9ca3af" />
+                            {t.area}
+                          </span>
+                        )}
+                        <span className="atk-meta-item">
+                          <Calendar size={10} color="#9ca3af" />
+                          {new Date(t.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="atk-status-pill" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>
+                      {t.status}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="td-acts">
+                <button className="td-act td-act-view" onClick={() => { setPrev(null); setSel(t); }}><Eye size={13} /> View</button>
+                <button className="td-act td-act-res" onClick={() => !isDone && setRConf(t)} disabled={isDone}><CheckCircle size={13} />{isRes ? "Resolved ✓" : "Resolve"}</button>
+                <button className="td-act td-act-cls" onClick={() => !isDone && setCConf(t)} disabled={isDone}><X size={13} />{isCls ? "Closed ✓" : "Close"}</button>
               </div>
             </div>
-            <div className="atk-status-pill" style={{ color: ss.color, background: ss.bg, border: `1px solid ${ss.border}` }}>
-              {t.status}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="td-acts">
-        <button className="td-act td-act-view" onClick={() => { setPrev(null); setSel(t); }}><Eye size={13} /> View</button>
-        <button className="td-act td-act-res" onClick={() => !isDone && setRConf(t)} disabled={isDone}><CheckCircle size={13} />{isRes ? "Resolved ✓" : "Resolve"}</button>
-        <button className="td-act td-act-cls" onClick={() => !isDone && setCConf(t)} disabled={isDone}><X size={13} />{isCls ? "Closed ✓" : "Close"}</button>
-      </div>
-    </div>
-  );
-})}
+          );
+        })}
       </div>
 
       {/* ══ VIEW DETAILS MODAL ══ */}
@@ -824,14 +836,14 @@ const TechnicianDashboard = () => {
 
               <div className="td-dg">
                 {[
-                  { l: "TICKET ID",      v: disp?.id,                                   s: false },
-                  { l: "STATUS",         v: disp?.status,                               s: false },
-                  { l: "SUBJECT",        v: disp?.subject,                              s: true  },
-                  { l: "DEPARTMENT",     v: disp?.type,                                 s: false },
-                  { l: "AREA",           v: disp?.area,                                 s: false },
-                  { l: "LOCATION",       v: disp?.location || "—",                      s: false },
-                  { l: "RAISED BY",      v: disp?.user?.username || "—",                s: false },
-                  { l: "CONTACT",        v: disp?.phone || "—",                         s: false },
+                  { l: "TICKET ID",      v: disp?.id,                                                s: false },
+                  { l: "STATUS",         v: disp?.status,                                            s: false },
+                  { l: "SUBJECT",        v: disp?.subject,                                           s: true  },
+                  { l: "DEPARTMENT",     v: disp?.type,                                              s: false },
+                  { l: "AREA",           v: disp?.area,                                              s: false },
+                  { l: "LOCATION",       v: disp?.location || "—",                                   s: false },
+                  { l: "RAISED BY",      v: disp?.user?.username || "—",                             s: false },
+                  { l: "CONTACT",        v: disp?.phone || "—",                                      s: false },
                   { l: "DATE",           v: disp ? new Date(disp.createdAt).toLocaleDateString() : "—", s: false },
                 ].map((f, i) => (
                   <div key={i} className={`td-dc${f.s ? " s2" : ""}`}>
@@ -872,21 +884,38 @@ const TechnicianDashboard = () => {
               <button className="td-sh-close" onClick={() => { setShowProf(false); resetPw(); }}><X size={13} /></button>
             </div>
             <div className="td-sh-body">
+              {/* ── Avatar & name block ── */}
               <div style={{ textAlign: "center", marginBottom: 18 }}>
                 <div style={{ width: 60, height: 60, borderRadius: 16, background: "linear-gradient(135deg,#6366f1,#0ea5e9)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, fontWeight: 700, margin: "0 auto 10px", boxShadow: "0 5px 18px rgba(99,102,241,0.35)" }}>
                   {(profile.username || "T").charAt(0).toUpperCase()}
                 </div>
                 <div style={{ fontSize: 17, fontWeight: 700, color: "#111827" }}>{profile.username}</div>
                 <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>{profile.department} · {profile.area}</div>
+                {/* ── Specialization pill shown below name ── */}
+                <div style={{ display: "flex", justifyContent: "center", marginTop: 6 }}>
+                  <span className="td-spec-pill">
+                    <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    {displaySpecialization}
+                  </span>
+                </div>
               </div>
-              {[{ l: "EMAIL", v: profile.email }, { l: "DEPARTMENT", v: profile.department }, { l: "AREA", v: profile.area }].map((f, i) => (
+
+              {/* ── Detail rows ── */}
+              {[
+                { l: "EMAIL",           v: profile.email              },
+                { l: "DEPARTMENT",      v: profile.department         },
+                { l: "SPECIALIZATION",  v: displaySpecialization      },
+                { l: "AREA",            v: profile.area               },
+              ].map((f, i) => (
                 <div key={i} style={{ padding: "10px 12px", borderRadius: 13, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginBottom: 7 }}>
                   <div style={{ fontSize: 10, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 3 }}>{f.l}</div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>{f.v}</div>
                 </div>
               ))}
 
-              {/* Change PW */}
+              {/* ── Change Password ── */}
               <div style={{ marginTop: 12, borderRadius: 14, border: "1.5px solid rgba(99,102,241,0.18)", overflow: "hidden" }}>
                 <button onClick={() => { setShowPw(v => !v); setPwErr(""); setPwOk(false); }} style={{ width: "100%", padding: "12px 13px", background: showPw ? "rgba(99,102,241,0.09)" : "rgba(99,102,241,0.04)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "inherit" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -1001,5 +1030,6 @@ const TechnicianDashboard = () => {
     </div>
   );
 };
+
 
 export default TechnicianDashboard;

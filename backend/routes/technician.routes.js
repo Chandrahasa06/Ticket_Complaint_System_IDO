@@ -194,7 +194,7 @@ technicianRouter.get("/dashboard", (req, res) => {
     res.json({ message: "Technician dashboard", user: req.user });
 });
 
-// GET full profile
+// GET full profile — includes specialization (falls back to "General" if empty)
 technicianRouter.get("/profile", async(req, res) => {
     if(req.user.role !== "technician"){
         return res.status(403).json({ message: "Access denied" });
@@ -202,9 +202,27 @@ technicianRouter.get("/profile", async(req, res) => {
     try {
         const technician = await prisma.technician.findUnique({
             where: { id: req.user.id },
-            select: { id: true, username: true, email: true, department: true, area: true }
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                department: true,
+                specialization: true,   // <-- added
+                area: true
+            }
         });
-        res.json({ technician });
+
+        if (!technician) {
+            return res.status(404).json({ message: "Technician not found" });
+        }
+
+        // Normalise: empty string → "General"
+        const normalized = {
+            ...technician,
+            specialization: technician.specialization?.trim() || "General",
+        };
+
+        res.json({ technician: normalized });
     } catch(e) {
         console.log(e);
         return res.status(500).json({ message: "Internal server error" });
@@ -298,8 +316,6 @@ technicianRouter.get("/tickets", async(req, res) => {
 });
 
 // GET single ticket by ID with comments
-// FIX: authorId is now included in each comment so the frontend can
-//      determine ownership without mixing up technician vs engineer comments.
 technicianRouter.get("/tickets/:id", async(req, res) => {
     if(req.user.role !== "technician"){
         return res.status(403).json({ message: "Access denied" });
@@ -339,8 +355,6 @@ technicianRouter.get("/tickets/:id", async(req, res) => {
             id: c.id,
             body: c.body,
             authorRole: c.authorRole,
-            // ── FIX: expose the numeric ID of whoever wrote this comment ──
-            // The frontend uses this to decide whether to show edit/delete buttons.
             authorId:
                 c.authorRole === "admin"
                     ? c.admin?.id
@@ -407,7 +421,7 @@ technicianRouter.post("/tickets/:id/comments", async(req, res) => {
                 technician: { select: { id: true, username: true, department: true } },
             },
         });
-await createCommentNotifications(Number(req.params.id), "technician", req.user.username, ticket.subject);
+        await createCommentNotifications(Number(req.params.id), "technician", req.user.username, ticket.subject);
 
         res.status(201).json({
             message: "Comment added",
@@ -415,7 +429,7 @@ await createCommentNotifications(Number(req.params.id), "technician", req.user.u
                 id: comment.id,
                 body: comment.body,
                 authorRole: comment.authorRole,
-                authorId: comment.technician.id,   // ── FIX: include authorId
+                authorId: comment.technician.id,
                 authorName: comment.technician.username,
                 authorDepartment: comment.technician.department,
                 createdAt: comment.createdAt,
@@ -464,7 +478,7 @@ technicianRouter.patch("/tickets/:ticketId/comments/:commentId", async(req, res)
                 id: updated.id,
                 body: updated.body,
                 authorRole: updated.authorRole,
-                authorId: updated.technician.id,   // ── FIX: include authorId
+                authorId: updated.technician.id,
                 authorName: updated.technician.username,
                 authorDepartment: updated.technician.department,
                 createdAt: updated.createdAt,
