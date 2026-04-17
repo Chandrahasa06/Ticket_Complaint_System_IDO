@@ -1177,7 +1177,7 @@ const AdminDashboard = () => {
 
   const TABS = [
     { id:"overview", label:"Overview", ct: null },
-    { id:"pending",  label:"Pending",  ct: stats.pending   },
+    { id:"pending",  label:"Pending",  ct: stats.pending +stats.overdue },
     { id:"overdue",  label:"Overdue",  ct: stats.overdue   },
     { id:"resolved", label:"Resolved", ct: stats.resolved  },
     { id:"closed",   label:"Closed",   ct: stats.closed    },
@@ -1336,7 +1336,6 @@ const AdminDashboard = () => {
                     <div className="admin-sec-sub">Showing {activeTabLabel.toLowerCase()} tickets · Page {currentPage} of {totalPages || 1}</div>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span className="admin-ct-pill">{totalTickets} Total</span>
                     <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
                   </div>
                 </div>
