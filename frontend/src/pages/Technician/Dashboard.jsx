@@ -525,7 +525,7 @@ const TechnicianDashboard = () => {
 
   const [tickets, setTickets]     = useState([]);
   const [loading, setLoading]     = useState(false);
-  const [activeTab, setTab]       = useState("all");
+  const [activeTab, setTab]       = useState("pending");
   const [sel, setSel]             = useState(null);
   const [prev, setPrev]           = useState(null);
   const [prevLoad, setPrevLoad]   = useState(false);
@@ -614,19 +614,13 @@ const TechnicianDashboard = () => {
   const overdue  = tickets.filter(t => t.status === "OVERDUE").length;
   const pending  = tickets.filter(t => t.status === "PENDING").length;
 
-  const STATS = [
-    { label: "Total Assigned", val: tickets.length, warn: false },
-    { label: "Pending",        val: pending,         warn: true  },
-    { label: "Resolved",       val: resolved,        warn: false },
-    { label: "Closed",         val: closed,          warn: false },
-  ];
+
   const TABS = [
-    { id: "all",      label: "All",      ct: tickets.length },
     { id: "pending",  label: "Pending",  ct: pending  },
     { id: "overdue",  label: "Overdue",  ct: overdue  },
     { id: "resolved", label: "Resolved", ct: resolved },
     { id: "closed",   label: "Closed",   ct: closed   },
-  ];const filtered = (activeTab === "all" ? tickets : tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status)))
+  ];  const filtered = tickets.filter(t => (TAB_MAP[activeTab] || []).includes(t.status))
   .slice()
   .sort((a, b) => (b.isPriority ? 1 : 0) - (a.isPriority ? 1 : 0));
   const disp = prev ?? sel;
@@ -728,7 +722,7 @@ const TechnicianDashboard = () => {
         <div className="td-sec-hd">
           <div>
             <div className="td-sec-title">{TABS.find(t => t.id === activeTab)?.label} Tickets</div>
-            <div className="td-sec-sub">{activeTab === "all" ? "All tickets assigned to your area and department" : `Showing ${activeTab} tickets`}</div>
+            <div className="td-sec-sub">Showing {activeTab} tickets</div>
           </div>
           <span className="td-ct-pill">{filtered.length} {filtered.length === 1 ? "Ticket" : "Tickets"}</span>
         </div>
@@ -852,12 +846,12 @@ const TechnicianDashboard = () => {
                 {disp && <Desc body={disp.body} />}
               </div>
 
-              {disp?.imageUrl && (
+              {disp?.imageUrl ? (
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 6 }}>ATTACHED IMAGE</div>
                   <img src={`http://localhost:3000${disp.imageUrl}`} alt="ticket" style={{ width: "100%", borderRadius: 13, maxHeight: 220, objectFit: "cover" }} />
                 </div>
-              )}
+              ) : null}
 
               {!prev && <Comments ticketId={sel.id} role="technician" uid={uid} />}
 

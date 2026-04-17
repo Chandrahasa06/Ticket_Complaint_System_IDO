@@ -1057,12 +1057,12 @@ const EngineerDashboard = () => {
                 {renderDescription(selectedTicket.body)}
               </div>
 
-              {selectedTicket.imageUrl && (
+              {selectedTicket.imageUrl ? (
                 <div style={{ padding: "14px 16px", borderRadius: 16, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)", marginTop: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#6366f1", letterSpacing: "0.05em", marginBottom: 10 }}>ATTACHED IMAGE</div>
                   <img src={`http://localhost:3000${selectedTicket.imageUrl}`} alt="ticket" style={{ width:"100%", borderRadius:12, maxHeight:250, objectFit:"cover" }} />
                 </div>
-              )}
+              ) : null}
 
               <CommentSection
                 ticketId={selectedTicket.id}
