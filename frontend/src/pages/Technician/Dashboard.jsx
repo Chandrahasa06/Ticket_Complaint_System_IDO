@@ -157,7 +157,7 @@ const CSS = `
   /* ── SECTION HEADER ── */
   .td-sec-hd {
     display: flex; align-items: center; justify-content: space-between;
-    gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+    gap: 8px; margin-bottom: 12px; flex-wrap: wrap; margin-top:10px;
   }
   .td-sec-title { font-size: 15px; font-weight: 600; color: #111827; }
   .td-sec-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
@@ -189,7 +189,7 @@ const CSS = `
   .atk-content { flex: 1; min-width: 0; }
   .atk-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
   .atk-subject { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
-  .atk-status-pill { padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .atk-status-pill { display: none; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
   .atk-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .atk-meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #9ca3af; }
   .td-fu-tag { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; color: #7c3aed; background: rgba(124,58,237,0.10); border: 1px solid rgba(124,58,237,0.18); margin-left: 6px; }
@@ -292,7 +292,7 @@ const CSS = `
   }
   .eng-tab-bar::-webkit-scrollbar { display: none; }
   .eng-tab-btn {
-    display: flex; align-items: center; gap: 5px; padding: 7px 11px;
+    display: flex; align-items: center; gap: 5px; padding: 8px 11px;
     border-radius: 11px; border: none; font-size: 12px; font-weight: 500;
     font-family: inherit; cursor: pointer; background: transparent;
     color: #6b7280; white-space: nowrap; flex-shrink: 0; transition: all 0.14s;
@@ -357,6 +357,7 @@ const CSS = `
     .td-cc { flex-direction: row; align-items: flex-end; }
     .td-cc textarea { flex: 1; }
     .td-cc-send { flex-shrink: 0; }
+    .atk-status-pill { display: flex;}
   }
 
   /* ─── DESKTOP 1024px+ ─── */
@@ -792,7 +793,7 @@ const TABS = [
       <div className="td-content">
 
         {/* TABS */}
-        <div style={{ padding: "10px 12px", maxWidth: 1280, margin: "0 auto" }}>
+        <div style={{ padding: "10px 0px", maxWidth: 1280, margin: "0 auto", marginBottom:"15px" }}>
           <div className="eng-tab-bar">
             {TABS.map(tab => {
               const act = activeTab === tab.id;
@@ -819,7 +820,8 @@ const TABS = [
         <div className="td-sec-hd">
           <div>
             <div className="td-sec-title">{TABS.find(t => t.id === activeTab)?.label} Tickets</div>
-            <div className="td-sec-sub">Showing {activeTab} tickets</div>
+            {/* <div className="td-sec-sub">Showing {activeTab} tickets</div> */}
+            <div className="td-sec-sub">Page {currentPage} of {totalPages || 1} · {totalTickets} Total</div>
           </div>
         </div>
 
