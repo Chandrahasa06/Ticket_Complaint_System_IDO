@@ -127,6 +127,21 @@ const RESPONSIVE_CSS = `
     color: white; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px;
     box-shadow: 0 3px 10px rgba(99,102,241,0.28); white-space: nowrap; flex-shrink: 0; margin-top: 2px;
   }
+    /* ── Priority compact button ── */
+  .eng-priority-btn {
+    padding: 6.5px 10px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   @media (min-width: 640px) {
     .atk-card { border-radius: 18px; margin-bottom: 10px; }
     .atk-body { padding: 14px 18px; gap: 12px; }
@@ -134,6 +149,7 @@ const RESPONSIVE_CSS = `
     .atk-subject { font-size: 14px; }
     .atk-meta-item { font-size: 12px; }
     .atk-view-btn { font-size: 12px; padding: 7px 15px; }
+    .eng-priority-btn { padding: 8px 12px; }
   }
   @media (min-width: 1024px) { .atk-body { padding: 16px 22px; } }
 
@@ -316,21 +332,6 @@ const RESPONSIVE_CSS = `
     flex-shrink: 0;
   }
   .eng-view-btn:hover { opacity: 0.92; }
-
-  /* ── Priority compact button ── */
-  .eng-priority-btn {
-    padding: 7px 10px;
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
 
   /* ── Ticket list wrapper ── */
   .eng-ticket-list {
@@ -602,7 +603,7 @@ const TicketCard = ({ ticket, onView, onTogglePriority, priorityLoading }) => {
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
               {canPriority && (
                 <button
                   className="eng-priority-btn"
@@ -614,13 +615,13 @@ const TicketCard = ({ ticket, onView, onTogglePriority, priorityLoading }) => {
                     color: "#dc2626",
                     opacity: priorityLoading === ticket.id ? 0.6 : 1,
                     cursor: priorityLoading === ticket.id ? "not-allowed" : "pointer",
-                    padding: "4px 8px", fontSize: 10, borderRadius: 8,
+                    fontSize: 14, borderRadius: 8,
                   }}
                 >
-                  <svg width="10" height="10" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0, marginRight: 2 }}>
+                  <svg width="14" height="14" fill={isPriority ? "#dc2626" : "none"} stroke="#dc2626" strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0, marginRight: 2 }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                   </svg>
-                  {priorityLoading === ticket.id ? "..." : isPriority ? "Unmark" : "Priority"}
+                  {/* {priorityLoading === ticket.id ? "..." : isPriority ? "Unmark" : "Priority"} */}
                 </button>
               )}
               <button className="atk-view-btn" onClick={() => onView(ticket)}>
@@ -885,7 +886,7 @@ const EngineerDashboard = () => {
       </header>
 
       {/* TAB STRIP */}
-      <div style={{ position: "sticky", top: 68, zIndex: 90, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", background: "rgba(255,255,255,0.45)", borderBottom: "1px solid rgba(255,255,255,0.5)", boxShadow: "0 4px 16px rgba(0,0,0,0.04)" }}>
+      <div style={{ position: "sticky", top: 68, zIndex: 90, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
         <div style={{ padding: "0 16px", maxWidth: 1280, margin: "0 auto", marginTop: 16 }}>
           <div className="eng-tab-bar">
             {tabs.map(tab => {
