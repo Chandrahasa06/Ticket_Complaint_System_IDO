@@ -158,6 +158,18 @@ const RESPONSIVE_CSS = `
   .ud-modal-actions{display:flex;gap:10px;flex-wrap:wrap;}
   .ud-modal-actions button{flex:1 1 120px;}
 
+  /* Pagination */
+  .ud-pagination {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 12px;
+    padding: 14px 18px; border-radius: 18px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.55); box-shadow: 0 8px 24px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.7);
+    flex-wrap: wrap; gap: 10px;
+  }
+  @media (max-width: 520px) {
+    .ud-pagination { justify-content: center; padding: 12px 14px; }
+    .ud-pagination-label { display: none; }
+  }
+
   /* Scrollbar slim */
   .ud-modal-body::-webkit-scrollbar,.ud-profile-modal-body::-webkit-scrollbar,.ud-followup-modal-body::-webkit-scrollbar{width:4px;}
   .ud-modal-body::-webkit-scrollbar-thumb,.ud-profile-modal-body::-webkit-scrollbar-thumb,.ud-followup-modal-body::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.25);border-radius:4px;}
@@ -199,6 +211,9 @@ const UserDashboard = () => {
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalTickets, setTotalTickets] = useState(0);
+  const TICKETS_PER_PAGE = 10;
 
   const [username, setUsername] = useState(null);
   const [email, setEmail] = useState(null);
@@ -257,19 +272,42 @@ const UserDashboard = () => {
     finally { setPhoneUpdateLoading(false); }
   };
 
-  const fetchTickets = async (status) => {
+  const fetchTickets = async (status, page = 1) => {
     setLoading(true);
     try {
-      let url = "http://localhost:3000/api/user/tickets";
-      if (status) url += "?status=" + status;
+      let url = `http://localhost:3000/api/user/tickets?page=${page}`;
+      if (status) url += "&status=" + status;
       const res = await fetch(url, { credentials: "include" });
       const text = await res.text();
       let data;
       try { data = JSON.parse(text); } catch { CustomToast("Invalid server response while fetching tickets."); return; }
       if (!res.ok) { CustomToast(data.message); return; }
       setTickets(data.tickets);
+      setTotalTickets(data.pagination?.totalTickets || 0);
     } catch (err) { console.error(err); CustomToast("Server error"); }
     finally { setLoading(false); }
+  };
+
+  const totalPages = Math.ceil(totalTickets / TICKETS_PER_PAGE) || 1;
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    fetchTickets(activeTab.toUpperCase(), page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    const start = Math.max(2, currentPage - 1);
+    const end   = Math.min(totalPages - 1, currentPage + 1);
+    pages.push(1);
+    if (start > 2) pages.push("...");
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
   };
 
   const fetchTicketById = async (id) => {
@@ -320,7 +358,7 @@ const UserDashboard = () => {
       try { data = JSON.parse(text); } catch { CustomToast("Invalid server response."); return; }
       if (!res.ok) { CustomToast(data.message); return; }
       CustomToast("Ticket cancelled successfully!", "green");
-      closeModal(); fetchTickets("PENDING");
+      closeModal(); fetchTickets("PENDING", currentPage);
     } catch (err) { console.error(err); CustomToast("Server error"); }
   };
 
@@ -349,7 +387,7 @@ const UserDashboard = () => {
       if (!response.ok) { CustomToast(data.message); return; }
       CustomToast("Follow-up submitted! Ticket has been reopened.", "green");
       setFollowupTicket(null); setFollowupForm({ title: "", description: "" });
-      fetchTickets("RESOLVED");
+      fetchTickets("RESOLVED", currentPage);
     } catch (err) { console.error(err); CustomToast("Server error"); }
   };
 
@@ -746,6 +784,34 @@ const UserDashboard = () => {
                 </div>
               </div>
             ))}
+
+            {/* Pagination for Pending */}
+            {totalPages > 1 && tickets.length > 0 && (
+            <div className="ud-pagination">
+              <div className="ud-pagination-label" style={{ fontSize:12, color:"#6b7280" }}>
+                Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of{" "}
+                <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span>
+                {" "}— <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> tickets
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <span key={`ellipsis-${idx}`} style={{ width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#9ca3af" }}>…</span>
+                  ) : (
+                    <button key={page} onClick={() => handlePageChange(page)} style={{ width:34, height:34, borderRadius:11, border:currentPage===page?"none":"1px solid rgba(0,0,0,0.08)", background:currentPage===page?"linear-gradient(135deg,#6366f1,#0ea5e9)":"rgba(255,255,255,0.8)", color:currentPage===page?"white":"#374151", fontSize:12, fontWeight:currentPage===page?700:500, cursor:"pointer", fontFamily:"inherit", boxShadow:currentPage===page?"0 4px 14px rgba(99,102,241,0.35)":"none" }}>
+                      {page}
+                    </button>
+                  )
+                )}
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===totalPages?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===totalPages?"#d1d5db":"#374151", cursor:currentPage===totalPages?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+            )}
           </div>
         )}
 
@@ -822,6 +888,34 @@ const UserDashboard = () => {
                 </div>
               </div>
             )})}
+
+            {/* Pagination for Resolved */}
+            {totalPages > 1 && tickets.length > 0 && (
+            <div className="ud-pagination">
+              <div className="ud-pagination-label" style={{ fontSize:12, color:"#6b7280" }}>
+                Page <span style={{ fontWeight:600, color:"#111827" }}>{currentPage}</span> of{" "}
+                <span style={{ fontWeight:600, color:"#111827" }}>{totalPages}</span>
+                {" "}— <span style={{ fontWeight:600, color:"#111827" }}>{totalTickets}</span> tickets
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===1?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===1?"#d1d5db":"#374151", cursor:currentPage===1?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <span key={`ellipsis-${idx}`} style={{ width:34, height:34, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:"#9ca3af" }}>…</span>
+                  ) : (
+                    <button key={page} onClick={() => handlePageChange(page)} style={{ width:34, height:34, borderRadius:11, border:currentPage===page?"none":"1px solid rgba(0,0,0,0.08)", background:currentPage===page?"linear-gradient(135deg,#6366f1,#0ea5e9)":"rgba(255,255,255,0.8)", color:currentPage===page?"white":"#374151", fontSize:12, fontWeight:currentPage===page?700:500, cursor:"pointer", fontFamily:"inherit", boxShadow:currentPage===page?"0 4px 14px rgba(99,102,241,0.35)":"none" }}>
+                      {page}
+                    </button>
+                  )
+                )}
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} style={{ width:34, height:34, borderRadius:11, border:"1px solid rgba(0,0,0,0.08)", background:currentPage===totalPages?"rgba(0,0,0,0.03)":"rgba(255,255,255,0.8)", color:currentPage===totalPages?"#d1d5db":"#374151", cursor:currentPage===totalPages?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+            )}
           </div>
         )}
       </main>

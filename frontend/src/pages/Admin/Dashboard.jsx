@@ -543,20 +543,33 @@ const exportTickets = async (tickets, format, tabLabel) => {
   }
 };
 
-const ExportDropdown = ({ tickets, tabLabel }) => {
+const ExportDropdown = ({ onFetchData, tabLabel }) => {
   const [open, setOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async (fmt) => {
+    setExporting(true);
+    try {
+      const tickets = await onFetchData();
+      if(tickets) await exportTickets(tickets, fmt, tabLabel);
+    } finally {
+      setExporting(false);
+      setOpen(false);
+    }
+  };
+
   return (
     <div style={{ position:"relative", display:"inline-block" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ padding:"9px 16px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.08)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
-        <Download size={13} /> Export
+      <button onClick={() => setOpen(o => !o)} disabled={exporting} style={{ padding:"9px 16px", borderRadius:14, border:"1px solid rgba(99,102,241,0.25)", background:"rgba(99,102,241,0.08)", color:"#6366f1", fontSize:12, fontWeight:600, fontFamily:"inherit", cursor:exporting?"not-allowed":"pointer", display:"flex", alignItems:"center", gap:6, opacity:exporting?0.6:1 }}>
+        <Download size={13} /> {exporting ? "Exporting..." : "Export"}
         <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
       </button>
-      {open && (
+      {open && !exporting && (
         <>
           <div onClick={() => setOpen(false)} style={{ position:"fixed", inset:0, zIndex:400 }} />
           <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:500, borderRadius:16, background:"rgba(255,255,255,0.97)", backdropFilter:"blur(30px)", WebkitBackdropFilter:"blur(30px)", boxShadow:"0 16px 48px rgba(0,0,0,0.12)", border:"1px solid rgba(99,102,241,0.12)", overflow:"hidden", minWidth:165 }}>
             {[{ label:"Export as PDF", fmt:"pdf", icon:"📄" },{ label:"Export as Excel", fmt:"excel", icon:"📊" }].map(({ label, fmt, icon }) => (
-              <button key={fmt} onClick={() => { exportTickets(tickets, fmt, tabLabel); setOpen(false); }} style={{ width:"100%", padding:"11px 16px", border:"none", background:"transparent", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:9, textAlign:"left" }}>
+              <button key={fmt} onClick={() => handleExport(fmt)} style={{ width:"100%", padding:"11px 16px", border:"none", background:"transparent", fontSize:13, fontWeight:500, fontFamily:"inherit", color:"#374151", cursor:"pointer", display:"flex", alignItems:"center", gap:9, textAlign:"left" }}>
                 <span>{icon}</span> {label}
               </button>
             ))}
@@ -1187,8 +1200,21 @@ const AdminDashboard = () => {
 
   const pendingCombinedTickets = activeTab==="pending" ? [...tickets,...overdueTickets] : tickets;
   const activeTabLabel = TABS.find(t=>t.id===activeTab)?.label || activeTab;
-  const exportableTickets = activeTab==="pending" ? pendingCombinedTickets : tickets;
   const displayTickets = activeTab==="pending" ? pendingCombinedTickets : tickets;
+
+  const fetchAllForExport = async () => {
+    if (activeTab === "overview") return [];
+    try {
+      const url = `http://localhost:3000/api/admin/tickets?status=${activeTab.toUpperCase().replace("-", "_")}&export=true`;
+      const res = await fetch(url, { credentials: "include" });
+      const data = await res.json();
+      return data.tickets || [];
+    } catch (e) {
+      console.error(e);
+      CustomToast("Failed to fetch tickets for export");
+      return [];
+    }
+  };
 
   /* Build pagination page numbers — show up to 5 pages around current */
   const getPageNumbers = () => {
@@ -1330,7 +1356,7 @@ const AdminDashboard = () => {
                     <div className="admin-sec-sub">Page {currentPage} of {totalPages || 1}</div>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
+                    <ExportDropdown onFetchData={fetchAllForExport} tabLabel={activeTabLabel} />
                   </div>
                 </div>
 

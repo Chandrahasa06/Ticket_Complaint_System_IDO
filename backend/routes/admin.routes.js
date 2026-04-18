@@ -181,20 +181,26 @@ adminRouter.get("/tickets", async(req, res) => {
     }
     try {
         const status = req.query.status;
+        const isExport = req.query.export === "true";
         const pg = parseInt(req.query.pg) || 1;
-        const take = 10;
-        const skip = (pg - 1) * take;
-        const tickets = await prisma.ticket.findMany({
+        
+        const queryOpts = {
             where: (status && status !== "ALL") ? { status } : undefined,
             orderBy: { createdAt: "desc" },
-            skip, take,
             include: {
                 prev: true,
                 user: {
                     select: { username: true, phone: true }
                 },
             },
-        });
+        };
+        
+        if (!isExport) {
+            queryOpts.take = 10;
+            queryOpts.skip = (pg - 1) * 10;
+        }
+
+        const tickets = await prisma.ticket.findMany(queryOpts);
         const totalTickets = await prisma.ticket.count({
             where: (status && status !== "ALL") ? { status } : undefined,
         });
