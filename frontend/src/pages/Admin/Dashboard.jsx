@@ -11,18 +11,12 @@ const RESPONSIVE_CSS = `
   /* ── Stat cards grid ── */
   .admin-stat-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 28px;
   }
-  @media (max-width: 1100px) {
-    .admin-stat-grid { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (max-width: 700px) {
-    .admin-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
-  }
-  @media (max-width: 400px) {
-    .admin-stat-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 640px) {
+    .admin-stat-grid { gap:10px; }
   }
 
   /* ── Overview two-column grid ── */
@@ -324,7 +318,7 @@ const RESPONSIVE_CSS = `
   .stat-card-box {
     padding: 22px 20px;
   }
-  @media (max-width: 480px) {
+  @media (max-width: 640px) {
     .stat-card-box { padding: 12px 14px !important; border-radius: 18px !important; }
     .stat-card-value { font-size: 20px !important; }
     .stat-card-label { font-size: 10px !important; margin-bottom: 2px !important; }
@@ -1184,7 +1178,7 @@ const AdminDashboard = () => {
   ];
 
   const statCards = [
-    { label:"Total Pending", value: stats.totalPending ?? (stats.pending + stats.overdue) },
+    // { label:"Total Pending", value: stats.totalPending ?? (stats.pending + stats.overdue) },
     { label:"Pending",       value: stats.pending   },
     { label:"Overdue",       value: stats.overdue   },
     { label:"Resolved",      value: stats.resolved  },
@@ -1333,7 +1327,7 @@ const AdminDashboard = () => {
                 <div className="admin-sec-hd">
                   <div>
                     <div className="admin-sec-title">{activeTabLabel} Tickets</div>
-                    <div className="admin-sec-sub">Showing {activeTabLabel.toLowerCase()} tickets · Page {currentPage} of {totalPages || 1}</div>
+                    <div className="admin-sec-sub">Page {currentPage} of {totalPages || 1}</div>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <ExportDropdown tickets={exportableTickets} tabLabel={activeTabLabel} />
