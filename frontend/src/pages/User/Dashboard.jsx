@@ -758,42 +758,37 @@ const UserDashboard = () => {
               </div>
             )}
             {!loading && tickets.map((ticket) => (
-              <div key={ticket.id} className="atk-card">
-                <div className="atk-body">
-                  <div className="atk-icon pending">
-                    <Clock size={16} />
-                  </div>
-                  <div className="atk-content">
-                    <div className="atk-top">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="atk-subject">
-                          {ticket.subject}
-                          {ticket.prevId && <span className="ud-fu-tag">Follow-up</span>}
-                        </div>
-                        <div className="atk-meta" style={{ marginTop: 4 }}>
-                          <span className="atk-meta-item">
-                            <Activity size={12} color="#9ca3af" />
-                            {ticket.type}
-                          </span>
-                          <span className="atk-meta-item">
-                            <Calendar size={12} color="#9ca3af" />
-                            {new Date(ticket.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                        <div className="atk-status-pill" style={{ color: "#d97706", background: "rgba(254,243,199,0.85)", border: "1px solid rgba(245,158,11,0.25)" }}>
-                          Pending
-                        </div>
-                        <button className="atk-view-btn" onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }}>
-                          <Eye size={11} /> View
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+  <div key={ticket.id} className="atk-card" style={{ marginBottom: 8 }}>
+    <div className="atk-body" style={{ padding: "10px 12px" }}>
+      <div className="atk-icon pending" style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, marginTop: 0 }}>
+        <Clock size={14} />
+      </div>
+      <div className="atk-content">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="atk-subject" style={{ fontSize: 13 }}>
+              {ticket.subject}
+              {ticket.prevId && <span className="ud-fu-tag">Follow-up</span>}
+            </div>
+            <div className="atk-meta" style={{ marginTop: 3 }}>
+              <span className="atk-meta-item">
+                <Activity size={10} color="#9ca3af" />
+                {ticket.type}
+              </span>
+              <span className="atk-meta-item">
+                <Calendar size={10} color="#9ca3af" />
+                {new Date(ticket.createdAt).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+          <button className="atk-view-btn" style={{ marginTop: 0 }} onClick={() => { setPrevTicket(null); setSelectedTicket(ticket); }}>
+            <Eye size={11} /> View
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+))}
 
             {/* Pagination for Pending */}
             {totalPages > 1 && tickets.length > 0 && (
